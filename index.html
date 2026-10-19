@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080d18">
+
+  <title>Blockchain Tracker</title>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    :root {
+      --bg: #080d18;
+      --panel: #101827;
+      --panel2: #141f30;
+      --border: #253248;
+      --text: #edf4ff;
+      --muted: #8b9ab2;
+      --cyan: #39d5ff;
+      --green: #38dfa0;
+      --red: #ff687c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+      margin: auto;
+      padding: 20px 16px 32px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 45px;
+      height: 45px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: #102c43;
+      border: 1px solid #1d617e;
+      color: var(--cyan);
+      font-size: 24px;
+    }
+
+    .brand h1 {
+      font-size: 16px;
+      margin: 0 0 5px;
+      letter-spacing: .3px;
+    }
+
+    .brand p {
+      color: var(--muted);
+      font-size: 11px;
+      margin: 0;
+    }
+
+    .live-badge {
+      border: 1px solid #245c4b;
+      background: #102b25;
+      color: var(--green);
+      padding: 8px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .welcome {
+      margin-bottom: 22px;
+    }
+
+    .welcome h2 {
+      margin: 0 0 8px;
+      font-size: 25px;
+      line-height: 1.25;
+    }
+
+    .welcome p {
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 25px 0 13px;
+    }
+
+    .section-heading h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .section-heading span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 14px 11px;
+      min-width: 0;
+    }
+
+    .stat-icon {
+      font-size: 19px;
+      margin-bottom: 13px;
+    }
+
+    .stat-value {
+      font-size: 23px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      overflow-wrap: anywhere;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .action-card {
+      text-align: left;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 17px 14px;
+      min-width: 0;
+      transition: border-color .15s;
+    }
+
+    .action-card:active {
+      border-color: var(--cyan);
+    }
+
+    .action-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #172a3c;
+      font-size: 22px;
+      margin-bottom: 14px;
+    }
+
+    .action-card strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 7px;
+    }
+
+    .action-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .primary-btn {
+      width: 100%;
+      border: none;
+      border-radius: 11px;
+      background: var(--cyan);
+      color: #06121d;
+      font-weight: 700;
+      padding: 14px;
+      margin-top: 16px;
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel2);
+      color: var(--text);
+      padding: 11px 13px;
+    }
+
+    .watchlist {
+      display: grid;
+      gap: 10px;
+    }
+
+    .watch-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 13px;
+      min-width: 0;
+    }
+
+    .watch-icon {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      background: var(--panel2);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .watch-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .watch-info strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+      overflow-wrap: anywhere;
+    }
+
+    .watch-info small {
+      color: var(--muted);
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+
+    .remove-btn {
+      border: 1px solid #59303b;
+      background: #291721;
+      color: var(--red);
+      border-radius: 9px;
+      padding: 8px;
+      flex-shrink: 0;
+    }
+
+    .empty {
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      padding: 25px 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .empty-icon {
+      font-size: 30px;
+      margin-bottom: 9px;
+    }
+
+    .notice {
+      background: #102333;
+      border: 1px solid #24465e;
+      border-radius: 12px;
+      padding: 13px;
+      color: #b8d9ed;
+      line-height: 1.6;
+      font-size: 12px;
+      margin-top: 23px;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 25px 0 5px;
+      line-height: 1.7;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      background: rgba(0, 0, 0, .75);
+      align-items: flex-end;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 520px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 21px;
+      margin: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 7px 11px;
+    }
+
+    .field {
+      margin-bottom: 15px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      color: #bdc9dc;
+      font-size: 12px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-width: 0;
+      background: #080f1c;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 13px;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--cyan);
+    }
+
+    .message {
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 12px;
+      color: var(--red);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 380px) {
+      .app {
+        padding: 16px 12px 25px;
+      }
+
+      .welcome h2 {
+        font-size: 22px;
+      }
+
+      .stats {
+        gap: 7px;
+      }
+
+      .stat {
+        padding: 12px 8px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+
+      .live-badge {
+        font-size: 10px;
+        padding: 7px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">⛓</div>
+        <div>
+          <h1>BLOCKCHAIN TRACKER</h1>
+          <p>Wallet & Smart Contract Alerts</p>
+        </div>
+      </div>
+
+      <div class="live-badge">● TRACKER</div>
+    </header>
+
+    <section class="welcome">
+      <h2>Blockchain Activity<br>At Your Fingertips.</h2>
+      <p>
+        Manage wallets and smart contracts from one place.
+        Your monitoring dashboard starts here.
+      </p>
+    </section>
+
+    <section class="stats">
+      <div class="stat">
+        <div class="stat-icon">👛</div>
+        <div class="stat-value" id="walletCount">0</div>
+        <div class="stat-label">Tracked Wallets</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-icon">📜</div>
+        <div class="stat-value" id="contractCount">0</div>
+        <div class="stat-label">Smart Contracts</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-icon">🔔</div>
+        <div class="stat-value" id="alertCount">0</div>
+        <div class="stat-label">Received Alerts</div>
+      </div>
+    </section>
+
+    <div class="section-heading">
+      <h3>Blockchain Tracker</h3>
+      <span>Monitoring tools</span>
+    </div>
+
+    <section class="actions">
+      <button class="action-card" id="openWallet">
+        <div class="action-icon">👛</div>
+        <strong>Wallet Tracker</strong>
+        <p>Add wallet addresses and manage your watchlist.</p>
+      </button>
+
+      <button class="action-card" id="openContract">
+        <div class="action-icon">📜</div>
+        <strong>Smart Contract</strong>
+        <p>Track contracts and monitor their activity.</p>
+      </button>
+    </section>
+
+    <div class="section-heading">
+      <h3>My Watchlist</h3>
+      <span id="watchCount">0 items</span>
+    </div>
+
+    <section class="watchlist" id="watchlist"></section>
+
+    <div class="notice">
+      <strong>ℹ️ Monitoring status</strong><br>
+      This is the initial interface. Live blockchain monitoring
+      and automatic Telegram notifications will activate after
+      the secure backend and monitoring worker are connected.
+    </div>
+
+    <footer class="footer">
+      MULTI BLOCKCHAIN TRACKER<br>
+      Wallet Monitoring • Smart Contract Alerts
+    </footer>
+
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add Wallet</h3>
+        <button class="close-btn" id="closeModal" type="button">
+          ✕
+        </button>
+      </div>
+
+      <form id="addForm">
+        <input type="hidden" id="itemType">
+
+        <div class="field">
+          <label for="itemName">Display Name</label>
+          <input
+            id="itemName"
+            type="text"
+            maxlength="50"
+            placeholder="e.g. My Wallet"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="network">Blockchain Network</label>
+          <select id="network" required>
+            <option value="ethereum">Ethereum</option>
+            <option value="bsc">BNB Smart Chain</option>
+            <option value="tron">TRON</option>
+            <option value="solana">Solana</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="address">Wallet / Contract Address</label>
+          <input
+            id="address"
+            type="text"
+            maxlength="120"
+            placeholder="Enter public address"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          >
+        </div>
+
+        <button class="primary-btn" type="submit" id="saveButton">
+          Add to Watchlist
+        </button>
+
+        <div class="message" id="formMessage" role="status"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const tg = window.Telegram && window.Telegram.WebApp;
+
+      if (tg) {
+        tg.ready();
+        tg.expand();
+      }
+
+      const STORAGE_KEY = "blockchain_tracker_demo_watchlist_v1";
+
+      const NETWORKS = {
+        ethereum: "Ethereum",
+        bsc: "BNB Smart Chain",
+        tron: "TRON",
+        solana: "Solana"
+      };
+
+      let watchlist = loadWatchlist();
+
+      const modal = document.getElementById("modal");
+      const form = document.getElementById("addForm");
+      const typeInput = document.getElementById("itemType");
+      const nameInput = document.getElementById("itemName");
+      const networkInput = document.getElementById("network");
+      const addressInput = document.getElementById("address");
+      const message = document.getElementById("formMessage");
+
+      function loadWatchlist() {
+        try {
+          const saved = JSON.parse(
+            localStorage.getItem(STORAGE_KEY) || "[]"
+          );
+
+          return Array.isArray(saved) ? saved : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function saveWatchlist() {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(watchlist)
+        );
+      }
+
+      function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, function (char) {
+          const entities = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+          };
+
+          return entities[char];
+        });
+      }
+
+      function validAddress(address, network) {
+        if (network === "ethereum" || network === "bsc") {
+          return /^0x[a-fA-F0-9]{40}$/.test(address);
+        }
+
+        if (network === "tron") {
+          return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(address);
+        }
+
+        if (network === "solana") {
+          return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+        }
+
+        return false;
+      }
+
+      function openModal(type) {
+        form.reset();
+
+        typeInput.value = type;
+        message.textContent = "";
+
+        document.getElementById("modalTitle").textContent =
+          type === "wallet" ? "Add Wallet" : "Add Smart Contract";
+
+        document.getElementById("saveButton").textContent =
+          type === "wallet" ? "Add Wallet" : "Add Contract";
+
+        modal.classList.add("open");
+        nameInput.focus();
+      }
+
+      function closeModal() {
+        modal.classList.remove("open");
+        message.textContent = "";
+      }
+
+      function render() {
+        const wallets = watchlist.filter(
+          item => item.type === "wallet"
+        );
+
+        const contracts = watchlist.filter(
+          item => item.type === "contract"
+        );
+
+        document.getElementById("walletCount").textContent =
+          wallets.length;
+
+        document.getElementById("contractCount").textContent =
+          contracts.length;
+
+        // Real alert counts will be connected to the backend later.
+        document.getElementById("alertCount").textContent = "0";
+
+        document.getElementById("watchCount").textContent =
+          watchlist.length + (watchlist.length === 1 ? " item" : " items");
+
+        const container = document.getElementById("watchlist");
+
+        if (watchlist.length === 0) {
+          container.innerHTML = `
+            <div class="empty">
+              <div class="empty-icon">🔎</div>
+              <strong>Your watchlist is empty</strong><br>
+              Add a wallet or smart contract to get started.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = watchlist.map(function (item) {
+          const icon = item.type === "wallet" ? "👛" : "📜";
+          const label = item.type === "wallet"
+            ? "Wallet"
+            : "Smart Contract";
+
+          return `
+            <article class="watch-item">
+              <div class="watch-icon">${icon}</div>
+
+              <div class="watch-info">
+                <strong>${escapeHTML(item.name)}</strong>
+                <small>
+                  ${label} · ${escapeHTML(NETWORKS[item.network])}
+                </small>
+                <small>${escapeHTML(item.address)}</small>
+              </div>
+
+              <button
+                class="remove-btn"
+                type="button"
+                data-remove="${escapeHTML(item.id)}"
+                aria-label="Remove ${escapeHTML(item.name)}"
+              >✕</button>
+            </article>
+          `;
+        }).join("");
+      }
+
+      document.getElementById("openWallet").addEventListener(
+        "click",
+        function () {
+          openModal("wallet");
+        }
+      );
+
+      document.getElementById("openContract").addEventListener(
+        "click",
+        function () {
+          openModal("contract");
+        }
+      );
+
+      document.getElementById("closeModal").addEventListener(
+        "click",
+        closeModal
+      );
+
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const type = typeInput.value;
+        const name = nameInput.value.trim();
+        const network = networkInput.value;
+        const address = addressInput.value.trim();
+
+        if (!name || !address) {
+          message.textContent = "Please complete all fields.";
+          return;
+        }
+
+        if (!validAddress(address, network)) {
+          message.textContent =
+            "The address format does not match the selected network.";
+          return;
+        }
+
+        const duplicate = watchlist.some(function (item) {
+          return item.network === network &&
+            item.address.toLowerCase() === address.toLowerCase();
+        });
+
+        if (duplicate) {
+          message.textContent =
+            "This address is already in your watchlist.";
+          return;
+        }
+
+        const item = {
+          id: Date.now().toString(36) +
+              Math.random().toString(36).slice(2, 8),
+          type: type,
+          name: name,
+          network: network,
+          address: address
+        };
+
+        watchlist.unshift(item);
+
+        try {
+          saveWatchlist();
+        } catch (error) {
+          watchlist.shift();
+
+          message.textContent =
+            "Unable to save this item in browser storage.";
+          return;
+        }
+
+        render();
+        closeModal();
+
+        if (tg && tg.HapticFeedback) {
+          tg.HapticFeedback.notificationOccurred("success");
+        }
+      });
+
+      document.getElementById("watchlist").addEventListener(
+        "click",
+        function (event) {
+          const button = event.target.closest("[data-remove]");
+
+          if (!button) {
+            return;
+          }
+
+          const id = button.getAttribute("data-remove");
+
+          watchlist = watchlist.filter(function (item) {
+            return item.id !== id;
+          });
+
+          saveWatchlist();
+          render();
+        }
+      );
+
+      render();
+    })();
+  </script>
+</body>
+</html>
