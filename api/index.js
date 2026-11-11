@@ -1,3 +1,4 @@
+
 import crypto from "node:crypto";
 import { db } from "../lib/db.js";
 import { send, methodNotAllowed } from "../lib/http.js";
@@ -13,6 +14,7 @@ function pathOf(req) {
   const raw = req.url || "/";
   return new URL(raw, "https://internal.invalid").pathname.replace(/\/+$/, "") || "/";
 }
+
 function requireMethod(req, res, method) {
   if (req.method !== method) {
     methodNotAllowed(res, [method]);
@@ -23,48 +25,88 @@ function requireMethod(req, res, method) {
 
 async function telegramLogin(req, res) {
   if (!requireMethod(req, res, "POST")) return;
+
   try {
     const telegramUser = verifyTelegramInitData(req.body?.initData);
+
     const result = await db().query(
       `INSERT INTO users
         (telegram_user_id, username, first_name, last_name, language_code, is_premium, last_login_at)
        VALUES ($1,$2,$3,$4,$5,$6,NOW())
        ON CONFLICT (telegram_user_id) DO UPDATE SET
-         username=EXCLUDED.username, first_name=EXCLUDED.first_name,
-         last_name=EXCLUDED.last_name, language_code=EXCLUDED.language_code,
-         is_premium=EXCLUDED.is_premium, updated_at=NOW(), last_login_at=NOW()
+         username=EXCLUDED.username,
+         first_name=EXCLUDED.first_name,
+         last_name=EXCLUDED.last_name,
+         language_code=EXCLUDED.language_code,
+         is_premium=EXCLUDED.is_premium,
+         updated_at=NOW(),
+         last_login_at=NOW()
        RETURNING id, telegram_user_id, username, first_name, is_blocked`,
-      [String(telegramUser.id), telegramUser.username || null,
-       telegramUser.first_name || null, telegramUser.last_name || null,
-       telegramUser.language_code || null, Boolean(telegramUser.is_premium)]
+      [
+        String(telegramUser.id),
+        telegramUser.username || null,
+        telegramUser.first_name || null,
+        telegramUser.last_name || null,
+        telegramUser.language_code || null,
+        Boolean(telegramUser.is_premium)
+      ]
     );
+
     const user = result.rows[0];
-    if (user.is_blocked) return send(res, 403, { ok: false, error: "ACCOUNT_BLOCKED" });
+
+    if (user.is_blocked) {
+      return send(res, 403, { ok: false, error: "ACCOUNT_BLOCKED" });
+    }
+
     const token = createSession(user);
+
     res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Set-Cookie", `bt_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${Number(process.env.SESSION_TTL_SECONDS || 604800)}`);
+    res.setHeader(
+      "Set-Cookie",
+      `bt_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${Number(process.env.SESSION_TTL_SECONDS || 604800)}`
+    );
+
     return send(res, 200, { ok: true, user });
   } catch (error) {
     const known = [
-      "INVALID_INIT_DATA", "INVALID_INIT_DATA_HASH", "TELEGRAM_SIGNATURE_INVALID",
-      "TELEGRAM_INIT_DATA_EXPIRED", "TELEGRAM_USER_MISSING", "TELEGRAM_USER_INVALID"
+      "INVALID_INIT_DATA",
+      "INVALID_INIT_DATA_HASH",
+      "TELEGRAM_SIGNATURE_INVALID",
+      "TELEGRAM_INIT_DATA_EXPIRED",
+      "TELEGRAM_USER_MISSING",
+      "TELEGRAM_USER_INVALID"
     ];
+
     const status = known.includes(error.message) ? 401 : 500;
-    return send(res, status, { ok: false, error: status === 401 ? error.message : "AUTHENTICATION_FAILED" });
+
+    return send(res, status, {
+      ok: false,
+      error: status === 401 ? error.message : "AUTHENTICATION_FAILED"
+    });
   }
 }
 
 async function me(req, res) {
   if (!requireMethod(req, res, "GET")) return;
+
   const session = readSession(req);
-  if (!session) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+
+  if (!session) {
+    return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+  }
+
   try {
     const result = await db().query(
       `SELECT id, telegram_user_id, username, first_name, last_name, created_at
-       FROM users WHERE id=$1 AND is_blocked=FALSE`,
+       FROM users
+       WHERE id=$1 AND is_blocked=FALSE`,
       [session.id]
     );
-    if (!result.rowCount) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+
+    if (!result.rowCount) {
+      return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+    }
+
     return send(res, 200, { ok: true, user: result.rows[0] });
   } catch {
     return send(res, 500, { ok: false, error: "DATABASE_ERROR" });
@@ -73,125 +115,270 @@ async function me(req, res) {
 
 async function plans(req, res) {
   if (!requireMethod(req, res, "GET")) return;
+
   try {
     const result = await db().query(
       `SELECT code, name, price_usdt, duration_days, features
-       FROM subscription_plans WHERE is_active=TRUE
-       ORDER BY CASE code WHEN 'free' THEN 0 WHEN 'pro' THEN 1 WHEN 'business' THEN 2 ELSE 3 END`
+       FROM subscription_plans
+       WHERE is_active=TRUE
+       ORDER BY CASE code
+         WHEN 'free' THEN 0
+         WHEN 'pro' THEN 1
+         WHEN 'business' THEN 2
+         ELSE 3
+       END`
     );
-    return send(res, 200, { ok: true, currency: "USDT", plans: result.rows });
+
+    return send(res, 200, {
+      ok: true,
+      currency: "USDT",
+      plans: result.rows
+    });
   } catch {
     return send(res, 500, { ok: false, error: "DATABASE_ERROR" });
   }
 }
 
-
 async function subscriptionMe(req, res) {
   if (!requireMethod(req, res, "GET")) return;
+
   const session = readSession(req);
-  if (!session) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+
+  if (!session) {
+    return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+  }
+
   try {
     const result = await db().query(
-      `SELECT s.id, s.plan_code, s.status, s.starts_at, s.expires_at,
-              p.name, p.price_usdt, p.duration_days, p.features
+      `SELECT
+         s.id,
+         s.plan_code,
+         s.status,
+         s.starts_at,
+         s.expires_at,
+         p.name,
+         p.price_usdt,
+         p.duration_days,
+         p.features
        FROM user_subscriptions s
        JOIN subscription_plans p ON p.code=s.plan_code
-       WHERE s.user_id=$1 AND s.status='active'
+       WHERE s.user_id=$1
+         AND s.status='active'
          AND (s.expires_at IS NULL OR s.expires_at > NOW())
        ORDER BY s.starts_at DESC NULLS LAST, s.id DESC
        LIMIT 1`,
       [session.id]
     );
+
     if (!result.rowCount) {
       return send(res, 200, {
         ok: true,
         subscription: {
-          plan: { code: "free", name: "Free", price_usdt: "0", duration_days: null, features: ["Basic wallet watchlist", "Limited alerts"] },
-          status: "active", starts_at: null, expires_at: null
+          plan: {
+            code: "free",
+            name: "Free",
+            price_usdt: "0",
+            duration_days: null,
+            features: [
+              "Basic wallet watchlist",
+              "Limited alerts"
+            ]
+          },
+          status: "active",
+          starts_at: null,
+          expires_at: null
         }
       });
     }
+
     const row = result.rows[0];
+
     return send(res, 200, {
       ok: true,
       subscription: {
-        id: row.id, status: row.status, starts_at: row.starts_at, expires_at: row.expires_at,
-        plan: { code: row.plan_code, name: row.name, price_usdt: row.price_usdt, duration_days: row.duration_days, features: row.features }
+        id: row.id,
+        status: row.status,
+        starts_at: row.starts_at,
+        expires_at: row.expires_at,
+        plan: {
+          code: row.plan_code,
+          name: row.name,
+          price_usdt: row.price_usdt,
+          duration_days: row.duration_days,
+          features: row.features
+        }
       }
     });
   } catch {
-    return send(res, 500, { ok: false, error: "SUBSCRIPTION_LOOKUP_FAILED" });
+    return send(res, 500, {
+      ok: false,
+      error: "SUBSCRIPTION_LOOKUP_FAILED"
+    });
   }
 }
 
 async function createPayment(req, res) {
   if (!requireMethod(req, res, "POST")) return;
+
   const session = readSession(req);
-  if (!session) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+
+  if (!session) {
+    return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+  }
+
   const planCode = String(req.body?.planCode || "").toLowerCase();
   const chain = String(req.body?.chain || "").toUpperCase();
-  if (!["pro", "business"].includes(planCode) || !["BEP20", "TRC20"].includes(chain)) {
-    return send(res, 400, { ok: false, error: "INVALID_PLAN_OR_CHAIN" });
+
+  if (
+    !["pro", "business"].includes(planCode) ||
+    !["BEP20", "TRC20"].includes(chain)
+  ) {
+    return send(res, 400, {
+      ok: false,
+      error: "INVALID_PLAN_OR_CHAIN"
+    });
   }
+
   const receivingAddress = RECEIVERS[chain]();
-  if (!receivingAddress) return send(res, 503, { ok: false, error: `${chain}_RECEIVING_ADDRESS_NOT_CONFIGURED` });
+
+  if (!receivingAddress) {
+    return send(res, 503, {
+      ok: false,
+      error: `${chain}_RECEIVING_ADDRESS_NOT_CONFIGURED`
+    });
+  }
 
   const validReceiver = chain === "BEP20"
     ? /^0x[a-fA-F0-9]{40}$/.test(receivingAddress)
     : /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(receivingAddress);
-  if (!validReceiver) return send(res, 503, { ok: false, error: `${chain}_RECEIVING_ADDRESS_INVALID` });
+
+  if (!validReceiver) {
+    return send(res, 503, {
+      ok: false,
+      error: `${chain}_RECEIVING_ADDRESS_INVALID`
+    });
+  }
 
   const client = await db().connect();
+
   try {
     const plan = await client.query(
-      "SELECT code, price_usdt FROM subscription_plans WHERE code=$1 AND is_active=TRUE",
+      `SELECT code, price_usdt
+       FROM subscription_plans
+       WHERE code=$1 AND is_active=TRUE`,
       [planCode]
     );
+
     if (!plan.rowCount || Number(plan.rows[0].price_usdt) <= 0) {
-      return send(res, 404, { ok: false, error: "PLAN_NOT_AVAILABLE" });
+      return send(res, 404, {
+        ok: false,
+        error: "PLAN_NOT_AVAILABLE"
+      });
     }
 
-    // Serialize invoice allocation per chain. A six-decimal unique suffix prevents
-    // collisions between simultaneously pending invoices on the same receiving wallet.
-    await client.query("SELECT pg_advisory_lock(hashtext($1))", [`subscription-invoice:${chain}`]);
+    // Lock invoice allocation per chain.
+    await client.query(
+      "SELECT pg_advisory_lock(hashtext($1))",
+      [`subscription-invoice:${chain}`]
+    );
+
     try {
-      const base = Math.round(Number(plan.rows[0].price_usdt) * 1_000_000);
+      // FIXED:
+      // USDT supports 6 decimal places.
+      // Pro: 1.000001 to 1.009999
+      // Business: 5.000001 to 5.009999
+
+      const base = Math.round(
+        Number(plan.rows[0].price_usdt) * 1_000_000
+      );
+
       let invoiceAmount = null;
+
       for (let attempt = 0; attempt < 30; attempt++) {
-        const suffix = crypto.randomInt(1, 999999);
-        const candidate = ((base * 1_000_000) + suffix) / 1_000_000;
+        const suffix = crypto.randomInt(1, 10000);
+
+        const candidate = (base + suffix) / 1_000_000;
+        const candidateAmount = candidate.toFixed(6);
+
         const exists = await client.query(
-          `SELECT 1 FROM subscription_payments
-           WHERE chain=$1 AND expected_amount=$2 AND status IN ('pending','verifying')
-             AND created_at > NOW() - INTERVAL '35 minutes' LIMIT 1`,
-          [chain, candidate.toFixed(6)]
+          `SELECT 1
+           FROM subscription_payments
+           WHERE chain=$1
+             AND expected_amount=$2
+             AND status IN ('pending','verifying')
+             AND created_at > NOW() - INTERVAL '35 minutes'
+           LIMIT 1`,
+          [chain, candidateAmount]
         );
-        if (!exists.rowCount) { invoiceAmount = candidate.toFixed(6); break; }
+
+        if (!exists.rowCount) {
+          invoiceAmount = candidateAmount;
+          break;
+        }
       }
-      if (!invoiceAmount) return send(res, 503, { ok: false, error: "INVOICE_ALLOCATION_BUSY" });
+
+      if (!invoiceAmount) {
+        return send(res, 503, {
+          ok: false,
+          error: "INVOICE_ALLOCATION_BUSY"
+        });
+      }
+
       const paymentId = crypto.randomUUID();
+
       const inserted = await client.query(
         `INSERT INTO subscription_payments
-         (id,user_id,plan_code,chain,expected_amount,receiving_address,status,expires_at)
+         (
+           id,
+           user_id,
+           plan_code,
+           chain,
+           expected_amount,
+           receiving_address,
+           status,
+           expires_at
+         )
          VALUES ($1,$2,$3,$4,$5,$6,'pending',NOW()+INTERVAL '30 minutes')
          RETURNING id, expected_amount, receiving_address, expires_at`,
-        [paymentId, session.id, planCode, chain, invoiceAmount, receivingAddress]
+        [
+          paymentId,
+          session.id,
+          planCode,
+          chain,
+          invoiceAmount,
+          receivingAddress
+        ]
       );
+
       const row = inserted.rows[0];
+
       return send(res, 201, {
         ok: true,
         payment: {
-          id: row.id, planCode, chain, token: "USDT",
-          baseAmount: String(plan.rows[0].price_usdt), amount: row.expected_amount,
-          receivingAddress: row.receiving_address, status: "pending", expiresAt: row.expires_at,
-          instructions: "Send the exact invoice amount using USDT on the selected network. Do not send the base plan price; the invoice amount includes a unique micro-amount suffix. On-chain verification is not enabled yet, so do not transfer funds until the verifier is activated."
+          id: row.id,
+          planCode,
+          chain,
+          token: "USDT",
+          baseAmount: String(plan.rows[0].price_usdt),
+          amount: row.expected_amount,
+          receivingAddress: row.receiving_address,
+          status: "pending",
+          expiresAt: row.expires_at,
+          instructions:
+            "Send the exact invoice amount using USDT on the selected network. Do not send the base plan price; the invoice amount includes a unique micro-amount suffix. On-chain verification is not enabled yet, so do not transfer funds until the verifier is activated."
         }
       });
     } finally {
-      await client.query("SELECT pg_advisory_unlock(hashtext($1))", [`subscription-invoice:${chain}`]);
+      await client.query(
+        "SELECT pg_advisory_unlock(hashtext($1))",
+        [`subscription-invoice:${chain}`]
+      );
     }
   } catch {
-    return send(res, 500, { ok: false, error: "PAYMENT_CREATION_FAILED" });
+    return send(res, 500, {
+      ok: false,
+      error: "PAYMENT_CREATION_FAILED"
+    });
   } finally {
     client.release();
   }
@@ -199,46 +386,111 @@ async function createPayment(req, res) {
 
 async function verifyPayment(req, res) {
   if (!requireMethod(req, res, "POST")) return;
+
   const session = readSession(req);
-  if (!session) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+
+  if (!session) {
+    return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+  }
+
   const paymentId = String(req.body?.paymentId || "");
   const txHash = String(req.body?.txHash || "").trim();
-  if (!/^[0-9a-f-]{36}$/i.test(paymentId)) return send(res, 400, { ok: false, error: "INVALID_PAYMENT_ID" });
+
+  if (!/^[0-9a-f-]{36}$/i.test(paymentId)) {
+    return send(res, 400, {
+      ok: false,
+      error: "INVALID_PAYMENT_ID"
+    });
+  }
 
   try {
     const result = await db().query(
-      `SELECT id, chain, status FROM subscription_payments WHERE id=$1 AND user_id=$2`,
+      `SELECT id, chain, status
+       FROM subscription_payments
+       WHERE id=$1 AND user_id=$2`,
       [paymentId, session.id]
     );
-    if (!result.rowCount) return send(res, 404, { ok: false, error: "PAYMENT_NOT_FOUND" });
-    const payment = result.rows[0];
-    if (payment.status === "confirmed") return send(res, 200, { ok: true, status: "confirmed" });
-    const patterns = { BEP20: /^0x[a-fA-F0-9]{64}$/, TRC20: /^[a-fA-F0-9]{64}$/ };
-    if (!patterns[payment.chain].test(txHash)) return send(res, 400, { ok: false, error: "INVALID_TRANSACTION_HASH" });
 
-    // Fail closed until independent chain verification is implemented and tested.
+    if (!result.rowCount) {
+      return send(res, 404, {
+        ok: false,
+        error: "PAYMENT_NOT_FOUND"
+      });
+    }
+
+    const payment = result.rows[0];
+
+    if (payment.status === "confirmed") {
+      return send(res, 200, {
+        ok: true,
+        status: "confirmed"
+      });
+    }
+
+    const patterns = {
+      BEP20: /^0x[a-fA-F0-9]{64}$/,
+      TRC20: /^[a-fA-F0-9]{64}$/
+    };
+
+    if (!patterns[payment.chain].test(txHash)) {
+      return send(res, 400, {
+        ok: false,
+        error: "INVALID_TRANSACTION_HASH"
+      });
+    }
+
+    // Fail closed until independent chain verification is implemented.
     return send(res, 503, {
       ok: false,
       error: "CHAIN_VERIFIER_NOT_IMPLEMENTED",
       message: "Payment remains pending. No subscription has been activated."
     });
   } catch {
-    return send(res, 500, { ok: false, error: "PAYMENT_VERIFICATION_FAILED" });
+    return send(res, 500, {
+      ok: false,
+      error: "PAYMENT_VERIFICATION_FAILED"
+    });
   }
 }
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
+
   const path = pathOf(req);
+
   try {
-    if (path === "/api/auth/telegram") return await telegramLogin(req, res);
-    if (path === "/api/auth/me") return await me(req, res);
-    if (path === "/api/subscription/plans") return await plans(req, res);
-    if (path === "/api/subscription/me") return await subscriptionMe(req, res);
-    if (path === "/api/subscription/create-payment") return await createPayment(req, res);
-    if (path === "/api/subscription/verify-payment") return await verifyPayment(req, res);
-    return send(res, 404, { ok: false, error: "API_ROUTE_NOT_FOUND" });
+    if (path === "/api/auth/telegram") {
+      return await telegramLogin(req, res);
+    }
+
+    if (path === "/api/auth/me") {
+      return await me(req, res);
+    }
+
+    if (path === "/api/subscription/plans") {
+      return await plans(req, res);
+    }
+
+    if (path === "/api/subscription/me") {
+      return await subscriptionMe(req, res);
+    }
+
+    if (path === "/api/subscription/create-payment") {
+      return await createPayment(req, res);
+    }
+
+    if (path === "/api/subscription/verify-payment") {
+      return await verifyPayment(req, res);
+    }
+
+    return send(res, 404, {
+      ok: false,
+      error: "API_ROUTE_NOT_FOUND"
+    });
   } catch {
-    return send(res, 500, { ok: false, error: "INTERNAL_SERVER_ERROR" });
+    return send(res, 500, {
+      ok: false,
+      error: "INTERNAL_SERVER_ERROR"
+    });
   }
 }
