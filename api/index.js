@@ -128,7 +128,6 @@ async function createPayment(req, res) {
   if (!requireMethod(req, res, "POST")) return;
   const session = readSession(req);
   if (!session) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
-
   const planCode = String(req.body?.planCode || "").toLowerCase();
   const chain = String(req.body?.chain || "").toUpperCase();
   if (!["pro", "business"].includes(planCode) || !["BEP20", "TRC20"].includes(chain)) {
@@ -137,33 +136,64 @@ async function createPayment(req, res) {
   const receivingAddress = RECEIVERS[chain]();
   if (!receivingAddress) return send(res, 503, { ok: false, error: `${chain}_RECEIVING_ADDRESS_NOT_CONFIGURED` });
 
+  const validReceiver = chain === "BEP20"
+    ? /^0x[a-fA-F0-9]{40}$/.test(receivingAddress)
+    : /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(receivingAddress);
+  if (!validReceiver) return send(res, 503, { ok: false, error: `${chain}_RECEIVING_ADDRESS_INVALID` });
+
+  const client = await db().connect();
   try {
-    const pool = db();
-    const plan = await pool.query(
+    const plan = await client.query(
       "SELECT code, price_usdt FROM subscription_plans WHERE code=$1 AND is_active=TRUE",
       [planCode]
     );
     if (!plan.rowCount || Number(plan.rows[0].price_usdt) <= 0) {
       return send(res, 404, { ok: false, error: "PLAN_NOT_AVAILABLE" });
     }
-    const paymentId = crypto.randomUUID();
-    const amount = plan.rows[0].price_usdt;
-    await pool.query(
-      `INSERT INTO subscription_payments
-       (id,user_id,plan_code,chain,expected_amount,receiving_address,status)
-       VALUES ($1,$2,$3,$4,$5,$6,'pending')`,
-      [paymentId, session.id, planCode, chain, amount, receivingAddress]
-    );
-    return send(res, 201, {
-      ok: true,
-      payment: {
-        id: paymentId, planCode, chain, token: "USDT",
-        amount: String(amount), receivingAddress, status: "pending",
-        instructions: "Send the exact USDT amount on the selected network, then submit the transaction hash for server-side verification."
+
+    // Serialize invoice allocation per chain. A six-decimal unique suffix prevents
+    // collisions between simultaneously pending invoices on the same receiving wallet.
+    await client.query("SELECT pg_advisory_lock(hashtext($1))", [`subscription-invoice:${chain}`]);
+    try {
+      const base = Math.round(Number(plan.rows[0].price_usdt) * 1_000_000);
+      let invoiceAmount = null;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const suffix = crypto.randomInt(1, 999999);
+        const candidate = ((base * 1_000_000) + suffix) / 1_000_000;
+        const exists = await client.query(
+          `SELECT 1 FROM subscription_payments
+           WHERE chain=$1 AND expected_amount=$2 AND status IN ('pending','verifying')
+             AND created_at > NOW() - INTERVAL '35 minutes' LIMIT 1`,
+          [chain, candidate.toFixed(6)]
+        );
+        if (!exists.rowCount) { invoiceAmount = candidate.toFixed(6); break; }
       }
-    });
+      if (!invoiceAmount) return send(res, 503, { ok: false, error: "INVOICE_ALLOCATION_BUSY" });
+      const paymentId = crypto.randomUUID();
+      const inserted = await client.query(
+        `INSERT INTO subscription_payments
+         (id,user_id,plan_code,chain,expected_amount,receiving_address,status,expires_at)
+         VALUES ($1,$2,$3,$4,$5,$6,'pending',NOW()+INTERVAL '30 minutes')
+         RETURNING id, expected_amount, receiving_address, expires_at`,
+        [paymentId, session.id, planCode, chain, invoiceAmount, receivingAddress]
+      );
+      const row = inserted.rows[0];
+      return send(res, 201, {
+        ok: true,
+        payment: {
+          id: row.id, planCode, chain, token: "USDT",
+          baseAmount: String(plan.rows[0].price_usdt), amount: row.expected_amount,
+          receivingAddress: row.receiving_address, status: "pending", expiresAt: row.expires_at,
+          instructions: "Send the exact invoice amount using USDT on the selected network. Do not send the base plan price; the invoice amount includes a unique micro-amount suffix. On-chain verification is not enabled yet, so do not transfer funds until the verifier is activated."
+        }
+      });
+    } finally {
+      await client.query("SELECT pg_advisory_unlock(hashtext($1))", [`subscription-invoice:${chain}`]);
+    }
   } catch {
     return send(res, 500, { ok: false, error: "PAYMENT_CREATION_FAILED" });
+  } finally {
+    client.release();
   }
 }
 
