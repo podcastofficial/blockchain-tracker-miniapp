@@ -560,10 +560,22 @@ async function startPayment(planCode,chain){
     const result=await apiRequest("/subscription/create-payment",{method:"POST",body:JSON.stringify({planCode,chain})});
     const p=result.payment;
     details.style.display="block";
-    details.innerHTML=`<strong>Invoice created · ${esc(p.chain)}</strong><br>Plan: ${esc(String(p.planCode).toUpperCase())}<br>Amount: <strong>${esc(p.amount)} USDT</strong><br>Token: ${window.BTLogos?BTLogos.coin("tether","USDT","ico-s"):""}USDT<br>Receiving address:<br><span style="font-family:monospace;word-break:break-all">${esc(p.receivingAddress)}</span><br>Expires: ${esc(new Date(p.expiresAt).toLocaleString())}<br><br><strong>Do not transfer funds yet.</strong> On-chain verification is not active.`;
-    message.textContent="Invoice generated. Payment remains disabled until transaction verification is live.";
+    details.innerHTML=`<strong>Invoice created · ${esc(p.chain)}</strong><br>Plan: ${esc(String(p.planCode).toUpperCase())}<br>Amount: <strong>${esc(p.amount)} USDT</strong><br>Token: ${window.BTLogos?BTLogos.coin("tether","USDT","ico-s"):""}USDT<br>Receiving address:<br><span style="font-family:monospace;word-break:break-all">${esc(p.receivingAddress)}</span><br>Expires: ${esc(new Date(p.expiresAt).toLocaleString())}<br><br>Send the <strong>exact amount</strong> in USDT on <strong>${esc(p.chain)}</strong>, then paste the transaction hash:<br><input id="txHashInput" class="control" placeholder="Transaction hash" style="width:100%;margin:8px 0" autocomplete="off"><button class="btn primary" data-verify-pay="${esc(p.id)}">Verify payment</button>`;
+    message.textContent="Invoice generated. Invoice expires in 30 minutes.";
   }catch(error){message.textContent=error.message==="UNAUTHENTICATED"?"Please open the Mini App through Telegram and sign in.":"Could not create invoice. Please try again.";}
 }
+
+const VERIFY_MSG={TX_ALREADY_USED:"This transaction was already used.",NO_MATCHING_USDT_TRANSFER:"No matching USDT transfer (check exact amount, network and address).",TX_FAILED:"Transaction failed on-chain.",PAYMENT_EXPIRED:"Invoice expired. Create a new one.",TX_BEFORE_INVOICE:"Transaction is older than the invoice.",INVALID_TRANSACTION_HASH:"Invalid transaction hash.",CHAIN_PROVIDER_UNAVAILABLE:"Chain provider busy, try again in a minute."};
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-verify-pay]");if(!b)return;
+  const msg=$("paymentMessage"),tx=($("txHashInput")||{}).value||"";
+  b.disabled=true;msg.textContent="Verifying on-chain…";
+  try{
+    const r=await apiRequest("/subscription/verify-payment",{method:"POST",body:JSON.stringify({paymentId:b.dataset.verifyPay,txHash:tx.trim()})});
+    if(r.status==="confirmed"){msg.textContent="✅ Payment confirmed. Subscription activated!";if(typeof loadSubscription==="function")loadSubscription();}
+    else{msg.textContent="⏳ Waiting for confirmations ("+(r.confirmations||0)+"). Tap Verify again in a minute.";b.disabled=false;}
+  }catch(err){msg.textContent=VERIFY_MSG[err.message]||"Verification failed. Please check the details.";b.disabled=false;}
+});
 document.addEventListener("click",e=>{
 const page=e.target.closest("[data-page]");if(page){go(page.dataset.page);return}
 const buy=e.target.closest("[data-buy-plan]");if(buy){selectedPaymentPlan=buy.dataset.buyPlan;$("paymentPlanLabel").textContent=`${selectedPaymentPlan.toUpperCase()} subscription · Select BEP20 or TRC20`;$("paymentMessage").textContent="";$("invoiceDetails").style.display="none";$("paymentModal").classList.add("open");return}
