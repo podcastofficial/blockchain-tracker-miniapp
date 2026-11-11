@@ -199,6 +199,15 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .res-cell{background:linear-gradient(135deg,#eef6ff,#f6f0ff);border-radius:10px;padding:10px}
 .res-cell small{display:block;font-size:9px;color:var(--muted);margin-bottom:4px}.res-cell b{font-family:var(--mono);font-size:12px}
 .res-link{display:inline-block;margin-top:12px;font-size:10px;font-weight:700;color:var(--blue);text-decoration:none}
+
+.ico{position:relative;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--grad);color:#fff;font-size:7px;font-weight:800;overflow:hidden;flex:none;vertical-align:middle}
+.ico i{font-style:normal}.ico.base{background:#0052ff;font-size:10px}
+.ico img,.logo-img,.coin img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff;border-radius:50%}
+.ico-s{margin-right:7px}.tk .ico{width:22px;height:22px;margin-right:-2px}
+.network-logo{position:relative;overflow:hidden;border-radius:50%!important}.coin{position:relative;overflow:hidden}
+.sel-wrap{position:relative;display:inline-block;max-width:100%}.field .sel-wrap{display:block}.sel-wrap select{width:100%}
+.sel-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;display:none;line-height:0}
+.sel-wrap.has .sel-ico{display:block}.sel-wrap.has select{padding-left:38px}.sel-ico .ico{width:22px;height:22px;margin:0}
 @media(prefers-reduced-motion:reduce){.tk-track{animation:none!important}.ticker{overflow-x:auto}*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -401,6 +410,7 @@ async function apiRequest(path,options={}){
 function setBackendStatus(label,ok){
   const el=$("backendStatus");if(el){el.textContent=label;el.className="status "+(ok?"ok":"pending")}
 }
+window.addEventListener("bt-logos",()=>{if(planCache&&planCache.length)renderPlanCards(planCache)});
 function renderPlanCards(plans){
   planCache=Array.isArray(plans)?plans:[];
   const container=$("plans");
@@ -421,7 +431,7 @@ function renderPlanCards(plans){
     return `<div class="card plan-card${featured}">
       <span class="tag ${code==="pro"?"yellow":""}">${esc(code.toUpperCase())}</span>
       <div style="font-size:17px;font-weight:750;margin-top:8px">${name}</div>
-      <div class="plan-price">${price===0?(code==="free"?"Free":"Custom"):`${price.toLocaleString("en-US",{maximumFractionDigits:6})} USDT`}</div>
+      <div class="plan-price">${price===0?(code==="free"?"Free":"Custom"):`${window.BTLogos?BTLogos.coin("tether","USDT","ico-s"):""}${price.toLocaleString("en-US",{maximumFractionDigits:6})} USDT`}</div>
       <div class="muted" style="font-size:10px">/${esc(duration)}</div>
       <div class="plan-features">${features||'<div>Plan details available soon</div>'}</div>
       <button class="btn ${code==="pro"?"primary":""}" ${disabled?"disabled":""} ${paid?`data-buy-plan="${esc(code)}"`:""}>${esc(label)}</button>
@@ -497,7 +507,7 @@ async function startPayment(planCode,chain){
     const result=await apiRequest("/subscription/create-payment",{method:"POST",body:JSON.stringify({planCode,chain})});
     const p=result.payment;
     details.style.display="block";
-    details.innerHTML=`<strong>Invoice created · ${esc(p.chain)}</strong><br>Plan: ${esc(String(p.planCode).toUpperCase())}<br>Amount: <strong>${esc(p.amount)} USDT</strong><br>Token: USDT<br>Receiving address:<br><span style="font-family:monospace;word-break:break-all">${esc(p.receivingAddress)}</span><br>Expires: ${esc(new Date(p.expiresAt).toLocaleString())}<br><br><strong>Do not transfer funds yet.</strong> On-chain verification is not active.`;
+    details.innerHTML=`<strong>Invoice created · ${esc(p.chain)}</strong><br>Plan: ${esc(String(p.planCode).toUpperCase())}<br>Amount: <strong>${esc(p.amount)} USDT</strong><br>Token: ${window.BTLogos?BTLogos.coin("tether","USDT","ico-s"):""}USDT<br>Receiving address:<br><span style="font-family:monospace;word-break:break-all">${esc(p.receivingAddress)}</span><br>Expires: ${esc(new Date(p.expiresAt).toLocaleString())}<br><br><strong>Do not transfer funds yet.</strong> On-chain verification is not active.`;
     message.textContent="Invoice generated. Payment remains disabled until transaction verification is live.";
   }catch(error){message.textContent=error.message==="UNAUTHENTICATED"?"Please open the Mini App through Telegram and sign in.":"Could not create invoice. Please try again.";}
 }
@@ -542,6 +552,82 @@ fillNetworks();networkCards();render();renderAccount();connectBackend();
 (function(){
 "use strict";
 const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const CHAIN_COIN={ethereum:"ethereum",bsc:"binancecoin",polygon:"polygon-ecosystem-token",arbitrum:"arbitrum",optimism:"optimism",avalanche:"avalanche-2",solana:"solana",tron:"tron",ton:"the-open-network"};
+const ABBR={ethereum:"ETH",bsc:"BNB",polygon:"POL",arbitrum:"ARB",base:"B",optimism:"OP",avalanche:"AVAX",solana:"SOL",tron:"TRX",ton:"TON"};
+const NAMES={"BNB Smart Chain":"bsc","Avalanche C-Chain":"avalanche","Arbitrum One":"arbitrum","Ethereum":"ethereum","Polygon":"polygon","Optimism":"optimism","Solana":"solana","TRON":"tron","TON":"ton","Base":"base"};
+const SORTED=Object.keys(NAMES).sort((a,b)=>b.length-a.length);
+const SYM_COIN={BTC:"bitcoin",ETH:"ethereum",BNB:"binancecoin",SOL:"solana",TRX:"tron",TON:"the-open-network"};
+const IDS=["bitcoin","ethereum","binancecoin","solana","tron","the-open-network","polygon-ecosystem-token","arbitrum","optimism","avalanche-2","tether"];
+let map={};try{map=JSON.parse(localStorage.getItem("bt_logos_v1")||"{}")||{}}catch(e){map={}}
+const safe=u=>typeof u==="string"&&/^https:\/\//.test(u)?u:"";
+function urlFor(key){const [t,k]=key.split(":");if(t==="coin")return safe(map[k]);const c=CHAIN_COIN[k];return c?safe(map[c]):""}
+function label(key,l){const [t,k]=key.split(":");return l||(t==="chain"?ABBR[k]:String(k).slice(0,3).toUpperCase())||""}
+function html(key,l,cls){const u=urlFor(key);const base=key==="chain:base";return `<span class="ico ${cls||""}${base?" base":""}"><i>${esc(label(key,l))}</i>${u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:""}</span>`}
+function node(key,l,cls){const t=document.createElement("template");t.innerHTML=html(key,l,cls);return t.content.firstChild}
+/* network logo boxes */
+function setLogoBox(el,chain){
+  if(el.dataset.logoDone===urlFor("chain:"+chain)&&el.dataset.logoDone!=="")return;
+  if(chain==="base"){el.style.background="#0052ff";el.textContent="B";return}
+  const u=urlFor("chain:"+chain);if(!u)return;
+  el.querySelectorAll("img").forEach(i=>i.remove());
+  const img=new Image();img.src=u;img.alt="";img.className="logo-img";img.onerror=()=>img.remove();el.appendChild(img);el.dataset.logoDone=u;
+}
+function decorateCards(){
+  document.querySelectorAll("#networkGrid .network-top,#dexGrid .network-top").forEach(top=>{
+    const nm=[...top.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join("").trim(),ch=NAMES[nm];if(!ch)return;
+    let lg=top.querySelector(".network-logo");
+    if(!lg){lg=document.createElement("span");lg.className="network-logo";lg.textContent=ABBR[ch]||"";top.insertBefore(lg,top.firstChild)}
+    setLogoBox(lg,ch);
+  });
+  document.querySelectorAll("#adminNetworks>div>span:first-child").forEach(sp=>{
+    const ch=NAMES[sp.textContent.trim()];if(!ch||sp.querySelector(".ico"))return;
+    sp.style.display="inline-flex";sp.style.alignItems="center";sp.prepend(node("chain:"+ch,"","ico-s"));
+  });
+}
+function decorateText(root){
+  if(!root)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),hits=[];
+  while(w.nextNode()){const n=w.currentNode,t=n.textContent.trim();for(const nm of SORTED){if(t===nm||t.startsWith(nm+" ·")){hits.push([n,NAMES[nm]]);break}}}
+  hits.forEach(([n,ch])=>{const pv=n.previousSibling;if(pv&&pv.classList&&pv.classList.contains("ico-s"))return;n.parentNode.insertBefore(node("chain:"+ch,"","ico-s"),n)});
+}
+/* select icons */
+const sels=[];
+function wrapSelect(id,keyOf){
+  const sel=$(id);if(!sel||sel.parentNode.classList.contains("sel-wrap"))return;
+  const w=document.createElement("div");w.className="sel-wrap";sel.parentNode.insertBefore(w,sel);w.appendChild(sel);
+  const ic=document.createElement("span");ic.className="sel-ico";w.insertBefore(ic,sel);
+  const upd=()=>{ic.innerHTML="";const k=keyOf(sel.value);if(!k){w.classList.remove("has");return}ic.appendChild(node(k));w.classList.add("has")};
+  sel.addEventListener("change",upd);sels.push(upd);upd();
+}
+const chainKey=v=>v?"chain:"+v:"";
+const symKey=v=>{const m=/:([A-Z]+)USDT$/.exec(v||"");return m&&SYM_COIN[m[1]]?"coin:"+SYM_COIN[m[1]]:""};
+function decorateAll(){
+  decorateCards();document.querySelectorAll("[data-pay-chain]").forEach(b=>{if(b.querySelector(".ico"))return;b.prepend(node("chain:"+(b.dataset.payChain==="BEP20"?"bsc":"tron"),"","ico-s"))});["walletRows","contractRows","recentWatchlist","alertList"].forEach(i=>decorateText($(i)));sels.forEach(f=>f());
+}
+async function fetchMarkets(){
+  const r=await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids="+IDS.join(",")+"&price_change_percentage=24h");
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const arr=await r.json();
+  if(!Array.isArray(arr))throw new Error("bad data");
+  arr.forEach(c=>{if(safe(c.image))map[c.id]=c.image});
+  try{localStorage.setItem("bt_logos_v1",JSON.stringify(map))}catch(e){}
+  decorateAll();window.dispatchEvent(new Event("bt-logos"));return arr;
+}
+window.BTLogos={fetchMarkets,coin:(id,sym,cls)=>html("coin:"+id,sym,cls),chain:(c,l)=>html("chain:"+c,l)};
+function init(){
+  ["scanNetwork","network","alertNetwork","walletNetworkFilter","contractNetworkFilter","txNetwork"].forEach(i=>wrapSelect(i,chainKey));
+  wrapSelect("chartSymbol",symKey);
+  const mo=new MutationObserver(()=>decorateAll());
+  ["walletRows","contractRows","recentWatchlist","alertList"].forEach(i=>{const el=$(i);if(el)mo.observe(el,{childList:true,subtree:true})});
+  decorateAll();
+}
+init();
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
 const num=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:NaN};
 const fmt=(n,d=2)=>isFinite(n)?n.toLocaleString("en-US",{maximumFractionDigits:d}):"—";
 const row=(l,v,c)=>`<div class="calc-row"><span>${l}</span><strong${c?` class="${c}"`:""}>${v}</strong></div>`;
@@ -553,12 +639,13 @@ async function loadTicker(){
   try{
     const ids=COINS.map(c=>c[0]).join(",");
     const [pr,fg]=await Promise.allSettled([
-      fetch("https://api.coingecko.com/api/v3/simple/price?ids="+ids+"&vs_currencies=usd&include_24hr_change=true").then(r=>{if(!r.ok)throw 0;return r.json()}),
+      BTLogos.fetchMarkets(),
       fetch("https://api.alternative.me/fng/?limit=1").then(r=>{if(!r.ok)throw 0;return r.json()})
     ]);
     if(pr.status!=="fulfilled")throw 0;
-    let html=COINS.map(([id,sym,col])=>{const d=pr.value[id];if(!d)return"";const ch=d.usd_24h_change,up=ch>=0;
-      return `<div class="tk" style="--c:${col}"><b>${sym}</b><span class="px">$${fmt(d.usd,d.usd<1?4:2)}</span><span class="ch ${up?"up":"down"}">${up?"▲":"▼"} ${fmt(Math.abs(ch),2)}%</span></div>`}).join("");
+    {const mk={};pr.value.forEach(c=>{mk[c.id]={usd:c.current_price,usd_24h_change:c.price_change_percentage_24h}});pr.value=mk}
+    let html=COINS.map(([id,sym,col])=>{const d=pr.value[id];if(!d||d.usd==null)return"";const ch=d.usd_24h_change||0,up=ch>=0;
+      return `<div class="tk" style="--c:${col}">${BTLogos.coin(id,sym)}<b>${sym}</b><span class="px">$${fmt(d.usd,d.usd<1?4:2)}</span><span class="ch ${up?"up":"down"}">${up?"▲":"▼"} ${fmt(Math.abs(ch),2)}%</span></div>`}).join("");
     if(fg.status==="fulfilled"&&fg.value&&fg.value.data&&fg.value.data[0]){const x=fg.value.data[0];html+=`<div class="tk fg"><b>Fear &amp; Greed</b><span class="px">${Number(x.value)}</span><span>${String(x.value_classification).replace(/[<>&]/g,"")}</span></div>`}
     html+=`<span class="tk-msg">Updated ${new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · CoinGecko</span>`;
     const copy=html;html=copy+copy+copy+copy;
@@ -706,8 +793,9 @@ function renderResearch(pair){
   if(!pair){box.innerHTML='<div class="empty"><strong>No market data found</strong>This token has no trading pair on DexScreener yet, or the address is wrong.</div>';return}
   const sym=esc(pair.baseToken&&pair.baseToken.symbol||"?"),nm=esc(pair.baseToken&&pair.baseToken.name||"Unknown token");
   const ch=pair.priceChange&&isFinite(Number(pair.priceChange.h24))?Number(pair.priceChange.h24):null;
+  const im=pair.info&&/^https:\/\//.test(pair.info.imageUrl||"")?pair.info.imageUrl:"";
   const link=/^https:\/\/dexscreener\.com\//.test(pair.url||"")?pair.url:"";
-  box.innerHTML=`<div class="res-head"><div class="coin">${sym.slice(0,3)}</div><div><strong>${nm}</strong><span>${sym} · ${esc(pair.dexId||"")} · ${esc(pair.chainId||"")}</span></div></div><div class="res-grid"><div class="res-cell"><small>Price</small><b>${price(pair.priceUsd)}</b></div><div class="res-cell"><small>24h change</small><b class="${ch===null?"":ch>=0?"positive":"negative"}">${ch===null?"—":(ch>=0?"+":"")+ch.toFixed(2)+"%"}</b></div><div class="res-cell"><small>Liquidity</small><b>${money(pair.liquidity&&pair.liquidity.usd)}</b></div><div class="res-cell"><small>24h volume</small><b>${money(pair.volume&&pair.volume.h24)}</b></div><div class="res-cell"><small>FDV</small><b>${money(pair.fdv)}</b></div><div class="res-cell"><small>Market cap</small><b>${money(pair.marketCap)}</b></div></div>${link?`<a class="res-link" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open full chart on DexScreener ↗</a>`:""}`;
+  box.innerHTML=`<div class="res-head"><div class="coin"><span>${sym.slice(0,3)}</span>${im?`<img src="${esc(im)}" alt="" onerror="this.remove()">`:""}</div><div><strong>${nm}</strong><span>${sym} · ${esc(pair.dexId||"")} · ${esc(pair.chainId||"")}</span></div></div><div class="res-grid"><div class="res-cell"><small>Price</small><b>${price(pair.priceUsd)}</b></div><div class="res-cell"><small>24h change</small><b class="${ch===null?"":ch>=0?"positive":"negative"}">${ch===null?"—":(ch>=0?"+":"")+ch.toFixed(2)+"%"}</b></div><div class="res-cell"><small>Liquidity</small><b>${money(pair.liquidity&&pair.liquidity.usd)}</b></div><div class="res-cell"><small>24h volume</small><b>${money(pair.volume&&pair.volume.h24)}</b></div><div class="res-cell"><small>FDV</small><b>${money(pair.fdv)}</b></div><div class="res-cell"><small>Market cap</small><b>${money(pair.marketCap)}</b></div></div>${link?`<a class="res-link" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open full chart on DexScreener ↗</a>`:""}`;
 }
 const timeout=(ms)=>{const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal};
 async function getJSON(url){const r=await fetch(url,{signal:timeout(15000)});if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
