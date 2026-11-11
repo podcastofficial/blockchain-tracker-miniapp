@@ -150,7 +150,7 @@
   <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr))" id="plans">
     <div class="card"><span class="tag">LOADING</span><h2 style="font-size:23px">Loading plans…</h2><p class="muted" style="font-size:11px">Fetching plan configuration from backend.</p></div>
   </div>
-  <div class="notice" id="paymentNotice">USDT checkout is not open yet. We are completing independent BEP20/TRC20 transaction verification first. Do not send funds until the app displays an enabled, verified checkout flow.</div>
+  <div class="notice" id="paymentNotice">Choose a payment network to create an invoice. On-chain verification is not active yet. Do not transfer funds until the app explicitly confirms that payment verification is live.</div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">Developer API</div><span class="tag">COMING SOON</span></div><div class="empty"><div class="empty-icon">⌘</div><strong>API key management is not active</strong>Key generation, hashing, rate limits, usage logs and webhook signing will be implemented server-side.</div></div>
 </section>
 
@@ -174,6 +174,7 @@
 <div class="field full"><label for="address">Public wallet / contract address</label><input id="address" maxlength="120" placeholder="Enter public address" autocomplete="off" spellcheck="false" required></div>
 <div class="field full"><label for="category">Category</label><select id="category"><option>Personal</option><option>Whale</option><option>Exchange</option><option>Project</option><option>Smart Money</option><option>Custom</option></select></div>
 </div><button class="btn primary" id="saveItem" style="width:100%;margin-top:7px">Save to watchlist</button><div class="form-message" id="formMessage" role="status"></div></form></div></div>
+<div class="modal" id="paymentModal"><div class="modal-box"><div class="modal-head"><h3>Choose payment network</h3><button class="close" data-close="paymentModal" type="button">✕</button></div><p class="muted" id="paymentPlanLabel" style="font-size:12px">Select how you want to pay.</p><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin:14px 0"><button class="btn" type="button" data-pay-chain="BEP20">BEP20<br><small>BNB Smart Chain · USDT</small></button><button class="btn" type="button" data-pay-chain="TRC20">TRC20<br><small>TRON · USDT</small></button></div><div id="invoiceDetails" class="notice" style="display:none;overflow-wrap:anywhere"></div><div class="form-message" id="paymentMessage"></div><p class="muted" style="font-size:10px;line-height:1.5">Safety notice: payment verification is not enabled yet. Creating an invoice does not mean funds will be detected or your plan activated. Do not send USDT.</p></div></div>
 <div class="modal" id="alertModal"><div class="modal-box"><div class="modal-head"><h3>Create Alert Rule</h3><button class="close" data-close="alertModal">✕</button></div><form id="alertForm"><div class="form-grid"><div class="field"><label>Alert type</label><select id="alertType"><option>Large wallet transfer</option><option>Incoming transaction</option><option>Outgoing transaction</option><option>Token security finding</option><option>Liquidity change</option><option>Smart contract event</option><option>Token price threshold</option></select></div><div class="field"><label>Blockchain</label><select id="alertNetwork"></select></div><div class="field"><label>Threshold (USD, optional)</label><input id="alertThreshold" type="number" min="0" step="any" placeholder="e.g. 100000"></div><div class="field"><label>Destination</label><select id="alertDestination"><option>Personal Telegram (after bot connection)</option><option>Authorized group/channel</option></select></div></div><button class="btn primary" style="width:100%">Save draft rule</button><div class="form-message" id="alertMessage"></div></form></div></div>
 <div class="toast" id="toast" role="status"></div>
 <script>
@@ -223,8 +224,8 @@ function renderPlanCards(plans){
     const features=Array.isArray(plan.features)?plan.features.map(x=>`<div>✓ ${esc(x)}</div>`).join(""):"";
     const isCurrent=code===currentCode;
     const paid=price>0 && ["pro","business"].includes(code);
-    const label=isCurrent?"Current plan":paid?"Payment coming soon":code==="enterprise"?"Contact admin":"Free plan";
-    const disabled=isCurrent||paid||code==="enterprise"||code==="free";
+    const label=isCurrent?"Current plan":paid?"Choose network":code==="enterprise"?"Contact admin":"Free plan";
+    const disabled=isCurrent||code==="enterprise"||code==="free";
     const featured=code==="pro"?' featured':'';
     return `<div class="card plan-card${featured}">
       <span class="tag ${code==="pro"?"yellow":""}">${esc(code.toUpperCase())}</span>
@@ -232,7 +233,7 @@ function renderPlanCards(plans){
       <div class="plan-price">${price===0?(code==="free"?"Free":"Custom"):`${price.toLocaleString("en-US",{maximumFractionDigits:6})} USDT`}</div>
       <div class="muted" style="font-size:10px">/${esc(duration)}</div>
       <div class="plan-features">${features||'<div>Plan details available soon</div>'}</div>
-      <button class="btn ${code==="pro"?"primary":""}" ${disabled?"disabled":""}>${esc(label)}</button>
+      <button class="btn ${code==="pro"?"primary":""}" ${disabled?"disabled":""} ${paid?`data-buy-plan="${esc(code)}"`:""}>${esc(label)}</button>
     </div>`;
   }).join("");
 }
@@ -298,8 +299,21 @@ $("alertList").innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;j
 function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",subscription:"Subscription & API",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
 function openItem(type){$("itemForm").reset();$("itemType").value=type;$("modalTitle").textContent=type==="wallet"?"Add Wallet":"Add Smart Contract";$("saveItem").textContent=type==="wallet"?"Save Wallet":"Save Contract";$("formMessage").textContent="";$("itemModal").classList.add("open");$("itemName").focus()}
 function closeModal(id){$(id).classList.remove("open")}
+let selectedPaymentPlan=null;
+async function startPayment(planCode,chain){
+  const message=$("paymentMessage"),details=$("invoiceDetails");message.textContent="Creating invoice…";details.style.display="none";
+  try{
+    const result=await apiRequest("/subscription/create-payment",{method:"POST",body:JSON.stringify({planCode,chain})});
+    const p=result.payment;
+    details.style.display="block";
+    details.innerHTML=`<strong>Invoice created · ${esc(p.chain)}</strong><br>Plan: ${esc(String(p.planCode).toUpperCase())}<br>Amount: <strong>${esc(p.amount)} USDT</strong><br>Token: USDT<br>Receiving address:<br><span style="font-family:monospace;word-break:break-all">${esc(p.receivingAddress)}</span><br>Expires: ${esc(new Date(p.expiresAt).toLocaleString())}<br><br><strong>Do not transfer funds yet.</strong> On-chain verification is not active.`;
+    message.textContent="Invoice generated. Payment remains disabled until transaction verification is live.";
+  }catch(error){message.textContent=error.message==="UNAUTHENTICATED"?"Please open the Mini App through Telegram and sign in.":"Could not create invoice. Please try again.";}
+}
 document.addEventListener("click",e=>{
 const page=e.target.closest("[data-page]");if(page){go(page.dataset.page);return}
+const buy=e.target.closest("[data-buy-plan]");if(buy){selectedPaymentPlan=buy.dataset.buyPlan;$("paymentPlanLabel").textContent=`${selectedPaymentPlan.toUpperCase()} subscription · Select BEP20 or TRC20`;$("paymentMessage").textContent="";$("invoiceDetails").style.display="none";$("paymentModal").classList.add("open");return}
+const chain=e.target.closest("[data-pay-chain]");if(chain&&selectedPaymentPlan){startPayment(selectedPaymentPlan,chain.dataset.payChain);return}
 const open=e.target.closest("[data-open]");if(open){openItem(open.dataset.open);return}
 const rm=e.target.closest("[data-remove]");if(rm){const item=watchlist.find(i=>i.id===rm.dataset.remove);if(item&&confirm(`Remove ${item.name} from this browser's watchlist?`)){watchlist=watchlist.filter(i=>i.id!==item.id);persist();render();toast("Watchlist item removed")}return}
 const ar=e.target.closest("[data-alert-remove]");if(ar){alerts=alerts.filter(a=>a.id!==ar.dataset.alertRemove);persistAlerts();render();toast("Alert draft deleted");return}
@@ -307,7 +321,7 @@ const close=e.target.closest("[data-close]");if(close)closeModal(close.dataset.c
 
 });
 $("closeModal").onclick=()=>closeModal("itemModal");
-["itemModal","alertModal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.id===id)closeModal(id)}));
+["itemModal","alertModal","paymentModal"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.id===id)closeModal(id)}));
 $("itemForm").addEventListener("submit",e=>{
 e.preventDefault();const type=$("itemType").value,name=$("itemName").value.trim(),network=$("network").value,address=$("address").value.trim();
 if(!name||!address){$("formMessage").textContent="Complete all required fields.";return}
@@ -332,4 +346,4 @@ $("notificationBtn").onclick=()=>{go("alerts");toast("Alert center opened")};
 fillNetworks();networkCards();render();renderAccount();connectBackend();
 })();
 </script>
-</body></html>
+</body></html></body></html>
