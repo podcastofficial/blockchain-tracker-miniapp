@@ -1,43 +1,29 @@
-# Blockchain Tracker — Backend + Frontend Integration
+# Blockchain Tracker — Telegram Mini App (v0.3.0)
 
-## Single Vercel API architecture
-Exactly one Vercel function entry file is used: `api/index.js`. All routes are dispatched from this file. Shared helper modules live in `/lib`.
+Single Vercel function: **`api/index.js`** dispatches every route; helpers live in `/lib`. Frontend is `index.html`.
 
-## Live API routes
-- `POST /api/auth/telegram` — verifies Telegram Mini App initData and creates an HttpOnly session cookie.
-- `GET /api/auth/me` — returns the authenticated Telegram account.
-- `GET /api/subscription/plans` — returns plans from Neon PostgreSQL.
-- `GET /api/subscription/me` — returns current active subscription or Free fallback.
-- `POST /api/subscription/create-payment` — creates a pending payment record.
-- `POST /api/subscription/verify-payment` — intentionally fails closed until an independent on-chain verifier is implemented.
+## API routes
+**Auth/account:** `POST /api/auth/telegram`, `GET /api/auth/me`, `GET /api/subscription/plans|me`, `POST /api/subscription/create-payment|verify-payment` (real on-chain USDT verification: BEP20 via BSC RPC, TRC20 via TronGrid).
+**Alerts:** `/api/alerts` (price), `/api/alerts/onchain` (wallet · whale · **contract**), cron: `/api/cron/alerts`, `/api/cron/onchain`.
+**Data:** `/api/portfolio/balances|history`, `/api/market/overview|whales` (whales now carry exchange labels on Ethereum), `/api/network/status`.
+**New in 0.3.0**
+- `GET|PUT /api/watchlist` — cloud-synced watchlist + invested amount (plan-limited).
+- `GET /api/defi/overview` — TVL by chain + top DEX volume (DeFiLlama).
+- `GET /api/tx/history?q=<hash|address>&network=&type=` — tx lookup (RPC/TronGrid/Solana) and wallet history (Etherscan V2 for EVM, TronGrid, Solana RPC, TONCenter).
+- `/api/admin/stats|payments|users|user|grant` — server-side admin (Telegram IDs in `ADMIN_TELEGRAM_IDS`), audit-logged.
+- `POST /api/telegram/webhook` — bot commands `/start /help /price /alerts`.
+- Rate limiting on login, payments, watchlist, tx history, admin. Plan limits unified in `lib/plans.js` (price + on-chain alerts now share one limit).
+- Contract monitor: ownership transfer, proxy upgrade/admin change, pause/unpause, role grant/revoke on EVM contracts.
 
-## Pricing baseline
-- Free: 0 USDT, lifetime
-- Pro: 1 USDT / 30 days
-- Business: 5 USDT / 30 days
-- Enterprise: custom
+## Setup
+1. Run in Neon (in order): `db/schema.sql`, `db/price_alerts.sql`, `db/portfolio.sql`, `db/onchain_alerts.sql`, **`db/phase5.sql`**.
+2. Set env vars — see `.env.example`.
+3. Deploy to Vercel.
+4. Schedulers: add repo secrets `APP_URL` + `CRON_SECRET` and the workflow `.github/workflows/cron.yml` runs both workers every 5 min (Vercel Hobby only allows daily crons).
+5. Bot webhook (once):
+   `https://api.telegram.org/bot<TOKEN>/setWebhook?url=<APP_URL>/api/telegram/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>`
 
-## Frontend integration
-- The Subscription & API page loads plans from `/api/subscription/plans`.
-- Inside Telegram, the app sends `Telegram.WebApp.initData` to `/api/auth/telegram`.
-- The HttpOnly session cookie is used for `/api/auth/me` and `/api/subscription/me`.
-- Paid checkout buttons remain disabled while on-chain verification is not implemented. This prevents users sending funds into an unfinished payment flow.
-- The existing local watchlist and other frontend modules are preserved.
-
-## Setup / deploy
-1. Merge this folder into the existing repository, keeping the `index.html`, `api/`, `lib/`, `db/`, `package.json`, and `vercel.json` at repository root.
-2. Ensure `db/schema.sql` has already been executed in Neon.
-3. Confirm Vercel environment variables are set: `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `APP_SESSION_SECRET`, and receiving wallet addresses.
-4. Deploy to Vercel.
-5. Test:
-   - `https://YOUR_DOMAIN/api/subscription/plans`
-   - Open the app inside Telegram and visit Subscription & API.
-   - Confirm Telegram login status and Free subscription are displayed.
-
-## Payment safety status
-The app does not yet accept payments. The verify endpoint deliberately does not activate subscriptions. Production verification must validate the official USDT token contract for the selected chain, recipient, exact amount, successful transaction receipt, confirmation depth, unique transaction use, and payment ownership before activation. Do not accept screenshots or client-provided status as proof.
-
-## Security notes
-- Never expose database URL, Telegram bot token, session secret, or RPC credentials in frontend JavaScript.
-- Keep only one file under `/api`: `api/index.js`.
-- This phase does not yet include admin authorization, rate limiting, on-chain verification, alert workers, or full wallet tracking APIs.
+## Status
+Backend for watchlist sync, admin, DeFi, tx explorer, contract monitor, exchange labels and bot is done.
+**Frontend wiring for these pages is the next step** (admin UI, DeFi cards, tx search, watchlist sync, stale labels, P&L card).
+Exchange labels are a small seed list — verify/extend via `EXCHANGE_LABELS_JSON`.
