@@ -2,7 +2,7 @@
 import crypto from "node:crypto";
 import { db } from "../lib/db.js";
 import { send, methodNotAllowed, getBearer } from "../lib/http.js";
-import { verifyTelegramInitData } from "../lib/telegram.verifyTelegramInitData
+import { verifyTelegramInitData } from "../lib/telegram.js";
 import { createSession, readSession } from "../lib/session.js";
 
 const RECEIVERS = {
@@ -592,7 +592,8 @@ export default async function handler(req, res) {
       ok: false,
       error: "API_ROUTE_NOT_FOUND"
     });
-  } catch {
+  } catch (err) {
+    console.error("API_ERROR", path, err && err.message);
     return send(res, 500, {
       ok: false,
       error: "INTERNAL_SERVER_ERROR"
