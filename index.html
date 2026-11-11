@@ -182,6 +182,20 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 @media(max-width:1050px){.tools-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.ticker{padding:8px 14px}#tvChart{height:380px}}
 #sideNav button:nth-child(10){--c:#0ea5e9;--cg:#0ea5e916;--cs:#0ea5e966}
+
+.status.bad{color:#dc2626}.status.warn{color:#d97706}
+.sec-sum{border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:11px;line-height:1.6;color:#fff;font-weight:600}
+.sec-sum.good{background:linear-gradient(135deg,#10b981,#14b8a6)}.sec-sum.warn{background:linear-gradient(135deg,#f59e0b,#f97316)}.sec-sum.bad{background:linear-gradient(135deg,#ef4444,#ec4899)}.sec-sum.unk{background:linear-gradient(135deg,#64748b,#475569)}
+.sec-sum small{display:block;font-weight:500;opacity:.92;margin-top:3px;font-size:10px}
+.chk{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #edf0f8;font-size:10.5px}
+.chk .val{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right}
+.res-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.res-head .coin{width:36px;height:36px;font-size:12px;flex:none}
+.res-head strong{font-size:14px;display:block}.res-head span{font-size:10px;color:var(--muted)}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.res-cell{background:linear-gradient(135deg,#eef6ff,#f6f0ff);border-radius:10px;padding:10px}
+.res-cell small{display:block;font-size:9px;color:var(--muted);margin-bottom:4px}.res-cell b{font-family:var(--mono);font-size:12px}
+.res-link{display:inline-block;margin-top:12px;font-size:10px;font-weight:700;color:var(--blue);text-decoration:none}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -261,7 +275,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <section class="page" id="page-tokens">
   <div class="page-head"><div><div class="eyebrow">RESEARCH / RISK ANALYSIS</div><h1 class="page-title">Token Intelligence</h1><p class="page-desc">Inspect token metadata, contract permissions, liquidity and holder concentration.</p></div></div>
   <div class="card"><div class="card-head"><div><div class="card-title">Token Security Scanner</div><div class="card-sub">Enter a contract address and choose its network</div></div><span class="tag yellow">EVIDENCE-BASED</span></div><div class="form-grid"><div class="field"><label>Blockchain</label><select id="scanNetwork" class="control" style="width:100%"></select></div><div class="field"><label>Token Contract Address</label><input id="scanAddress" placeholder="Paste public contract address"></div></div><button class="btn primary" id="scanBtn">Analyze Token</button><div class="form-message" id="scanMessage"></div></div>
-  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Security Checks</div><span class="tag">PLANNED CHECKS</span></div><div id="securityChecks"></div></div><div class="card"><div class="card-head"><div class="card-title">Token Research</div></div><div class="empty"><div class="empty-icon">◉</div><strong>No token selected</strong>Search a token after the scanner backend is connected.</div></div></div>
+  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Security Checks</div><span class="tag green">GOPLUS DATA</span></div><div id="securityChecks"></div></div><div class="card"><div class="card-head"><div class="card-title">Token Research</div><span class="tag" id="researchTag">DEXSCREENER</span></div><div id="tokenResearch"><div class="empty"><div class="empty-icon">◉</div><strong>No token selected</strong>Paste a contract address and press Analyze Token.</div></div></div></div>
   <div class="notice">A risk score is not a guarantee of safety. Scanner findings must include evidence, timestamp and chain-specific limitations; unknown checks must remain unknown.</div>
 </section>
 
@@ -593,6 +607,98 @@ bind(["ps_bal","ps_risk","ps_entry","ps_stop","ps_target"],calcPS);
 bind(["pl_side","pl_entry","pl_exit","pl_qty","pl_lev","pl_fee"],calcPL);
 bind(["dca_p1","dca_a1","dca_p2","dca_a2","dca_p3","dca_a3","dca_p4","dca_a4"],calcDCA);
 bind(["lq_side","lq_lev","lq_entry"],calcLQ);
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const GP={ethereum:"1",bsc:"56",polygon:"137",arbitrum:"42161",base:"8453",optimism:"10",avalanche:"43114",tron:"tron"};
+const EVM=["ethereum","bsc","polygon","arbitrum","base","optimism","avalanche"];
+function valid(a,n){if(EVM.includes(n))return /^0x[a-fA-F0-9]{40}$/.test(a);if(n==="tron")return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a);if(n==="solana")return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a);if(n==="ton")return /^(0:[a-fA-F0-9]{64}|EQ[A-Za-z0-9_-]{46,50}|UQ[A-Za-z0-9_-]{46,50})$/.test(a);return false}
+const has=v=>v!==undefined&&v!==null&&v!=="";
+const money=n=>{n=Number(n);if(!isFinite(n))return"—";if(n>=1e9)return"$"+(n/1e9).toFixed(2)+"B";if(n>=1e6)return"$"+(n/1e6).toFixed(2)+"M";if(n>=1e3)return"$"+(n/1e3).toFixed(1)+"K";return"$"+n.toFixed(2)};
+const price=n=>{n=Number(n);if(!isFinite(n))return"—";return"$"+(n<1?n.toPrecision(4):n.toLocaleString("en-US",{maximumFractionDigits:2}))};
+const pct=v=>(Number(v)*100);
+function flag(label,v,badWhen,warnWhen,okText,badText){
+  if(!has(v))return{label,st:"unk",txt:"Not reported"};
+  const x=String(v);
+  if(badWhen&&badWhen(x))return{label,st:"bad",txt:badText};
+  if(warnWhen&&warnWhen(x))return{label,st:"warn",txt:badText};
+  return{label,st:"ok",txt:okText};
+}
+function tax(label,v){
+  if(!has(v))return{label,st:"unk",txt:"Not reported"};
+  if(v==="")return{label,st:"unk",txt:"Not reported"};
+  const t=pct(v);if(!isFinite(t))return{label,st:"unk",txt:"Not reported"};
+  return{label,st:t>10?"bad":t>5?"warn":"ok",txt:t.toFixed(1)+"%"};
+}
+function buildChecks(d){
+  const L=[];
+  L.push(flag("Contract verified",d.is_open_source,x=>x==="0",null,"Source code verified","Not verified"));
+  L.push(flag("Honeypot / sellability",d.is_honeypot,x=>x==="1",null,"No honeypot flag","Honeypot detected"));
+  L.push(tax("Buy tax",d.buy_tax));L.push(tax("Sell tax",d.sell_tax));
+  L.push(flag("Mint function",d.is_mintable,null,x=>x==="1","Not mintable","Owner can mint more"));
+  const own=(has(d.can_take_back_ownership)||has(d.hidden_owner))?(d.can_take_back_ownership==="1"||d.hidden_owner==="1"?"1":"0"):undefined;
+  L.push(flag("Owner privileges",own,x=>x==="1",null,"No hidden owner flags","Hidden owner or ownership takeback"));
+  L.push(flag("Proxy / upgrade",d.is_proxy,null,x=>x==="1","Not a proxy","Upgradeable proxy"));
+  L.push(flag("Transfers can be paused",d.transfer_pausable,null,x=>x==="1","Not pausable","Owner can pause transfers"));
+  L.push(flag("Blacklist function",d.is_blacklisted,null,x=>x==="1","No blacklist","Can blacklist wallets"));
+  if(Array.isArray(d.holders)&&d.holders.length){const t=d.holders.slice(0,10).reduce((a,h)=>a+pct(h.percent||0),0);L.push({label:"Top 10 holders share",st:t>50?"warn":"ok",txt:t.toFixed(1)+"%"})}else L.push({label:"Holder concentration",st:"unk",txt:"Not reported"});
+  if(Array.isArray(d.lp_holders)&&d.lp_holders.length){const lk=d.lp_holders.filter(h=>h.is_locked===1||h.is_locked==="1").reduce((a,h)=>a+pct(h.percent||0),0);L.push({label:"Liquidity locked",st:lk>=50?"ok":lk>0?"warn":"bad",txt:lk.toFixed(1)+"% of LP"})}else L.push({label:"Liquidity lock evidence",st:"unk",txt:"Not reported"});
+  if(has(d.holder_count))L.push({label:"Holder count",st:"ok",txt:Number(d.holder_count).toLocaleString("en-US")});
+  return L;
+}
+function renderChecks(list,meta){
+  const bad=list.filter(c=>c.st==="bad").length,warn=list.filter(c=>c.st==="warn").length,unk=list.filter(c=>c.st==="unk").length;
+  let cls="good",title="No major red flags found";
+  if(bad){cls="bad";title=bad+" serious risk flag"+(bad>1?"s":"")+" found"}else if(warn){cls="warn";title=warn+" caution flag"+(warn>1?"s":"")}
+  if(unk>=list.length-1){cls="unk";title="Not enough data to judge"}
+  const dot={ok:"ok",warn:"warn",bad:"bad",unk:"offline"};
+  $("securityChecks").innerHTML=`<div class="sec-sum ${cls}">${esc(title)}<small>${esc(meta)} · ${unk} check${unk===1?"":"s"} unknown · Not a guarantee of safety</small></div>`+list.map(c=>`<div class="chk"><span>${esc(c.label)}</span><span class="status ${dot[c.st]}">${esc(c.txt)}</span></div>`).join("");
+}
+function renderUnavailable(msg){
+  $("securityChecks").innerHTML=`<div class="sec-sum unk">${esc(msg)}<small>Unknown checks are never treated as safe</small></div>`;
+}
+function renderResearch(pair){
+  const box=$("tokenResearch");
+  if(!pair){box.innerHTML='<div class="empty"><strong>No market data found</strong>This token has no trading pair on DexScreener yet, or the address is wrong.</div>';return}
+  const sym=esc(pair.baseToken&&pair.baseToken.symbol||"?"),nm=esc(pair.baseToken&&pair.baseToken.name||"Unknown token");
+  const ch=pair.priceChange&&isFinite(Number(pair.priceChange.h24))?Number(pair.priceChange.h24):null;
+  const link=/^https:\/\/dexscreener\.com\//.test(pair.url||"")?pair.url:"";
+  box.innerHTML=`<div class="res-head"><div class="coin">${sym.slice(0,3)}</div><div><strong>${nm}</strong><span>${sym} · ${esc(pair.dexId||"")} · ${esc(pair.chainId||"")}</span></div></div><div class="res-grid"><div class="res-cell"><small>Price</small><b>${price(pair.priceUsd)}</b></div><div class="res-cell"><small>24h change</small><b class="${ch===null?"":ch>=0?"positive":"negative"}">${ch===null?"—":(ch>=0?"+":"")+ch.toFixed(2)+"%"}</b></div><div class="res-cell"><small>Liquidity</small><b>${money(pair.liquidity&&pair.liquidity.usd)}</b></div><div class="res-cell"><small>24h volume</small><b>${money(pair.volume&&pair.volume.h24)}</b></div><div class="res-cell"><small>FDV</small><b>${money(pair.fdv)}</b></div><div class="res-cell"><small>Market cap</small><b>${money(pair.marketCap)}</b></div></div>${link?`<a class="res-link" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open full chart on DexScreener ↗</a>`:""}`;
+}
+const timeout=(ms)=>{const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal};
+async function getJSON(url){const r=await fetch(url,{signal:timeout(15000)});if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
+const btn=$("scanBtn");
+btn.onclick=async()=>{
+  const net=$("scanNetwork").value,addr=$("scanAddress").value.trim(),msg=$("scanMessage");
+  if(!addr){msg.textContent="Enter a token contract address.";return}
+  if(!valid(addr,net)){msg.textContent="Address format does not match the selected network.";return}
+  msg.textContent="";btn.disabled=true;btn.textContent="Scanning…";
+  $("securityChecks").innerHTML='<div class="empty">Running security checks…</div>';
+  $("tokenResearch").innerHTML='<div class="empty">Loading market data…</div>';
+  const secP=GP[net]?getJSON("https://api.gopluslabs.io/api/v1/token_security/"+GP[net]+"?contract_addresses="+encodeURIComponent(EVM.includes(net)?addr.toLowerCase():addr)):Promise.resolve(null);
+  const mktP=getJSON("https://api.dexscreener.com/latest/dex/tokens/"+encodeURIComponent(addr));
+  const [sec,mkt]=await Promise.allSettled([secP,mktP]);
+  const stamp=new Date().toLocaleString();
+  if(!GP[net])renderUnavailable("Security data is not available for this network yet");
+  else if(sec.status!=="fulfilled")renderUnavailable("Security service could not be reached. Try again.");
+  else{
+    const res=sec.value&&sec.value.result,d=res&&Object.values(res)[0];
+    if(!d||!Object.keys(d).length)renderUnavailable("No security data found for this contract");
+    else renderChecks(buildChecks(d),"GoPlus · "+stamp);
+  }
+  if(mkt.status!=="fulfilled")$("tokenResearch").innerHTML='<div class="empty"><strong>Market data unavailable</strong>DexScreener could not be reached. Try again.</div>';
+  else{
+    const pairs=(mkt.value&&mkt.value.pairs||[]).filter(x=>!x.chainId||x.chainId===net||(net==="bsc"&&x.chainId==="bsc"));
+    pairs.sort((a,b)=>(Number(b.liquidity&&b.liquidity.usd)||0)-(Number(a.liquidity&&a.liquidity.usd)||0));
+    renderResearch(pairs[0]);
+  }
+  btn.disabled=false;btn.textContent="Analyze Token";
+};
 })();
 </script>
 </body></html>
