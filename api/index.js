@@ -5,6 +5,7 @@ import { send, methodNotAllowed, getBearer } from "../lib/http.js";
 import { verifyTelegramInitData } from "../lib/telegram.js";
 import { createSession, readSession } from "../lib/session.js";
 import { verifyOnChain } from "../lib/chain.js";
+import { portfolioBalances, portfolioHistory } from "../lib/portfolio.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -628,6 +629,9 @@ export default async function handler(req, res) {
     if (path === "/api/auth/me") {
       return await me(req, res);
     }
+
+    if (path === "/api/portfolio/balances") return await portfolioBalances(req, res);
+    if (path === "/api/portfolio/history") return await portfolioHistory(req, res);
 
     if (path === "/api/alerts") {
       return await priceAlerts(req, res, path);
