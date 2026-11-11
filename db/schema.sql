@@ -65,10 +65,14 @@ CREATE TABLE IF NOT EXISTS subscription_payments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   confirmed_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
   UNIQUE(chain, tx_hash)
 );
+ALTER TABLE subscription_payments ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_subscription_payments_user
   ON subscription_payments(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_subscription_payments_invoice
+  ON subscription_payments(chain, expected_amount, status, expires_at);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id BIGSERIAL PRIMARY KEY,
