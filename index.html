@@ -318,6 +318,11 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     </div></div>
   </div>
   <div class="section-grid grid">
+    <div class="card" style="margin-bottom:15px"><div class="card-head"><div><div class="card-title">Market Pulse</div><div class="card-sub">Trending coins, top movers and live gas fees</div></div><span class="tag" id="mpUpdated">LIVE</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn small primary" data-mp="trending">🔥 Trending</button><button class="btn small" data-mp="gainers">▲ Gainers</button><button class="btn small" data-mp="losers">▼ Losers</button></div>
+      <div id="mpList" class="muted" style="font-size:12px">Loading…</div>
+      <div class="card-title" style="margin:16px 0 8px;font-size:12px">⛽ Gas Tracker</div><div id="gasGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>
+    </div>
     <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Live health check of each network (updates every 30 seconds)</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
     <div class="card"><div class="card-head"><div><div class="card-title">Recent Watchlist</div><div class="card-sub">Your locally saved wallets and contracts</div></div><button class="btn small" data-page="wallets">View all</button></div><div id="recentWatchlist"></div></div>
   </div>
@@ -345,8 +350,10 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 
 <section class="page" id="page-whales">
   <div class="page-head"><div><div class="eyebrow">ON-CHAIN INTELLIGENCE</div><h1 class="page-title">Whale Terminal</h1><p class="page-desc">Track large transfers, watched wallets and exchange flows.</p></div><div class="head-actions"><button class="btn primary" id="whaleRuleBtn">＋ Create Whale Rule</button></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Large Transfers <span class="stat-symbol">◉</span></div><div class="stat-value">—</div><div class="stat-foot">Indexer required</div></div><div class="stat-card"><div class="stat-top">Tracked Volume <span class="stat-symbol">＄</span></div><div class="stat-value">—</div><div class="stat-foot">No live data</div></div><div class="stat-card"><div class="stat-top">Exchange Inflow <span class="stat-symbol">↓</span></div><div class="stat-value">—</div><div class="stat-foot">Labels required</div></div><div class="stat-card"><div class="stat-top">Exchange Outflow <span class="stat-symbol">↑</span></div><div class="stat-value">—</div><div class="stat-foot">Labels required</div></div></div>
-  <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">Whale Activity Feed</div><span class="tag">AWAITING INDEXER</span></div><div class="empty"><div class="empty-icon">◉</div><strong>No whale events available</strong>Large transfer events will appear after network indexing, price normalization and wallet labeling are active.</div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Large Transfers <span class="stat-symbol">◉</span></div><div class="stat-value" id="wfCount">—</div><div class="stat-foot" id="wfWindow">Open feed below</div></div><div class="stat-card"><div class="stat-top">Tracked Volume <span class="stat-symbol">＄</span></div><div class="stat-value" id="wfVol">—</div><div class="stat-foot">Shown transfers, USDT/USDC</div></div><div class="stat-card"><div class="stat-top">Exchange Inflow <span class="stat-symbol">↓</span></div><div class="stat-value">—</div><div class="stat-foot">Labels required</div></div><div class="stat-card"><div class="stat-top">Exchange Outflow <span class="stat-symbol">↑</span></div><div class="stat-value">—</div><div class="stat-foot">Labels required</div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Live Whale Feed</div><div class="card-sub">Large USDT/USDC transfers from the most recent blocks</div></div><span class="tag" id="wfTag">LIVE</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select class="control" id="wfNet"><option value="ethereum">Ethereum</option><option value="bsc">BNB Smart Chain</option><option value="polygon">Polygon</option></select><select class="control" id="wfMin"><option value="50000">≥ $50K</option><option value="100000" selected>≥ $100K</option><option value="250000">≥ $250K</option><option value="500000">≥ $500K</option><option value="1000000">≥ $1M</option></select><button class="btn" id="wfRefresh">↻ Refresh</button></div>
+    <div id="wfList" class="muted" style="font-size:12px">Open this page to load the feed.</div></div>
 </section>
 
 <section class="page" id="page-contracts">
@@ -1292,6 +1299,55 @@ async function run(){
   });
 }
 run();setInterval(()=>{if(!document.hidden)run()},30000);
+})();
+</script>
+<script>
+(function(){
+const g=id=>document.getElementById(id),E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const NAME={ethereum:"Ethereum",bsc:"BNB Chain",polygon:"Polygon",arbitrum:"Arbitrum",base:"Base",optimism:"Optimism",avalanche:"Avalanche"};
+const money=n=>n>=1e6?"$"+(n/1e6).toFixed(2)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Number(n).toFixed(2);
+const price=n=>n==null?"—":n>=1?"$"+n.toLocaleString("en-US",{maximumFractionDigits:2}):"$"+Number(n.toPrecision(3));
+const short=a=>a.slice(0,6)+"…"+a.slice(-4);
+const age=s=>s<90?Math.max(s,1)+"s":s<5400?Math.round(s/60)+"m":Math.round(s/3600)+"h";
+async function getJ(u){const r=await fetch(u,{cache:"no-store"});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||"FAILED");return j}
+/* ---- Market Pulse ---- */
+let mp=null,tab="trending";
+function drawMp(){
+  const box=g("mpList");if(!box||!mp)return;
+  const rows=mp[tab]||[];
+  box.innerHTML=rows.length?rows.map((c,i)=>{const up=(c.change||0)>=0;return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><span class="muted" style="width:16px;font-size:10px">${i+1}</span>${c.thumb?`<img src="${E(c.thumb)}" alt="" width="22" height="22" loading="lazy" style="border-radius:50%">`:""}<div style="flex:1;min-width:0"><strong>${E(c.symbol)}</strong><div class="muted" style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${E(c.name)}</div></div><div style="text-align:right"><div>${price(c.price)}</div><div style="font-size:11px;font-weight:700;color:var(--${up?"green":"red"})">${c.change==null?"—":(up?"+":"")+c.change.toFixed(2)+"%"}</div></div></div>`}).join(""):"No data right now. Try again in a minute.";
+  document.querySelectorAll("[data-mp]").forEach(b=>b.classList.toggle("primary",b.dataset.mp===tab));
+}
+function drawGas(list){
+  const el=g("gasGrid");if(!el)return;
+  el.innerHTML=list.map(x=>`<div style="border:1px solid var(--border);border-radius:11px;padding:9px 11px"><div class="muted" style="font-size:10px">${E(NAME[x.network]||x.network)}</div><div style="font-weight:800;font-size:14px">${x.gwei==null?"—":x.gwei<1?x.gwei.toFixed(3):x.gwei.toFixed(1)} <span style="font-size:9px" class="muted">gwei</span></div><div class="muted" style="font-size:10px">${x.transferUsd==null?"":"≈ "+(x.transferUsd<0.01?"<$0.01":"$"+x.transferUsd.toFixed(2))+" / transfer"}</div></div>`).join("");
+}
+async function loadMp(){
+  try{mp=await getJ("/api/market/overview");drawMp();drawGas(mp.gas||[]);g("mpUpdated").textContent="Updated "+new Date(mp.updatedAt).toLocaleTimeString()}
+  catch(e){if(g("mpList"))g("mpList").textContent="Market data unavailable right now."}
+}
+/* ---- Whale feed ---- */
+let wbusy=false,wlast=0;
+async function loadWhales(){
+  if(wbusy)return;wbusy=true;
+  const b=g("wfRefresh");b.disabled=true;g("wfList").textContent="Scanning recent blocks…";
+  try{
+    const d=await getJ("/api/market/whales?network="+encodeURIComponent(g("wfNet").value)+"&min="+encodeURIComponent(g("wfMin").value));
+    g("wfCount").textContent=d.events.length;g("wfVol").textContent=money(d.totalUsd);
+    g("wfWindow").textContent="Last ~"+Math.max(1,Math.round(d.windowSec/60))+" min on "+(NAME[d.network]||d.network);
+    g("wfList").innerHTML=d.events.length?d.events.map(e=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:14px">🐋 ${money(e.usd)} ${E(e.symbol)}</strong><span class="muted" style="font-size:10px">~${age(e.ageSec)} ago</span></div><div class="muted address" style="font-size:10px;margin:4px 0">${E(short(e.from))} → ${E(short(e.to))}</div>${String(e.link).startsWith("https://")?`<a href="${E(e.link)}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue)">View transaction ↗</a>`:""}</div>`).join(""):"No transfers above this size in the scanned blocks. Try a lower minimum.";
+    wlast=Date.now();
+  }catch(e){g("wfList").textContent=e.message==="RPC_BUSY"?"Network RPC is busy. Tap Refresh in a few seconds.":"Could not load whale feed."}
+  wbusy=false;b.disabled=false;
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-mp]");if(t){tab=t.dataset.mp;drawMp();return}
+  if(e.target.closest('[data-page="whales"]')&&Date.now()-wlast>60000)setTimeout(loadWhales,150);
+  if(e.target.closest('[data-page="dashboard"]')&&(!mp))setTimeout(loadMp,100);
+});
+g("wfRefresh").addEventListener("click",loadWhales);
+g("wfNet").addEventListener("change",loadWhales);g("wfMin").addEventListener("change",loadWhales);
+loadMp();setInterval(()=>{if(!document.hidden)loadMp()},60000);
 })();
 </script>
 </body></html>
