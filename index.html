@@ -624,6 +624,7 @@ $("globalSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){const q=e.t
 $("refreshBtn").onclick=$("dashRefresh").onclick=()=>{render();toast("Local dashboard refreshed. Live chain sync is not connected.")};
 $("notificationBtn").onclick=()=>{go("alerts");toast("Alert center opened")};
 fillNetworks();networkCards();render();renderAccount();connectBackend();
+window.BT={NETWORKS,apiRequest,toast,get watchlist(){return watchlist},get backendUser(){return backendUser}};
 })();
 </script>
 
@@ -1208,21 +1209,21 @@ function draw(d){
   if(d.allocation.length){al.className="";al.innerHTML=`<div style="display:flex;height:14px;border-radius:8px;overflow:hidden;margin:6px 0 14px">${d.allocation.map((a,i)=>`<div title="${E(a.symbol)}" style="width:${a.pct}%;background:${COL[i%COL.length]}"></div>`).join("")}</div>`+d.allocation.map((a,i)=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${COL[i%COL.length]};margin-right:8px"></i><strong>${E(a.symbol)}</strong></span><span>${usd(a.usd)} · ${a.pct.toFixed(1)}%</span></div>`).join("")}
   else{al.className="empty";al.innerHTML="<strong>No assets found</strong>These wallets hold no native coin or USDT/USDC."}
   g("pfRows").innerHTML=d.wallets.map(w=>{
-    const name=(typeof watchlist!=="undefined"?watchlist:[]).find(x=>x.address===w.address&&x.network===w.network)?.name||"Wallet";
+    const name=(BT.watchlist).find(x=>x.address===w.address&&x.network===w.network)?.name||"Wallet";
     if(w.error)return `<tr><td><strong>${E(name)}</strong></td><td>${E(w.network)}</td><td colspan="3" class="muted">Balance unavailable, try again</td></tr>`;
     return `<tr><td><strong>${E(name)}</strong><div class="muted address" style="font-size:9px">${E(w.address.slice(0,10)+"…"+w.address.slice(-6))}</div></td><td>${E(w.network)}</td><td>${amt(w.native.amount)} ${E(w.native.symbol)}</td><td>${w.tokens.length?w.tokens.map(t=>amt(t.amount)+" "+E(t.symbol)).join("<br>"):"—"}</td><td><strong>${usd(w.totalUsd)}</strong></td></tr>`}).join("");
 }
 async function sync(manual){
   if(busy)return;
-  const wl=(typeof watchlist!=="undefined"?watchlist:[]).filter(i=>i.type==="wallet").slice(0,10);
-  if(!wl.length){if(manual)toast("Add a wallet first");return}
-  if(typeof backendUser==="undefined"||!backendUser){if(manual)toast("Open via Telegram and sign in to sync balances");return}
+  const wl=(BT.watchlist).filter(i=>i.type==="wallet").slice(0,10);
+  if(!wl.length){if(manual)BT.toast("Add a wallet first");return}
+  if(!BT.backendUser){if(manual)BT.toast("Open via Telegram and sign in to sync balances");return}
   busy=true;const b=g("pfSync");b.disabled=true;b.textContent="Syncing…";
   try{
-    const d=await apiRequest("/portfolio/balances",{method:"POST",body:JSON.stringify({wallets:wl.map(w=>({network:w.network,address:w.address}))})});
+    const d=await BT.apiRequest("/portfolio/balances",{method:"POST",body:JSON.stringify({wallets:wl.map(w=>({network:w.network,address:w.address}))})});
     draw(d);last=Date.now();
-    try{const h=await apiRequest("/portfolio/history");drawHistory(h.points)}catch(e){}
-  }catch(e){if(manual)toast(e.status===429?"Too many syncs, wait a minute":"Could not sync balances")}
+    try{const h=await BT.apiRequest("/portfolio/history");drawHistory(h.points)}catch(e){}
+  }catch(e){if(manual)BT.toast(e.status===429?"Too many syncs, wait a minute":"Could not sync balances")}
   busy=false;b.disabled=false;b.textContent="↻ Sync balances";
 }
 g("pfSync").addEventListener("click",()=>sync(true));
@@ -1243,7 +1244,7 @@ function fillNets(){
   g("ocMin").value=whale?"100000":"100";
 }
 function fillSaved(){
-  const w=(typeof watchlist!=="undefined"?watchlist:[]).filter(i=>i.type==="wallet");
+  const w=(BT.watchlist).filter(i=>i.type==="wallet");
   g("ocSaved").innerHTML='<option value="">Saved wallet…</option>'+w.map(i=>`<option value="${E(i.network+"|"+i.address)}">${E(i.name)}</option>`).join("");
 }
 function draw(d){
@@ -1254,22 +1255,22 @@ function draw(d){
 }
 async function load(manual){
   fillSaved();
-  if(typeof backendUser==="undefined"||!backendUser)return;
-  try{draw(await apiRequest("/alerts/onchain"))}catch(e){if(manual)toast("Could not load on-chain alerts")}
+  if(!BT.backendUser)return;
+  try{draw(await BT.apiRequest("/alerts/onchain"))}catch(e){if(manual)BT.toast("Could not load on-chain alerts")}
 }
 g("ocKind").addEventListener("change",fillNets);
 g("ocSaved").addEventListener("change",e=>{const[v,a]=e.target.value.split("|");if(a){g("ocNet").value=v;g("ocAddr").value=a}});
 g("ocAdd").addEventListener("click",async()=>{
   const b=g("ocAdd"),kind=g("ocKind").value;b.disabled=true;g("ocMsg").textContent="Saving…";
   try{
-    await apiRequest("/alerts/onchain",{method:"POST",body:JSON.stringify({kind,network:g("ocNet").value,address:g("ocAddr").value.trim(),minUsd:Number(g("ocMin").value)})});
+    await BT.apiRequest("/alerts/onchain",{method:"POST",body:JSON.stringify({kind,network:g("ocNet").value,address:g("ocAddr").value.trim(),minUsd:Number(g("ocMin").value)})});
     g("ocMsg").textContent="Rule added. The first scan sets a starting point, alerts start after that.";g("ocAddr").value="";load(true);
   }catch(e){g("ocMsg").textContent=ERR[e.message]||"Could not add rule."}
   b.disabled=false;
 });
 document.addEventListener("click",async e=>{
   const del=e.target.closest("[data-oc-del]");
-  if(del){del.disabled=true;try{await apiRequest("/alerts/onchain?id="+encodeURIComponent(del.dataset.ocDel),{method:"DELETE"})}catch(x){}load(true);return}
+  if(del){del.disabled=true;try{await BT.apiRequest("/alerts/onchain?id="+encodeURIComponent(del.dataset.ocDel),{method:"DELETE"})}catch(x){}load(true);return}
   if(e.target.closest('[data-page="alerts"]'))setTimeout(()=>load(false),200);
 });
 fillNets();fillSaved();
@@ -1278,10 +1279,11 @@ fillNets();fillSaved();
 <script>
 (function(){
 async function run(){
-  let d;try{const r=await fetch("/api/network/status",{cache:"no-store"});d=(await r.json()).networks}catch(e){return}
-  if(!d||typeof NETWORKS==="undefined")return;
+  let d;try{const r=await fetch("/api/network/status",{cache:"no-store"});d=(await r.json()).networks}catch(e){}
+  if(!window.BT)return;
+  if(!d){document.querySelectorAll("#networkGrid .status").forEach(el=>{el.className="status pending";el.textContent="Status API not deployed"});return}
   document.querySelectorAll("#networkGrid .network-card").forEach(card=>{
-    const n=NETWORKS.find(x=>card.textContent.includes(x.name)),st=n&&d[n.id],el=card.querySelector(".status");
+    const n=BT.NETWORKS.find(x=>card.textContent.includes(x.name)),st=n&&d[n.id],el=card.querySelector(".status");
     if(!st||!el)return;
     const on=st.status==="online";
     el.className="status "+(on?"ok":"offline");
