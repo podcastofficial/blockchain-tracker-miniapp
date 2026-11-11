@@ -85,6 +85,45 @@ async function plans(req, res) {
   }
 }
 
+
+async function subscriptionMe(req, res) {
+  if (!requireMethod(req, res, "GET")) return;
+  const session = readSession(req);
+  if (!session) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+  try {
+    const result = await db().query(
+      `SELECT s.id, s.plan_code, s.status, s.starts_at, s.expires_at,
+              p.name, p.price_usdt, p.duration_days, p.features
+       FROM user_subscriptions s
+       JOIN subscription_plans p ON p.code=s.plan_code
+       WHERE s.user_id=$1 AND s.status='active'
+         AND (s.expires_at IS NULL OR s.expires_at > NOW())
+       ORDER BY s.starts_at DESC NULLS LAST, s.id DESC
+       LIMIT 1`,
+      [session.id]
+    );
+    if (!result.rowCount) {
+      return send(res, 200, {
+        ok: true,
+        subscription: {
+          plan: { code: "free", name: "Free", price_usdt: "0", duration_days: null, features: ["Basic wallet watchlist", "Limited alerts"] },
+          status: "active", starts_at: null, expires_at: null
+        }
+      });
+    }
+    const row = result.rows[0];
+    return send(res, 200, {
+      ok: true,
+      subscription: {
+        id: row.id, status: row.status, starts_at: row.starts_at, expires_at: row.expires_at,
+        plan: { code: row.plan_code, name: row.name, price_usdt: row.price_usdt, duration_days: row.duration_days, features: row.features }
+      }
+    });
+  } catch {
+    return send(res, 500, { ok: false, error: "SUBSCRIPTION_LOOKUP_FAILED" });
+  }
+}
+
 async function createPayment(req, res) {
   if (!requireMethod(req, res, "POST")) return;
   const session = readSession(req);
@@ -165,6 +204,7 @@ export default async function handler(req, res) {
     if (path === "/api/auth/telegram") return await telegramLogin(req, res);
     if (path === "/api/auth/me") return await me(req, res);
     if (path === "/api/subscription/plans") return await plans(req, res);
+    if (path === "/api/subscription/me") return await subscriptionMe(req, res);
     if (path === "/api/subscription/create-payment") return await createPayment(req, res);
     if (path === "/api/subscription/verify-payment") return await verifyPayment(req, res);
     return send(res, 404, { ok: false, error: "API_ROUTE_NOT_FOUND" });
