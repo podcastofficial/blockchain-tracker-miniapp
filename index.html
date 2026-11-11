@@ -258,6 +258,8 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .cm-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .cm-links a{font-size:11px;font-weight:700;color:var(--blue);text-decoration:none;background:#eef2ff;padding:7px 12px;border-radius:20px}
 .cm-src{font-size:10px;color:var(--muted);margin:12px 0 0;line-height:1.6}.cm-src a{color:var(--blue);font-weight:700;text-decoration:none}
+.cm-al{display:flex;gap:8px;flex-wrap:wrap}.cm-al .control{min-width:0;flex:1 1 120px}
+.pa-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:11px}.pa-row small{display:block;color:var(--muted);font-size:9.5px;margin-top:3px}
 .cm-frame iframe{display:block;width:100%;height:380px;border:0;border-radius:12px;background:#f3f5fc}
 </style>
 </head>
@@ -368,6 +370,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <section class="page" id="page-alerts">
   <div class="page-head"><div><div class="eyebrow">AUTOMATION / NOTIFICATIONS</div><h1 class="page-title">Alert Center</h1><p class="page-desc">Create rules for wallet activity, whale transfers, token risks and contract events.</p></div><div class="head-actions"><button class="btn primary" id="createAlert">＋ Create Alert</button></div></div>
   <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Active Rules <span class="stat-symbol">♧</span></div><div class="stat-value" id="alertRulesCount">0</div><div class="stat-foot">Local draft rules</div></div><div class="stat-card"><div class="stat-top">Triggered Today <span class="stat-symbol">⚡</span></div><div class="stat-value">—</div><div class="stat-foot">Engine not connected</div></div><div class="stat-card"><div class="stat-top">Delivered <span class="stat-symbol">✓</span></div><div class="stat-value">—</div><div class="stat-foot">Telegram not connected</div></div><div class="stat-card"><div class="stat-top">Failed Delivery <span class="stat-symbol">!</span></div><div class="stat-value">—</div><div class="stat-foot">Delivery logs not connected</div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Price Alerts</div><div class="card-sub">Telegram message when a coin hits your price. Search a coin, open it, tap Set alert.</div></div><span class="tag" id="paCount">0</span></div><div id="paList"><div class="empty">Open this app inside Telegram to use price alerts.</div></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">My Alert Rules</div><span class="tag">LOCAL DRAFTS</span></div><div id="alertList" class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div></div>
 </section>
 
@@ -1020,6 +1023,7 @@ function renderCoin(d){
     `<div class="cm-price">$${price(u(md.current_price))} ${pct(md.price_change_percentage_24h)} <small>24h</small></div>`+
     '<div class="cm-ranges">'+[[1,"1D"],[7,"7D"],[30,"30D"],[90,"90D"],[365,"1Y"]].map(r=>`<button type="button" class="cm-r${r[0]===cur.days?" on":""}" data-days="${r[0]}">${r[1]}</button>`).join("")+"</div>"+
     '<div class="cm-tip" id="cmTip"></div><div class="cm-chart" id="cmChart"></div>'+
+    '<div class="cm-sec">Price alert (Telegram)</div><div class="cm-al"><select class="control" id="cmAlDir"><option value="above">Goes above</option><option value="below">Goes below</option></select><input class="control" id="cmAlPrice" inputmode="decimal" placeholder="Target price (USD)"><button type="button" class="cm-b pri" data-setalert="'+esc(d.id)+'|'+esc(sym)+'">Set alert</button></div><p class="cm-src" id="cmAlMsg"></p>'+
     '<div class="cm-sec">Market data</div><div class="cm-stats">'+stats+"</div>"+contracts+
     (desc?`<div class="cm-sec">About</div><p class="cm-desc">${esc(desc.slice(0,360))}${desc.length>360?"…":""}</p>`:"")+links+
     '<p class="cm-src">Data: CoinGecko. Not financial advice.</p>'
@@ -1103,9 +1107,52 @@ modal.addEventListener("click",e=>{
   if(r&&cur.kind==="coin"){cur.days=Number(r.dataset.days);modal.querySelectorAll(".cm-r").forEach(b=>b.classList.toggle("on",b===r));loadChart();return}
   const c=e.target.closest("[data-copy]");
   if(c){const a=c.dataset.copy;const done=()=>{c.textContent="Copied";setTimeout(()=>{c.textContent="Copy"},1200)};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(a).then(done,()=>{});else{const t=document.createElement("textarea");t.value=a;document.body.appendChild(t);t.select();try{document.execCommand("copy");done()}catch(x){}t.remove()}return}
+  const sa=e.target.closest("[data-setalert]");
+  if(sa){const i=sa.dataset.setalert.indexOf("|");window.dispatchEvent(new CustomEvent("bt-setalert",{detail:{id:sa.dataset.setalert.slice(0,i),sym:sa.dataset.setalert.slice(i+1),dir:$("cmAlDir").value,price:$("cmAlPrice").value}}));return}
   const s=e.target.closest("[data-scan]");
   if(s){const i=s.dataset.scan.indexOf("|");scan(s.dataset.scan.slice(0,i),s.dataset.scan.slice(i+1));return}
   if(e.target.closest("[data-retry]")){if(cur.kind==="coin"){if($("cmChart"))loadChart();else openCoin(cur.id,cur.hint)}}
+});
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(m){const t=$("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("show"),2800)}
+async function call(method,url,body){
+  const r=await fetch(url,{method,credentials:"same-origin",cache:"no-store",headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});
+  let j={};try{j=await r.json()}catch(e){}return{status:r.status,j};
+}
+const px=n=>{n=Number(n);return n>=1?n.toLocaleString("en-US",{maximumFractionDigits:4}):String(Number(n.toPrecision(4)))};
+async function load(){
+  const box=$("paList");if(!box)return;
+  try{
+    const {status,j}=await call("GET","/api/alerts");
+    if(status===401){box.innerHTML='<div class="empty">Open this app inside Telegram to use price alerts.</div>';return}
+    if(!j.ok)throw 0;
+    const act=j.alerts.filter(a=>a.status==="active").length;
+    $("paCount").textContent=act+" / "+j.limit+" ("+String(j.plan).toUpperCase()+")";
+    box.innerHTML=j.alerts.length?j.alerts.map(a=>`<div class="pa-row"><div><strong>${esc(a.symbol)} ${a.direction==="above"?"≥":"≤"} $${px(a.target_price)}</strong><small>${a.status==="active"?"Watching":"Triggered at $"+px(a.triggered_price)}</small></div><button class="btn danger small" type="button" data-pa-del="${esc(a.id)}">Delete</button></div>`).join(""):'<div class="empty">No price alerts yet.</div>';
+  }catch(e){box.innerHTML='<div class="empty">Could not load alerts. Try again.</div>'}
+}
+window.addEventListener("bt-setalert",async e=>{
+  const d=e.detail,msg=$("cmAlMsg"),price=Number(String(d.price).replace(/,/g,""));
+  const say=t=>{if(msg)msg.textContent=t;toast(t)};
+  if(!Number.isFinite(price)||price<=0){say("Enter a valid target price.");return}
+  try{
+    const {status,j}=await call("POST","/api/alerts",{coinId:d.id,symbol:d.sym,direction:d.dir,targetPrice:price});
+    if(status===401)say("Open this app inside Telegram to set alerts.");
+    else if(status===403)say("Alert limit reached for your plan ("+j.limit+"). Delete one or upgrade.");
+    else if(!j.ok)say("Could not save the alert.");
+    else{say("Alert set: "+d.sym+" "+d.dir+" $"+px(price));load()}
+  }catch(x){say("Network error. Try again.")}
+});
+document.addEventListener("click",async e=>{
+  if(e.target.closest('[data-page="alerts"]'))setTimeout(load,50);
+  const del=e.target.closest("[data-pa-del]");
+  if(del){del.disabled=true;try{await call("DELETE","/api/alerts?id="+encodeURIComponent(del.dataset.paDel))}catch(x){}load()}
 });
 })();
 </script>
