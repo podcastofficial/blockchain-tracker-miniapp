@@ -157,8 +157,31 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .toast.show{display:block}.mobile-nav{display:none}
 /* responsive */
 @media(max-width:1050px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.network-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.section-grid{grid-template-columns:1fr}}
-@media(max-width:760px){.sidebar{display:none}.main{margin-left:0}.topbar{height:60px;padding:0 14px}.top-search{width:min(48vw,260px)}.content{padding:20px 14px 96px}.page-title{font-size:21px}.page-head{align-items:flex-start}.head-actions .btn{padding:9px}.mobile-nav{position:fixed;display:grid;grid-template-columns:repeat(5,1fr);bottom:0;left:0;right:0;padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:#fffffff5;border-top:1px solid var(--border);box-shadow:0 -8px 24px #1b2a5a14;z-index:30;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.mobile-nav button{border:0;background:transparent;color:var(--muted);font-size:9px;font-weight:600;display:grid;gap:4px;justify-items:center;padding:4px 1px}.mobile-nav button span:first-child{font-size:17px}.mobile-nav button.active{color:var(--violet)}.mobile-nav button.active span:first-child{background:var(--grad);color:#fff;border-radius:10px;padding:2px 12px;box-shadow:0 6px 14px #7c3aed55}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.network-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-grid{margin-top:12px}.card{padding:14px}.stat-card{padding:13px}.stat-value{font-size:20px}.top-actions .icon-btn{display:none}}
+@media(max-width:760px){.sidebar{display:none}.main{margin-left:0}.topbar{height:60px;padding:0 14px}.top-search{width:min(48vw,260px)}.content{padding:20px 14px 96px}.page-title{font-size:21px}.page-head{align-items:flex-start}.head-actions .btn{padding:9px}.mobile-nav{position:fixed;display:grid;grid-template-columns:repeat(6,1fr);bottom:0;left:0;right:0;padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:#fffffff5;border-top:1px solid var(--border);box-shadow:0 -8px 24px #1b2a5a14;z-index:30;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.mobile-nav button{border:0;background:transparent;color:var(--muted);font-size:9px;font-weight:600;display:grid;gap:4px;justify-items:center;padding:4px 1px}.mobile-nav button span:first-child{font-size:17px}.mobile-nav button.active{color:var(--violet)}.mobile-nav button.active span:first-child{background:var(--grad);color:#fff;border-radius:10px;padding:2px 12px;box-shadow:0 6px 14px #7c3aed55}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.network-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-grid{margin-top:12px}.card{padding:14px}.stat-card{padding:13px}.stat-value{font-size:20px}.top-actions .icon-btn{display:none}}
 @media(max-width:390px){.stats-grid{gap:8px}.stat-value{font-size:17px}.top-search{width:42vw}.crumb{font-size:11px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+
+/* ticker */
+.ticker{display:flex;gap:8px;align-items:center;overflow-x:auto;padding:9px 28px;border-bottom:1px solid var(--border);background:#fafbff;scrollbar-width:none}
+.ticker::-webkit-scrollbar{display:none}
+.tk{display:flex;align-items:center;gap:8px;flex:none;padding:6px 11px;border-radius:10px;background:#fff;border:1px solid var(--border);font-size:11px}
+.tk b{font-weight:800;color:var(--c,#2563eb)}
+.tk .px{font-family:var(--mono);font-weight:700}
+.tk .ch{font-family:var(--mono);font-weight:700;font-size:10px;padding:2px 6px;border-radius:6px}
+.tk .ch.up{color:#059669;background:#10b98120}.tk .ch.down{color:#dc2626;background:#ef444420}
+.tk.fg{background:var(--grad-hot);border:0;color:#fff}.tk.fg b{color:#fff}
+.tk-msg{font-size:10px;color:var(--muted);flex:none;padding:0 6px}
+/* tools */
+.tools-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:16px}
+.calc-out{margin-top:14px;border-radius:12px;background:linear-gradient(135deg,#eef6ff,#f6f0ff);padding:6px 14px}
+.calc-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed #d5dcf0;font-size:11px}
+.calc-row:last-child{border-bottom:0}
+.calc-row span{color:var(--muted)}.calc-row strong{font-family:var(--mono)}
+.calc-row .pos{color:#059669}.calc-row .neg{color:#dc2626}
+.calc-hint{font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6}
+#tvChart{height:480px;border-radius:12px;overflow:hidden;border:1px solid #dfe6f6;background:#fff}
+@media(max-width:1050px){.tools-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.ticker{padding:8px 14px}#tvChart{height:380px}}
+#sideNav button:nth-child(10){--c:#0ea5e9;--cg:#0ea5e916;--cs:#0ea5e966}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -177,6 +200,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <button data-page="defi"><span class="nav-icon">◫</span>DeFi Analytics</button>
     <button data-page="portfolio"><span class="nav-icon">◩</span>Portfolio Analytics</button>
     <button data-page="alerts"><span class="nav-icon">♧</span>Alert Center</button>
+    <button data-page="tools"><span class="nav-icon">⚖</span>Trading Tools</button>
   </nav>
   <div class="nav-label">ACCOUNT</div>
   <nav class="nav">
@@ -191,6 +215,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="top-search"><span class="search-icon">⌕</span><input id="globalSearch" placeholder="Search wallet, token, tx hash..." autocomplete="off"></div>
   <div class="top-actions"><button class="icon-btn" id="refreshBtn" title="Refresh view">↻</button><button class="icon-btn" id="notificationBtn" title="Notifications">♧</button><div class="profile" id="profileBadge" title="Telegram account">U</div></div>
 </header>
+<div class="ticker" id="ticker"><span class="tk-msg">Loading live prices…</span></div>
 <div class="content">
 <section class="page active" id="page-dashboard">
   <div class="page-head"><div><div class="eyebrow">OVERVIEW / MULTI-CHAIN</div><h1 class="page-title">Market & Network Overview</h1><p class="page-desc">Your blockchain monitoring workspace at a glance.</p></div><div class="head-actions"><button class="btn" id="dashRefresh">↻ Refresh</button><button class="btn primary" data-open="wallet">＋ Add Wallet</button></div></div>
@@ -211,13 +236,14 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <button class="quick" data-page="whales"><div class="q-icon">◉</div><strong>Whale Activity</strong><span>Explore large transfers</span></button>
       <button class="quick" data-page="alerts"><div class="q-icon">♧</div><strong>Create Alert</strong><span>Configure alert rules</span></button>
       <button class="quick" data-page="transactions"><div class="q-icon">⇄</div><strong>Transactions</strong><span>Explore chain activity</span></button>
+      <button class="quick" data-page="tools"><div class="q-icon">⚖</div><strong>Trading Tools</strong><span>Live chart and calculators</span></button>
     </div></div>
   </div>
   <div class="section-grid grid">
     <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Provider health will be reported by backend workers</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
     <div class="card"><div class="card-head"><div><div class="card-title">Recent Watchlist</div><div class="card-sub">Your locally saved wallets and contracts</div></div><button class="btn small" data-page="wallets">View all</button></div><div id="recentWatchlist"></div></div>
   </div>
-  <div class="notice">Preview mode: this dashboard does not claim to show live balances, token prices, transaction counts or network health. These indicators will be populated only after backend providers and indexing workers are connected.</div>
+  <div class="notice">Prices in the top ticker come from CoinGecko and the sentiment index from alternative.me. This dashboard does not show live wallet balances, transaction counts or network health. These indicators will be populated only after backend providers and indexing workers are connected.</div>
 </section>
 
 <section class="page" id="page-wallets">
@@ -269,6 +295,23 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">My Alert Rules</div><span class="tag">LOCAL DRAFTS</span></div><div id="alertList" class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div></div>
 </section>
 
+
+<section class="page" id="page-tools">
+  <div class="page-head"><div><div class="eyebrow">TRADING / LIVE CHART + CALCULATORS</div><h1 class="page-title">Trading Tools</h1><p class="page-desc">Live chart and risk calculators. All calculations run on your device; nothing is sent anywhere.</p></div></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Live Chart</div><div class="card-sub">Real market chart by TradingView</div></div><select class="control" id="chartSymbol"><option value="BINANCE:BTCUSDT">BTC / USDT</option><option value="BINANCE:ETHUSDT">ETH / USDT</option><option value="BINANCE:BNBUSDT">BNB / USDT</option><option value="BINANCE:SOLUSDT">SOL / USDT</option><option value="BINANCE:TRXUSDT">TRX / USDT</option><option value="BINANCE:TONUSDT">TON / USDT</option></select></div><div id="tvChart"></div></div>
+  <div class="grid tools-grid">
+    <div class="card"><div class="card-head"><div><div class="card-title">Position Size &amp; Risk/Reward</div><div class="card-sub">How much to buy so a stop-loss costs only your risk %</div></div><span class="tag yellow">RISK</span></div>
+      <div class="form-grid"><div class="field"><label for="ps_bal">Account balance (USD)</label><input id="ps_bal" type="number" step="any" inputmode="decimal" placeholder="1000"></div><div class="field"><label for="ps_risk">Risk per trade (%)</label><input id="ps_risk" type="number" step="any" inputmode="decimal" placeholder="1"></div><div class="field"><label for="ps_entry">Entry price</label><input id="ps_entry" type="number" step="any" inputmode="decimal" placeholder="100"></div><div class="field"><label for="ps_stop">Stop-loss price</label><input id="ps_stop" type="number" step="any" inputmode="decimal" placeholder="95"></div><div class="field"><label for="ps_target">Target price (optional)</label><input id="ps_target" type="number" step="any" inputmode="decimal" placeholder="115"></div></div><div class="calc-out" id="ps_out"></div></div>
+    <div class="card"><div class="card-head"><div><div class="card-title">Profit &amp; Loss</div><div class="card-sub">Net result after fees, with leverage</div></div><span class="tag green">P&amp;L</span></div>
+      <div class="form-grid"><div class="field"><label for="pl_side">Direction</label><select id="pl_side"><option value="1">Long (buy)</option><option value="-1">Short (sell)</option></select></div><div class="field"><label for="pl_entry">Entry price</label><input id="pl_entry" type="number" step="any" inputmode="decimal" placeholder="100"></div><div class="field"><label for="pl_exit">Exit price</label><input id="pl_exit" type="number" step="any" inputmode="decimal" placeholder="110"></div><div class="field"><label for="pl_qty">Quantity (coins)</label><input id="pl_qty" type="number" step="any" inputmode="decimal" placeholder="10"></div><div class="field"><label for="pl_lev">Leverage (x)</label><input id="pl_lev" type="number" step="any" inputmode="decimal" placeholder="1" value="1" min="1"></div><div class="field"><label for="pl_fee">Fee per side (%)</label><input id="pl_fee" type="number" step="any" inputmode="decimal" placeholder="0.1" value="0.1" min="0"></div></div><div class="calc-out" id="pl_out"></div></div>
+    <div class="card"><div class="card-head"><div><div class="card-title">DCA Average Price</div><div class="card-sub">Enter up to 4 buys: price and amount in USD</div></div><span class="tag">DCA</span></div>
+      <div class="form-grid"><div class="field"><label for="dca_p1">Buy 1 price</label><input id="dca_p1" type="number" step="any" inputmode="decimal" placeholder="0"></div><div class="field"><label for="dca_a1">Buy 1 amount (USD)</label><input id="dca_a1" type="number" step="any" inputmode="decimal" placeholder="0"></div><div class="field"><label for="dca_p2">Buy 2 price</label><input id="dca_p2" type="number" step="any" inputmode="decimal" placeholder="0"></div><div class="field"><label for="dca_a2">Buy 2 amount (USD)</label><input id="dca_a2" type="number" step="any" inputmode="decimal" placeholder="0"></div><div class="field"><label for="dca_p3">Buy 3 price</label><input id="dca_p3" type="number" step="any" inputmode="decimal" placeholder="0"></div><div class="field"><label for="dca_a3">Buy 3 amount (USD)</label><input id="dca_a3" type="number" step="any" inputmode="decimal" placeholder="0"></div><div class="field"><label for="dca_p4">Buy 4 price</label><input id="dca_p4" type="number" step="any" inputmode="decimal" placeholder="0"></div><div class="field"><label for="dca_a4">Buy 4 amount (USD)</label><input id="dca_a4" type="number" step="any" inputmode="decimal" placeholder="0"></div></div><div class="calc-out" id="dca_out"></div></div>
+    <div class="card"><div class="card-head"><div><div class="card-title">Liquidation Estimate</div><div class="card-sub">Isolated margin, 0.5% maintenance margin assumed</div></div><span class="tag red">LEVERAGE</span></div>
+      <div class="form-grid"><div class="field"><label for="lq_side">Direction</label><select id="lq_side"><option value="1">Long</option><option value="-1">Short</option></select></div><div class="field"><label for="lq_lev">Leverage (x)</label><input id="lq_lev" type="number" step="any" inputmode="decimal" placeholder="10"></div><div class="field"><label for="lq_entry">Entry price</label><input id="lq_entry" type="number" step="any" inputmode="decimal" placeholder="100"></div></div><div class="calc-out" id="lq_out"></div><div class="calc-hint">Estimate only. Exchanges use their own formulas, fees and funding, so check the liquidation price on your exchange before trading.</div></div>
+  </div>
+  <div class="notice">These tools are for planning only and are not financial advice. Crypto trading with leverage can lose more than you expect.</div>
+</section>
+
 <section class="page" id="page-subscription">
   <div class="page-head"><div><div class="eyebrow">ACCOUNT / BILLING</div><h1 class="page-title">Subscription & API</h1><p class="page-desc">Plans and account status are loaded from the live Blockchain Tracker backend. All paid plans are priced in USDT.</p></div><span class="tag yellow" id="authStatus">Checking account…</span></div>
   <div class="card" style="margin-bottom:15px">
@@ -294,7 +337,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 </div>
 </main>
 <nav class="mobile-nav" id="mobileNav">
-  <button class="active" data-page="dashboard"><span>▦</span>Home</button><button data-page="wallets"><span>◈</span>Wallets</button><button data-page="tokens"><span>◉</span>Scanner</button><button data-page="alerts"><span>♧</span>Alerts</button><button data-page="subscription"><span>☻</span>Account</button>
+  <button class="active" data-page="dashboard"><span>▦</span>Home</button><button data-page="wallets"><span>◈</span>Wallets</button><button data-page="tokens"><span>◉</span>Scanner</button><button data-page="tools"><span>⚖</span>Tools</button><button data-page="alerts"><span>♧</span>Alerts</button><button data-page="subscription"><span>☻</span>Account</button>
 </nav>
 </div>
 
@@ -427,7 +470,7 @@ $("contractRows").innerHTML=itemRows(citems);$("contractEmpty").style.display=ci
 $("alertList").className=alerts.length?"":"empty";
 $("alertList").innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${esc(a.type)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${esc(netName(a.network))} · ${a.threshold?`Threshold $${esc(a.threshold)}`:"No threshold"} · Draft only</div></div><button class="btn danger small" data-alert-remove="${esc(a.id)}">Delete</button></div>`).join(""):'<div class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div>';
 }
-function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",subscription:"Subscription & API",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
+function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
 function openItem(type){$("itemForm").reset();$("itemType").value=type;$("modalTitle").textContent=type==="wallet"?"Add Wallet":"Add Smart Contract";$("saveItem").textContent=type==="wallet"?"Save Wallet":"Save Contract";$("formMessage").textContent="";$("itemModal").classList.add("open");$("itemName").focus()}
 function closeModal(id){$(id).classList.remove("open")}
 let selectedPaymentPlan=null;
@@ -475,6 +518,81 @@ $("globalSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){const q=e.t
 $("refreshBtn").onclick=$("dashRefresh").onclick=()=>{render();toast("Local dashboard refreshed. Live chain sync is not connected.")};
 $("notificationBtn").onclick=()=>{go("alerts");toast("Alert center opened")};
 fillNetworks();networkCards();render();renderAccount();connectBackend();
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const num=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:NaN};
+const fmt=(n,d=2)=>isFinite(n)?n.toLocaleString("en-US",{maximumFractionDigits:d}):"—";
+const row=(l,v,c)=>`<div class="calc-row"><span>${l}</span><strong${c?` class="${c}"`:""}>${v}</strong></div>`;
+const empty='<div class="calc-row"><span>Fill the fields above to see the result</span><strong>—</strong></div>';
+/* ---------- ticker ---------- */
+const COINS=[["bitcoin","BTC","#f59e0b"],["ethereum","ETH","#2563eb"],["binancecoin","BNB","#d97706"],["solana","SOL","#7c3aed"],["tron","TRX","#ef4444"],["the-open-network","TON","#0ea5e9"]];
+async function loadTicker(){
+  const box=$("ticker");
+  try{
+    const ids=COINS.map(c=>c[0]).join(",");
+    const [pr,fg]=await Promise.allSettled([
+      fetch("https://api.coingecko.com/api/v3/simple/price?ids="+ids+"&vs_currencies=usd&include_24hr_change=true").then(r=>{if(!r.ok)throw 0;return r.json()}),
+      fetch("https://api.alternative.me/fng/?limit=1").then(r=>{if(!r.ok)throw 0;return r.json()})
+    ]);
+    if(pr.status!=="fulfilled")throw 0;
+    let html=COINS.map(([id,sym,col])=>{const d=pr.value[id];if(!d)return"";const ch=d.usd_24h_change,up=ch>=0;
+      return `<div class="tk" style="--c:${col}"><b>${sym}</b><span class="px">$${fmt(d.usd,d.usd<1?4:2)}</span><span class="ch ${up?"up":"down"}">${up?"▲":"▼"} ${fmt(Math.abs(ch),2)}%</span></div>`}).join("");
+    if(fg.status==="fulfilled"&&fg.value&&fg.value.data&&fg.value.data[0]){const x=fg.value.data[0];html+=`<div class="tk fg"><b>Fear &amp; Greed</b><span class="px">${Number(x.value)}</span><span>${String(x.value_classification).replace(/[<>&]/g,"")}</span></div>`}
+    html+=`<span class="tk-msg">Updated ${new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · CoinGecko</span>`;
+    box.innerHTML=html;
+  }catch(e){box.innerHTML='<span class="tk-msg">Live prices unavailable right now. Retrying in 60 seconds.</span>'}
+}
+loadTicker();setInterval(loadTicker,60000);
+/* ---------- TradingView chart ---------- */
+let tvReady=false;
+function drawChart(){
+  const host=$("tvChart");host.innerHTML="";
+  const wrap=document.createElement("div");wrap.className="tradingview-widget-container";wrap.style.cssText="height:100%;width:100%";
+  const inner=document.createElement("div");inner.className="tradingview-widget-container__widget";inner.style.cssText="height:100%;width:100%";
+  const sc=document.createElement("script");sc.src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";sc.async=true;
+  sc.text=JSON.stringify({autosize:true,symbol:$("chartSymbol").value,interval:"60",timezone:"Asia/Kolkata",theme:"light",style:"1",locale:"en",allow_symbol_change:true,hide_side_toolbar:false,support_host:"https://www.tradingview.com"});
+  wrap.appendChild(inner);wrap.appendChild(sc);host.appendChild(wrap);
+}
+document.addEventListener("click",e=>{if(e.target.closest('[data-page="tools"]')&&!tvReady){tvReady=true;setTimeout(drawChart,50)}});
+$("chartSymbol").addEventListener("change",drawChart);
+/* ---------- calculators ---------- */
+function calcPS(){
+  const bal=num("ps_bal"),risk=num("ps_risk"),en=num("ps_entry"),st=num("ps_stop"),tg=num("ps_target");
+  if(![bal,risk,en,st].every(isFinite)||en===st||bal<=0||risk<=0){$("ps_out").innerHTML=empty;return}
+  const long=en>st,riskAmt=bal*risk/100,perUnit=Math.abs(en-st),units=riskAmt/perUnit,val=units*en;
+  let h=row("Direction",long?"Long":"Short")+row("Risk amount","$"+fmt(riskAmt))+row("Position size",fmt(units,6)+" coins")+row("Position value","$"+fmt(val))+row("Stop distance",fmt(perUnit/en*100,2)+"%");
+  if(val>bal)h+=row("Leverage needed",fmt(val/bal,2)+"x","neg");
+  if(isFinite(tg)&&((long&&tg>en)||(!long&&tg<en))){const rw=Math.abs(tg-en)*units;h+=row("Potential profit","$"+fmt(rw),"pos")+row("Risk : Reward","1 : "+fmt(rw/riskAmt,2))}
+  $("ps_out").innerHTML=h;
+}
+function calcPL(){
+  const side=Number($("pl_side").value),en=num("pl_entry"),ex=num("pl_exit"),q=num("pl_qty"),lev=num("pl_lev")||1,fee=isFinite(num("pl_fee"))?num("pl_fee"):0;
+  if(![en,ex,q].every(isFinite)||en<=0||q<=0||lev<1){$("pl_out").innerHTML=empty;return}
+  const gross=(ex-en)*q*side,fees=(en+ex)*q*fee/100,net=gross-fees,margin=en*q/lev,roi=net/margin*100,c=net>=0?"pos":"neg";
+  $("pl_out").innerHTML=row("Gross P&L",(gross>=0?"+$":"-$")+fmt(Math.abs(gross)),gross>=0?"pos":"neg")+row("Fees","$"+fmt(fees))+row("Net P&L",(net>=0?"+$":"-$")+fmt(Math.abs(net)),c)+row("Margin used","$"+fmt(margin))+row("ROI on margin",(roi>=0?"+":"")+fmt(roi,2)+"%",c);
+}
+function calcDCA(){
+  let amt=0,units=0,n=0;
+  for(let i=1;i<=4;i++){const p=num("dca_p"+i),a=num("dca_a"+i);if(isFinite(p)&&isFinite(a)&&p>0&&a>0){amt+=a;units+=a/p;n++}}
+  if(!n){$("dca_out").innerHTML=empty;return}
+  $("dca_out").innerHTML=row("Buys counted",n)+row("Total invested","$"+fmt(amt))+row("Total coins",fmt(units,6))+row("Average buy price","$"+fmt(amt/units,6),"pos");
+}
+function calcLQ(){
+  const side=Number($("lq_side").value),lev=num("lq_lev"),en=num("lq_entry"),mm=0.005;
+  if(![lev,en].every(isFinite)||lev<1||en<=0){$("lq_out").innerHTML=empty;return}
+  const liq=side===1?en*(1-1/lev+mm):en*(1+1/lev-mm),dist=Math.abs(liq-en)/en*100;
+  $("lq_out").innerHTML=row("Est. liquidation price",liq<=0?"None (safe at 1x)":"$"+fmt(liq,4),"neg")+row("Distance from entry",liq<=0?"—":fmt(dist,2)+"%")+(lev>=20?row("Warning","Very high leverage","neg"):"");
+}
+const bind=(ids,fn)=>{ids.forEach(i=>{const el=$(i);el.addEventListener("input",fn);el.addEventListener("change",fn)});fn()};
+bind(["ps_bal","ps_risk","ps_entry","ps_stop","ps_target"],calcPS);
+bind(["pl_side","pl_entry","pl_exit","pl_qty","pl_lev","pl_fee"],calcPL);
+bind(["dca_p1","dca_a1","dca_p2","dca_a2","dca_p3","dca_a3","dca_p4","dca_a4"],calcDCA);
+bind(["lq_side","lq_lev","lq_entry"],calcLQ);
 })();
 </script>
 </body></html>
