@@ -161,15 +161,18 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 @media(max-width:390px){.stats-grid{gap:8px}.stat-value{font-size:17px}.top-search{width:42vw}.crumb{font-size:11px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
 
 /* ticker */
-.ticker{display:flex;gap:8px;align-items:center;overflow-x:auto;padding:9px 28px;border-bottom:1px solid var(--border);background:#fafbff;scrollbar-width:none}
+.ticker{display:flex;align-items:center;overflow:hidden;padding:9px 0;border-bottom:1px solid var(--border);background:#fafbff;scrollbar-width:none}
 .ticker::-webkit-scrollbar{display:none}
-.tk{display:flex;align-items:center;gap:8px;flex:none;padding:6px 11px;border-radius:10px;background:#fff;border:1px solid var(--border);font-size:11px}
+.tk{display:flex;align-items:center;gap:8px;flex:none;margin-right:8px;padding:6px 11px;border-radius:10px;background:#fff;border:1px solid var(--border);font-size:11px}
 .tk b{font-weight:800;color:var(--c,#2563eb)}
 .tk .px{font-family:var(--mono);font-weight:700}
 .tk .ch{font-family:var(--mono);font-weight:700;font-size:10px;padding:2px 6px;border-radius:6px}
 .tk .ch.up{color:#059669;background:#10b98120}.tk .ch.down{color:#dc2626;background:#ef444420}
 .tk.fg{background:var(--grad-hot);border:0;color:#fff}.tk.fg b{color:#fff}
-.tk-msg{font-size:10px;color:var(--muted);flex:none;padding:0 6px}
+.tk-msg{font-size:10px;color:var(--muted);flex:none;padding:0 14px;white-space:nowrap}
+.tk-track{display:flex;align-items:center;width:max-content;animation:tkmove var(--dur,40s) linear infinite;will-change:transform}
+.ticker:hover .tk-track,.ticker:active .tk-track{animation-play-state:paused}
+@keyframes tkmove{to{transform:translateX(-25%)}}
 /* tools */
 .tools-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:16px}
 .calc-out{margin-top:14px;border-radius:12px;background:linear-gradient(135deg,#eef6ff,#f6f0ff);padding:6px 14px}
@@ -180,7 +183,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .calc-hint{font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6}
 #tvChart{height:480px;border-radius:12px;overflow:hidden;border:1px solid #dfe6f6;background:#fff}
 @media(max-width:1050px){.tools-grid{grid-template-columns:1fr}}
-@media(max-width:760px){.ticker{padding:8px 14px}#tvChart{height:380px}}
+@media(max-width:760px){.ticker{padding:8px 0}#tvChart{height:380px}}
 #sideNav button:nth-child(10){--c:#0ea5e9;--cg:#0ea5e916;--cs:#0ea5e966}
 
 .status.bad{color:#dc2626}.status.warn{color:#d97706}
@@ -196,7 +199,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .res-cell{background:linear-gradient(135deg,#eef6ff,#f6f0ff);border-radius:10px;padding:10px}
 .res-cell small{display:block;font-size:9px;color:var(--muted);margin-bottom:4px}.res-cell b{font-family:var(--mono);font-size:12px}
 .res-link{display:inline-block;margin-top:12px;font-size:10px;font-weight:700;color:var(--blue);text-decoration:none}
-@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media(prefers-reduced-motion:reduce){.tk-track{animation:none!important}.ticker{overflow-x:auto}*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -275,7 +278,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <section class="page" id="page-tokens">
   <div class="page-head"><div><div class="eyebrow">RESEARCH / RISK ANALYSIS</div><h1 class="page-title">Token Intelligence</h1><p class="page-desc">Inspect token metadata, contract permissions, liquidity and holder concentration.</p></div></div>
   <div class="card"><div class="card-head"><div><div class="card-title">Token Security Scanner</div><div class="card-sub">Enter a contract address and choose its network</div></div><span class="tag yellow">EVIDENCE-BASED</span></div><div class="form-grid"><div class="field"><label>Blockchain</label><select id="scanNetwork" class="control" style="width:100%"></select></div><div class="field"><label>Token Contract Address</label><input id="scanAddress" placeholder="Paste public contract address"></div></div><button class="btn primary" id="scanBtn">Analyze Token</button><div class="form-message" id="scanMessage"></div></div>
-  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Security Checks</div><span class="tag green">GOPLUS DATA</span></div><div id="securityChecks"></div></div><div class="card"><div class="card-head"><div class="card-title">Token Research</div><span class="tag" id="researchTag">DEXSCREENER</span></div><div id="tokenResearch"><div class="empty"><div class="empty-icon">◉</div><strong>No token selected</strong>Paste a contract address and press Analyze Token.</div></div></div></div>
+  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Security Checks</div><span class="tag green">GOPLUS · TONAPI</span></div><div id="securityChecks"></div></div><div class="card"><div class="card-head"><div class="card-title">Token Research</div><span class="tag" id="researchTag">DEXSCREENER</span></div><div id="tokenResearch"><div class="empty"><div class="empty-icon">◉</div><strong>No token selected</strong>Paste a contract address and press Analyze Token.</div></div></div></div>
   <div class="notice">A risk score is not a guarantee of safety. Scanner findings must include evidence, timestamp and chain-specific limitations; unknown checks must remain unknown.</div>
 </section>
 
@@ -558,7 +561,9 @@ async function loadTicker(){
       return `<div class="tk" style="--c:${col}"><b>${sym}</b><span class="px">$${fmt(d.usd,d.usd<1?4:2)}</span><span class="ch ${up?"up":"down"}">${up?"▲":"▼"} ${fmt(Math.abs(ch),2)}%</span></div>`}).join("");
     if(fg.status==="fulfilled"&&fg.value&&fg.value.data&&fg.value.data[0]){const x=fg.value.data[0];html+=`<div class="tk fg"><b>Fear &amp; Greed</b><span class="px">${Number(x.value)}</span><span>${String(x.value_classification).replace(/[<>&]/g,"")}</span></div>`}
     html+=`<span class="tk-msg">Updated ${new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · CoinGecko</span>`;
-    box.innerHTML=html;
+    const copy=html;html=copy+copy+copy+copy;
+    box.innerHTML='<div class="tk-track" id="tkTrack">'+html+'</div>';
+    requestAnimationFrame(()=>{const t=$("tkTrack");if(t){const w=t.scrollWidth/4;t.style.setProperty("--dur",Math.max(20,Math.round(w/45))+"s")}});
   }catch(e){box.innerHTML='<span class="tk-msg">Live prices unavailable right now. Retrying in 60 seconds.</span>'}
 }
 loadTicker();setInterval(loadTicker,60000);
@@ -651,6 +656,40 @@ function buildChecks(d){
   if(has(d.holder_count))L.push({label:"Holder count",st:"ok",txt:Number(d.holder_count).toLocaleString("en-US")});
   return L;
 }
+
+const hasKeys=o=>o&&typeof o==="object"&&Object.keys(o).length>0;
+const stat=o=>o&&typeof o==="object"?String(o.status):undefined;
+function holdersShare(arr){const raw=arr.slice(0,10).reduce((a,h)=>a+(Number(h.percent)||0),0);return raw<=1.0001?raw*100:raw}
+function buildSolana(d){
+  const L=[];
+  L.push(flag("Mint authority",stat(d.mintable),x=>x==="1",null,"Revoked, supply is fixed","Dev can mint more tokens"));
+  L.push(flag("Freeze authority",stat(d.freezable),x=>x==="1",null,"Revoked","Dev can freeze wallets"));
+  L.push(flag("Balance change authority",stat(d.balance_mutable_authority),x=>x==="1",null,"None","Dev can change balances"));
+  L.push(flag("Close authority",stat(d.closable),null,x=>x==="1","None","Dev can close the token account"));
+  L.push(flag("Non-transferable",d.non_transferable,null,x=>x==="1","Transferable","Token cannot be transferred"));
+  if(d.transfer_fee===undefined)L.push({label:"Transfer fee",st:"unk",txt:"Not reported"});else L.push(hasKeys(d.transfer_fee)?{label:"Transfer fee",st:"warn",txt:"Transfer fee configured"}:{label:"Transfer fee",st:"ok",txt:"None"});
+  if(!Array.isArray(d.transfer_hook))L.push({label:"Transfer hook",st:"unk",txt:"Not reported"});else L.push(d.transfer_hook.length?{label:"Transfer hook",st:"warn",txt:"Custom hook present"}:{label:"Transfer hook",st:"ok",txt:"None"});
+  L.push(flag("Metadata editable",stat(d.metadata_mutable),null,x=>x==="1","Locked","Dev can change name or image"));
+  if(Array.isArray(d.holders)&&d.holders.length){const t=holdersShare(d.holders);L.push({label:"Top 10 holders share",st:t>50?"warn":"ok",txt:t.toFixed(1)+"%"})}else L.push({label:"Holder concentration",st:"unk",txt:"Not reported"});
+  if(has(d.holder_count))L.push({label:"Holder count",st:"ok",txt:Number(d.holder_count).toLocaleString("en-US")});
+  if(String(d.trusted_token)==="1")L.push({label:"Trusted list",st:"ok",txt:"Recognized token"});
+  return L;
+}
+function buildTon(j){
+  const L=[];
+  if(typeof j.mintable==="boolean"){
+    L.push(j.mintable?{label:"Minting",st:"warn",txt:"Admin can mint more"}:{label:"Minting",st:"ok",txt:"Minting disabled"});
+    L.push(j.admin&&j.admin.address?{label:"Admin wallet",st:"warn",txt:"Admin still set"}:{label:"Admin wallet",st:"ok",txt:"No admin (renounced)"});
+  }else{L.push({label:"Minting",st:"unk",txt:"Not reported"});L.push({label:"Admin wallet",st:"unk",txt:"Not reported"})}
+  const v=String(j.verification||"");
+  if(v==="whitelist")L.push({label:"Verification list",st:"ok",txt:"On verified list"});
+  else if(v==="blacklist")L.push({label:"Verification list",st:"bad",txt:"Flagged as scam"});
+  else if(v==="graylist")L.push({label:"Verification list",st:"warn",txt:"Flagged, be careful"});
+  else if(v==="none")L.push({label:"Verification list",st:"warn",txt:"Not on any verified list"});
+  else L.push({label:"Verification list",st:"unk",txt:"Not reported"});
+  if(has(j.holders_count))L.push({label:"Holder count",st:"ok",txt:Number(j.holders_count).toLocaleString("en-US")});
+  return L;
+}
 function renderChecks(list,meta){
   const bad=list.filter(c=>c.st==="bad").length,warn=list.filter(c=>c.st==="warn").length,unk=list.filter(c=>c.st==="unk").length;
   let cls="good",title="No major red flags found";
@@ -680,16 +719,24 @@ btn.onclick=async()=>{
   msg.textContent="";btn.disabled=true;btn.textContent="Scanning…";
   $("securityChecks").innerHTML='<div class="empty">Running security checks…</div>';
   $("tokenResearch").innerHTML='<div class="empty">Loading market data…</div>';
-  const secP=GP[net]?getJSON("https://api.gopluslabs.io/api/v1/token_security/"+GP[net]+"?contract_addresses="+encodeURIComponent(EVM.includes(net)?addr.toLowerCase():addr)):Promise.resolve(null);
+  const GPU="https://api.gopluslabs.io/api/v1/";
+  let secP;
+  if(GP[net])secP=getJSON(GPU+"token_security/"+GP[net]+"?contract_addresses="+encodeURIComponent(EVM.includes(net)?addr.toLowerCase():addr));
+  else if(net==="solana")secP=getJSON(GPU+"solana/token_security?contract_addresses="+encodeURIComponent(addr));
+  else if(net==="ton")secP=getJSON("https://tonapi.io/v2/jettons/"+encodeURIComponent(addr));
+  else secP=Promise.resolve(null);
   const mktP=getJSON("https://api.dexscreener.com/latest/dex/tokens/"+encodeURIComponent(addr));
   const [sec,mkt]=await Promise.allSettled([secP,mktP]);
   const stamp=new Date().toLocaleString();
-  if(!GP[net])renderUnavailable("Security data is not available for this network yet");
-  else if(sec.status!=="fulfilled")renderUnavailable("Security service could not be reached. Try again.");
-  else{
+  if(sec.status!=="fulfilled")renderUnavailable(net==="ton"?"TON data service could not be reached. It may be rate-limited, try again in a few seconds.":"Security service could not be reached. Try again.");
+  else if(net==="ton"){
+    const jv=sec.value;
+    if(!jv||typeof jv!=="object"||jv.error)renderUnavailable("No jetton data found for this address");
+    else renderChecks(buildTon(jv),"TonAPI · "+stamp);
+  }else{
     const res=sec.value&&sec.value.result,d=res&&Object.values(res)[0];
     if(!d||!Object.keys(d).length)renderUnavailable("No security data found for this contract");
-    else renderChecks(buildChecks(d),"GoPlus · "+stamp);
+    else renderChecks(net==="solana"?buildSolana(d):buildChecks(d),"GoPlus · "+stamp);
   }
   if(mkt.status!=="fulfilled")$("tokenResearch").innerHTML='<div class="empty"><strong>Market data unavailable</strong>DexScreener could not be reached. Try again.</div>';
   else{
