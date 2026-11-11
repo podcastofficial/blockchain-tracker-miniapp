@@ -301,7 +301,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="dashWallets">0</div><div class="stat-foot">Saved in this browser</div></div>
     <div class="stat-card"><div class="stat-top">Smart Contracts <span class="stat-symbol">⌘</span></div><div class="stat-value" id="dashContracts">0</div><div class="stat-foot">Saved in this browser</div></div>
     <div class="stat-card"><div class="stat-top">Alert Events <span class="stat-symbol">♧</span></div><div class="stat-value">—</div><div class="stat-foot">Backend connection required</div></div>
-    <div class="stat-card"><div class="stat-top">Portfolio Value <span class="stat-symbol">＄</span></div><div class="stat-value">—</div><div class="stat-foot">Live balance not connected</div></div>
+    <div class="stat-card"><div class="stat-top">Portfolio Value <span class="stat-symbol">＄</span></div><div class="stat-value" id="dashPortfolioUsd">—</div><div class="stat-foot">From last balance sync</div></div>
   </div>
   <div class="grid section-grid">
     <div class="card"><div class="card-head"><div><div class="card-title">Portfolio Performance</div><div class="card-sub">Historical valuation will appear after data integration</div></div><span class="tag yellow">NO LIVE DATA</span></div>
@@ -318,7 +318,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     </div></div>
   </div>
   <div class="section-grid grid">
-    <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Provider health will be reported by backend workers</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
+    <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Live health check of each network (updates every 30 seconds)</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
     <div class="card"><div class="card-head"><div><div class="card-title">Recent Watchlist</div><div class="card-sub">Your locally saved wallets and contracts</div></div><button class="btn small" data-page="wallets">View all</button></div><div id="recentWatchlist"></div></div>
   </div>
   <div class="notice">Prices in the top ticker come from CoinGecko and the sentiment index from alternative.me. This dashboard does not show live wallet balances, transaction counts or network health. These indicators will be populated only after backend providers and indexing workers are connected.</div>
@@ -326,7 +326,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 
 <section class="page" id="page-wallets">
   <div class="page-head"><div><div class="eyebrow">MONITORING / ADDRESSES</div><h1 class="page-title">Wallet Terminal</h1><p class="page-desc">Organize and monitor public wallet addresses across supported networks.</p></div><div class="head-actions"><button class="btn primary" data-open="wallet">＋ Add Wallet</button></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="walletPageCount">0</div><div class="stat-foot">Local watchlist entries</div></div><div class="stat-card"><div class="stat-top">Networks Used <span class="stat-symbol">◎</span></div><div class="stat-value" id="walletNetworkCount">0</div><div class="stat-foot">Across saved wallets</div></div><div class="stat-card"><div class="stat-top">Total Balance <span class="stat-symbol">＄</span></div><div class="stat-value">—</div><div class="stat-foot">Requires RPC/indexer</div></div><div class="stat-card"><div class="stat-top">Wallet Alerts <span class="stat-symbol">♧</span></div><div class="stat-value">—</div><div class="stat-foot">Alert engine not connected</div></div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="walletPageCount">0</div><div class="stat-foot">Local watchlist entries</div></div><div class="stat-card"><div class="stat-top">Networks Used <span class="stat-symbol">◎</span></div><div class="stat-value" id="walletNetworkCount">0</div><div class="stat-foot">Across saved wallets</div></div><div class="stat-card"><div class="stat-top">Total Balance <span class="stat-symbol">＄</span></div><div class="stat-value" id="walletTotalUsd">—</div><div class="stat-foot">Sync in Portfolio Analytics</div></div><div class="stat-card"><div class="stat-top">Wallet Alerts <span class="stat-symbol">♧</span></div><div class="stat-value">—</div><div class="stat-foot">Alert engine not connected</div></div></div>
   <div class="card" style="margin-top:15px"><div class="toolbar"><input class="control" id="walletFilter" placeholder="Search name or address"><select class="control" id="walletNetworkFilter"><option value="">All networks</option></select><select class="control" id="walletTypeFilter"><option value="">All watchlist types</option><option value="wallet">Wallets</option><option value="contract">Contracts</option></select></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Network</th><th>Address</th><th>Type</th><th>Storage</th><th>Action</th></tr></thead><tbody id="walletRows"></tbody></table></div><div class="empty" id="walletEmpty"><div class="empty-icon">◈</div><strong>No tracked addresses yet</strong>Add a wallet or contract to start building your watchlist.</div></div>
 </section>
 
@@ -362,15 +362,29 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 </section>
 
 <section class="page" id="page-portfolio">
-  <div class="page-head"><div><div class="eyebrow">ASSET MANAGEMENT</div><h1 class="page-title">Portfolio Analytics</h1><p class="page-desc">Understand asset allocation, performance and historical wallet value.</p></div><div class="head-actions"><button class="btn" id="portfolioExport">Export report</button></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Total Value <span class="stat-symbol">＄</span></div><div class="stat-value">—</div><div class="stat-foot">Awaiting balances and prices</div></div><div class="stat-card"><div class="stat-top">24H Change <span class="stat-symbol">↗</span></div><div class="stat-value">—</div><div class="stat-foot">Not calculated</div></div><div class="stat-card"><div class="stat-top">Realized P&L <span class="stat-symbol">◩</span></div><div class="stat-value">—</div><div class="stat-foot">Cost basis required</div></div><div class="stat-card"><div class="stat-top">Assets <span class="stat-symbol">◉</span></div><div class="stat-value">—</div><div class="stat-foot">Token balances not indexed</div></div></div>
-  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Portfolio Value History</div><span class="tag">NO DATA</span></div><div class="empty"><div class="empty-icon">⌁</div><strong>Portfolio history unavailable</strong>Historical snapshots will appear after balances and prices are synchronized.</div></div><div class="card"><div class="card-head"><div class="card-title">Asset Allocation</div></div><div class="empty"><strong>No asset allocation yet</strong>Track a wallet and connect balance indexing.</div></div></div>
+  <div class="page-head"><div><div class="eyebrow">ASSET MANAGEMENT</div><h1 class="page-title">Portfolio Analytics</h1><p class="page-desc">Live balances (native coins + USDT/USDC) for your saved wallets, allocation and value history.</p></div><div class="head-actions"><button class="btn" id="pfSync">↻ Sync balances</button><button class="btn" id="portfolioExport">Export report</button></div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Total Value <span class="stat-symbol">＄</span></div><div class="stat-value" id="pfTotal">—</div><div class="stat-foot" id="pfUpdated">Tap “Sync balances”</div></div><div class="stat-card"><div class="stat-top">24H Change <span class="stat-symbol">↗</span></div><div class="stat-value" id="pfChange">—</div><div class="stat-foot">Native coin price moves only</div></div><div class="stat-card"><div class="stat-top">Realized P&amp;L <span class="stat-symbol">◩</span></div><div class="stat-value">—</div><div class="stat-foot">Cost basis required</div></div><div class="stat-card"><div class="stat-top">Assets <span class="stat-symbol">◉</span></div><div class="stat-value" id="pfAssets">—</div><div class="stat-foot">Native + USDT/USDC</div></div></div>
+  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Portfolio Value History</div><span class="tag" id="pfHistTag">30 DAYS</span></div><div id="pfHistory" class="empty"><div class="empty-icon">⌁</div><strong>No history yet</strong>Each sync saves a snapshot. The chart builds up over time.</div></div><div class="card"><div class="card-head"><div class="card-title">Asset Allocation</div></div><div id="pfAlloc" class="empty"><strong>No asset allocation yet</strong>Add a wallet, then sync balances.</div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Wallet Balances</div><div class="card-sub">Login via Telegram required · up to 10 wallets per sync</div></div></div><div style="overflow-x:auto"><table><thead><tr><th>Wallet</th><th>Network</th><th>Native</th><th>Stablecoins</th><th>Value (USD)</th></tr></thead><tbody id="pfRows"><tr><td colspan="5" class="muted">Nothing synced yet.</td></tr></tbody></table></div></div>
 </section>
 
 <section class="page" id="page-alerts">
   <div class="page-head"><div><div class="eyebrow">AUTOMATION / NOTIFICATIONS</div><h1 class="page-title">Alert Center</h1><p class="page-desc">Create rules for wallet activity, whale transfers, token risks and contract events.</p></div><div class="head-actions"><button class="btn primary" id="createAlert">＋ Create Alert</button></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Active Rules <span class="stat-symbol">♧</span></div><div class="stat-value" id="alertRulesCount">0</div><div class="stat-foot">Local draft rules</div></div><div class="stat-card"><div class="stat-top">Triggered Today <span class="stat-symbol">⚡</span></div><div class="stat-value">—</div><div class="stat-foot">Engine not connected</div></div><div class="stat-card"><div class="stat-top">Delivered <span class="stat-symbol">✓</span></div><div class="stat-value">—</div><div class="stat-foot">Telegram not connected</div></div><div class="stat-card"><div class="stat-top">Failed Delivery <span class="stat-symbol">!</span></div><div class="stat-value">—</div><div class="stat-foot">Delivery logs not connected</div></div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Active Rules <span class="stat-symbol">♧</span></div><div class="stat-value" id="alertRulesCount">0</div><div class="stat-foot">Local draft rules</div></div><div class="stat-card"><div class="stat-top">Triggered Today <span class="stat-symbol">⚡</span></div><div class="stat-value" id="ocToday">—</div><div class="stat-foot">Last 24 hours</div></div><div class="stat-card"><div class="stat-top">Delivered <span class="stat-symbol">✓</span></div><div class="stat-value" id="ocSent">—</div><div class="stat-foot">Telegram messages sent</div></div><div class="stat-card"><div class="stat-top">Failed Delivery <span class="stat-symbol">!</span></div><div class="stat-value" id="ocFailed">—</div><div class="stat-foot">Start the bot in Telegram if >0</div></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Price Alerts</div><div class="card-sub">Telegram message when a coin hits your price. Search a coin, open it, tap Set alert.</div></div><span class="tag" id="paCount">0</span></div><div id="paList"><div class="empty">Open this app inside Telegram to use price alerts.</div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">On-chain Alerts</div><div class="card-sub">Wallet activity and whale transfers, delivered to Telegram.</div></div><span class="tag" id="ocCount">0</span></div>
+    <div class="toolbar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <select class="control" id="ocKind"><option value="wallet">Wallet activity</option><option value="whale">Whale transfer (USDT/USDC)</option></select>
+      <select class="control" id="ocSaved"><option value="">Saved wallet…</option></select>
+      <select class="control" id="ocNet"></select>
+      <input class="control" id="ocAddr" placeholder="Wallet address" style="flex:1;min-width:200px">
+      <input class="control" id="ocMin" type="number" min="0.01" step="any" value="100" placeholder="Min USD" style="width:110px">
+      <button class="btn primary" id="ocAdd">＋ Add rule</button>
+    </div>
+    <div id="ocMsg" class="muted" style="font-size:10px;margin-bottom:8px"></div>
+    <div id="ocRules"><div class="empty">Open this app inside Telegram to use on-chain alerts.</div></div>
+    <div class="card-title" style="margin:16px 0 6px;font-size:12px">Recent events</div><div id="ocEvents" class="muted" style="font-size:11px">No events yet.</div>
+  </div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">My Alert Rules</div><span class="tag">LOCAL DRAFTS</span></div><div id="alertList" class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div></div>
 </section>
 
@@ -1166,6 +1180,116 @@ document.addEventListener("click",async e=>{
   const del=e.target.closest("[data-pa-del]");
   if(del){del.disabled=true;try{await call("DELETE","/api/alerts?id="+encodeURIComponent(del.dataset.paDel))}catch(x){}load()}
 });
+})();
+</script>
+<script>
+(function(){
+const g=id=>document.getElementById(id),E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const usd=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const amt=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:n<1?6:4});
+const COL=["#2563eb","#7c3aed","#06b6d4","#f59e0b","#10b981","#ec4899","#f97316"];
+let last=0,busy=false;
+function drawHistory(pts){
+  const box=g("pfHistory");
+  if(!pts||pts.length<2){box.className="empty";return}
+  const W=700,H=200,P=8,vs=pts.map(p=>p.v),mn=Math.min(...vs),mx=Math.max(...vs),rg=(mx-mn)||1;
+  const xy=pts.map((p,i)=>[P+i*(W-2*P)/(pts.length-1),H-P-((p.v-mn)/rg)*(H-2*P)]);
+  const d=xy.map((q,i)=>(i?"L":"M")+q[0].toFixed(1)+" "+q[1].toFixed(1)).join(" ");
+  box.className="chart-wrap";
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:200px"><defs><linearGradient id="pfFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".3"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs><path d="${d} L${W-P} ${H} L${P} ${H} Z" fill="url(#pfFill)"/><path d="${d}" fill="none" stroke="#2563eb" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="muted" style="font-size:10px;display:flex;justify-content:space-between"><span>${new Date(pts[0].t).toLocaleDateString()} · ${usd(pts[0].v)}</span><span>${new Date(pts.at(-1).t).toLocaleDateString()} · ${usd(pts.at(-1).v)}</span></div>`;
+}
+function draw(d){
+  g("pfTotal").textContent=usd(d.totalUsd);
+  const c=g("pfChange"),up=d.change24hUsd>=0;c.textContent=(up?"+":"")+usd(d.change24hUsd)+" ("+(up?"+":"")+d.change24hPct.toFixed(2)+"%)";c.style.color=up?"var(--green)":"var(--red)";c.style.fontSize="20px";
+  g("pfAssets").textContent=d.allocation.length;
+  g("pfUpdated").textContent="Updated "+new Date(d.updatedAt).toLocaleTimeString();
+  ["walletTotalUsd","dashPortfolioUsd"].forEach(i=>{const el=g(i);if(el)el.textContent=usd(d.totalUsd)});
+  const al=g("pfAlloc");
+  if(d.allocation.length){al.className="";al.innerHTML=`<div style="display:flex;height:14px;border-radius:8px;overflow:hidden;margin:6px 0 14px">${d.allocation.map((a,i)=>`<div title="${E(a.symbol)}" style="width:${a.pct}%;background:${COL[i%COL.length]}"></div>`).join("")}</div>`+d.allocation.map((a,i)=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${COL[i%COL.length]};margin-right:8px"></i><strong>${E(a.symbol)}</strong></span><span>${usd(a.usd)} · ${a.pct.toFixed(1)}%</span></div>`).join("")}
+  else{al.className="empty";al.innerHTML="<strong>No assets found</strong>These wallets hold no native coin or USDT/USDC."}
+  g("pfRows").innerHTML=d.wallets.map(w=>{
+    const name=(typeof watchlist!=="undefined"?watchlist:[]).find(x=>x.address===w.address&&x.network===w.network)?.name||"Wallet";
+    if(w.error)return `<tr><td><strong>${E(name)}</strong></td><td>${E(w.network)}</td><td colspan="3" class="muted">Balance unavailable, try again</td></tr>`;
+    return `<tr><td><strong>${E(name)}</strong><div class="muted address" style="font-size:9px">${E(w.address.slice(0,10)+"…"+w.address.slice(-6))}</div></td><td>${E(w.network)}</td><td>${amt(w.native.amount)} ${E(w.native.symbol)}</td><td>${w.tokens.length?w.tokens.map(t=>amt(t.amount)+" "+E(t.symbol)).join("<br>"):"—"}</td><td><strong>${usd(w.totalUsd)}</strong></td></tr>`}).join("");
+}
+async function sync(manual){
+  if(busy)return;
+  const wl=(typeof watchlist!=="undefined"?watchlist:[]).filter(i=>i.type==="wallet").slice(0,10);
+  if(!wl.length){if(manual)toast("Add a wallet first");return}
+  if(typeof backendUser==="undefined"||!backendUser){if(manual)toast("Open via Telegram and sign in to sync balances");return}
+  busy=true;const b=g("pfSync");b.disabled=true;b.textContent="Syncing…";
+  try{
+    const d=await apiRequest("/portfolio/balances",{method:"POST",body:JSON.stringify({wallets:wl.map(w=>({network:w.network,address:w.address}))})});
+    draw(d);last=Date.now();
+    try{const h=await apiRequest("/portfolio/history");drawHistory(h.points)}catch(e){}
+  }catch(e){if(manual)toast(e.status===429?"Too many syncs, wait a minute":"Could not sync balances")}
+  busy=false;b.disabled=false;b.textContent="↻ Sync balances";
+}
+g("pfSync").addEventListener("click",()=>sync(true));
+document.addEventListener("click",e=>{if(e.target.closest('[data-page="portfolio"]')&&Date.now()-last>60000)setTimeout(()=>sync(false),150)});
+})();
+</script>
+<script>
+(function(){
+const g=id=>document.getElementById(id),E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const WALLET_NETS=[["ethereum","Ethereum"],["bsc","BNB Smart Chain"],["polygon","Polygon"],["arbitrum","Arbitrum"],["base","Base"],["optimism","Optimism"],["avalanche","Avalanche"],["tron","TRON"],["solana","Solana"],["ton","TON"]];
+const WHALE_NETS=["ethereum","bsc","polygon"];
+const ERR={AUTH_REQUIRED:"Open via Telegram and sign in first.",INVALID_ALERT:"Check network, address and minimum amount (whale min is $10,000).",ALERT_LIMIT_REACHED:"Alert limit reached for your plan."};
+function fillNets(){
+  const whale=g("ocKind").value==="whale",cur=g("ocNet").value;
+  g("ocNet").innerHTML=WALLET_NETS.filter(n=>!whale||WHALE_NETS.includes(n[0])).map(n=>`<option value="${n[0]}">${n[1]}</option>`).join("");
+  if([...g("ocNet").options].some(o=>o.value===cur))g("ocNet").value=cur;
+  g("ocAddr").style.display=g("ocSaved").style.display=whale?"none":"";
+  g("ocMin").value=whale?"100000":"100";
+}
+function fillSaved(){
+  const w=(typeof watchlist!=="undefined"?watchlist:[]).filter(i=>i.type==="wallet");
+  g("ocSaved").innerHTML='<option value="">Saved wallet…</option>'+w.map(i=>`<option value="${E(i.network+"|"+i.address)}">${E(i.name)}</option>`).join("");
+}
+function draw(d){
+  g("ocCount").textContent=d.rules.length+" / "+d.limit;
+  g("ocToday").textContent=d.stats.today;g("ocSent").textContent=d.stats.sent;g("ocFailed").textContent=d.stats.failed;
+  g("ocRules").innerHTML=d.rules.length?d.rules.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${r.kind==="whale"?"🐋 Whale transfer":"👛 Wallet activity"}</strong><div class="muted" style="font-size:9px;margin-top:5px">${E(r.network)}${r.address?" · "+E(r.address.slice(0,8)+"…"+r.address.slice(-6)):""} · ≥ $${Number(r.min_usd).toLocaleString()}${r.last_error?" · ⚠ "+E(r.last_error):""}${r.last_run_at?"":" · waiting for first scan"}</div></div><button class="btn danger small" data-oc-del="${r.id}">Delete</button></div>`).join(""):'<div class="empty"><strong>No on-chain rules</strong>Add a wallet or whale rule above.</div>';
+  g("ocEvents").innerHTML=d.events.length?d.events.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);white-space:pre-line">${E(e.summary.split("\n").slice(0,2).join("\n"))}<div style="font-size:9px">${new Date(e.created_at).toLocaleString()} · ${E(e.delivery_status)}</div></div>`).join(""):"No events yet.";
+}
+async function load(manual){
+  fillSaved();
+  if(typeof backendUser==="undefined"||!backendUser)return;
+  try{draw(await apiRequest("/alerts/onchain"))}catch(e){if(manual)toast("Could not load on-chain alerts")}
+}
+g("ocKind").addEventListener("change",fillNets);
+g("ocSaved").addEventListener("change",e=>{const[v,a]=e.target.value.split("|");if(a){g("ocNet").value=v;g("ocAddr").value=a}});
+g("ocAdd").addEventListener("click",async()=>{
+  const b=g("ocAdd"),kind=g("ocKind").value;b.disabled=true;g("ocMsg").textContent="Saving…";
+  try{
+    await apiRequest("/alerts/onchain",{method:"POST",body:JSON.stringify({kind,network:g("ocNet").value,address:g("ocAddr").value.trim(),minUsd:Number(g("ocMin").value)})});
+    g("ocMsg").textContent="Rule added. The first scan sets a starting point, alerts start after that.";g("ocAddr").value="";load(true);
+  }catch(e){g("ocMsg").textContent=ERR[e.message]||"Could not add rule."}
+  b.disabled=false;
+});
+document.addEventListener("click",async e=>{
+  const del=e.target.closest("[data-oc-del]");
+  if(del){del.disabled=true;try{await apiRequest("/alerts/onchain?id="+encodeURIComponent(del.dataset.ocDel),{method:"DELETE"})}catch(x){}load(true);return}
+  if(e.target.closest('[data-page="alerts"]'))setTimeout(()=>load(false),200);
+});
+fillNets();fillSaved();
+})();
+</script>
+<script>
+(function(){
+async function run(){
+  let d;try{const r=await fetch("/api/network/status",{cache:"no-store"});d=(await r.json()).networks}catch(e){return}
+  if(!d||typeof NETWORKS==="undefined")return;
+  document.querySelectorAll("#networkGrid .network-card").forEach(card=>{
+    const n=NETWORKS.find(x=>card.textContent.includes(x.name)),st=n&&d[n.id],el=card.querySelector(".status");
+    if(!st||!el)return;
+    const on=st.status==="online";
+    el.className="status "+(on?"ok":"offline");
+    el.textContent=on?"Online · "+st.ms+"ms":"Offline";
+    el.title=on?"Latest block "+Number(st.block).toLocaleString():"Provider not responding";
+  });
+}
+run();setInterval(()=>{if(!document.hidden)run()},30000);
 })();
 </script>
 </body></html>
