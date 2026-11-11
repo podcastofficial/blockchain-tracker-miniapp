@@ -4,6 +4,7 @@ import { db } from "../lib/db.js";
 import { send, methodNotAllowed, getBearer } from "../lib/http.js";
 import { verifyTelegramInitData } from "../lib/telegram.js";
 import { createSession, readSession } from "../lib/session.js";
+import { verifyOnChain } from "../lib/chain.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -365,7 +366,7 @@ async function createPayment(req, res) {
           status: "pending",
           expiresAt: row.expires_at,
           instructions:
-            "Send the exact invoice amount using USDT on the selected network. Do not send the base plan price; the invoice amount includes a unique micro-amount suffix. On-chain verification is not enabled yet, so do not transfer funds until the verifier is activated."
+            "Send the exact invoice amount using USDT on the selected network. Do not send the base plan price; the invoice amount includes a unique micro-amount suffix. After sending, paste the transaction hash to verify."
         }
       });
     } finally {
@@ -405,7 +406,7 @@ async function verifyPayment(req, res) {
 
   try {
     const result = await db().query(
-      `SELECT id, chain, status
+      `SELECT id, chain, status, plan_code, expected_amount, receiving_address, created_at, expires_at
        FROM subscription_payments
        WHERE id=$1 AND user_id=$2`,
       [paymentId, session.id]
@@ -439,12 +440,76 @@ async function verifyPayment(req, res) {
       });
     }
 
-    // Fail closed until independent chain verification is implemented.
-    return send(res, 503, {
-      ok: false,
-      error: "CHAIN_VERIFIER_NOT_IMPLEMENTED",
-      message: "Payment remains pending. No subscription has been activated."
-    });
+    if (payment.status === "rejected" || payment.status === "expired") {
+      return send(res, 409, { ok: false, error: "PAYMENT_CLOSED", status: payment.status });
+    }
+    if (new Date(payment.expires_at) < new Date()) {
+      await db().query("UPDATE subscription_payments SET status='expired', updated_at=NOW() WHERE id=$1 AND status<>'confirmed'", [payment.id]);
+      return send(res, 410, { ok: false, error: "PAYMENT_EXPIRED" });
+    }
+
+    // Each tx hash can be used only once, across all users.
+    const used = await db().query(
+      "SELECT 1 FROM subscription_payments WHERE chain=$1 AND lower(tx_hash)=lower($2) AND id<>$3",
+      [payment.chain, txHash, payment.id]
+    );
+    if (used.rowCount) {
+      return send(res, 409, { ok: false, error: "TX_ALREADY_USED" });
+    }
+
+    let v;
+    try {
+      v = await verifyOnChain(payment.chain, txHash, payment);
+    } catch {
+      return send(res, 502, { ok: false, error: "CHAIN_PROVIDER_UNAVAILABLE", message: "Try again in a minute." });
+    }
+
+    if (v.state === "pending") {
+      return send(res, 202, { ok: true, status: "verifying", reason: v.reason, confirmations: v.confirmations ?? 0 });
+    }
+    if (v.state === "rejected") {
+      return send(res, 422, { ok: false, error: v.reason });
+    }
+    if (v.paidAt < new Date(payment.created_at.getTime() - 60000)) {
+      return send(res, 422, { ok: false, error: "TX_BEFORE_INVOICE" });
+    }
+
+    // Confirmed on-chain: activate atomically.
+    const client = await db().connect();
+    try {
+      await client.query("BEGIN");
+      const lock = await client.query("SELECT status FROM subscription_payments WHERE id=$1 FOR UPDATE", [payment.id]);
+      if (lock.rows[0].status === "confirmed") {
+        await client.query("ROLLBACK");
+        return send(res, 200, { ok: true, status: "confirmed" });
+      }
+      const plan = await client.query("SELECT duration_days FROM subscription_plans WHERE code=$1", [payment.plan_code]);
+      const days = plan.rows[0].duration_days || 30;
+      await client.query(
+        `UPDATE subscription_payments SET status='confirmed', tx_hash=$2, confirmations=$3,
+         confirmed_at=NOW(), updated_at=NOW() WHERE id=$1`,
+        [payment.id, txHash, v.confirmations]
+      );
+      await client.query(
+        `INSERT INTO user_subscriptions (user_id, plan_code, status, starts_at, expires_at)
+         VALUES ($1,$2,'active',NOW(),
+           GREATEST(NOW(), COALESCE((SELECT MAX(expires_at) FROM user_subscriptions
+             WHERE user_id=$1 AND status='active' AND expires_at > NOW()), NOW())) + ($3 || ' days')::interval)`,
+        [session.id, payment.plan_code, String(days)]
+      );
+      await client.query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata) VALUES ($1,'payment.confirmed','payment',$2,$3)",
+        [session.id, payment.id, JSON.stringify({ chain: payment.chain, txHash, amount: payment.expected_amount })]
+      );
+      await client.query("COMMIT");
+      return send(res, 200, { ok: true, status: "confirmed" });
+    } catch (e) {
+      await client.query("ROLLBACK").catch(() => {});
+      if (e.code === "23505") return send(res, 409, { ok: false, error: "TX_ALREADY_USED" });
+      throw e;
+    } finally {
+      client.release();
+    }
   } catch {
     return send(res, 500, {
       ok: false,
