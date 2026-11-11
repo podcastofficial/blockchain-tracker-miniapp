@@ -1,8 +1,8 @@
 
 import crypto from "node:crypto";
 import { db } from "../lib/db.js";
-import { send, methodNotAllowed } from "../lib/http.js";
-import { verifyTelegramInitData } from "../lib/telegram.js";
+import { send, methodNotAllowed, getBearer } from "../lib/http.js";
+import { verifyTelegramInitData } from "../lib/telegram.verifyTelegramInitData
 import { createSession, readSession } from "../lib/session.js";
 
 const RECEIVERS = {
@@ -453,6 +453,103 @@ async function verifyPayment(req, res) {
   }
 }
 
+const ALERT_LIMITS = { free: 3, pro: 20, business: 100, enterprise: 500 };
+
+async function alertLimitFor(userId) {
+  const r = await db().query(
+    `SELECT plan_code FROM user_subscriptions
+     WHERE user_id=$1 AND status='active' AND (expires_at IS NULL OR expires_at > NOW())
+     ORDER BY expires_at DESC NULLS FIRST LIMIT 1`, [userId]);
+  const plan = r.rows[0]?.plan_code || "free";
+  return { plan, limit: ALERT_LIMITS[plan] ?? ALERT_LIMITS.free };
+}
+
+async function priceAlerts(req, res, path) {
+  const session = readSession(req);
+  if (!session) return send(res, 401, { ok: false, error: "AUTH_REQUIRED" });
+  const uid = session.id;
+  if (req.method === "GET") {
+    const [list, lim] = await Promise.all([
+      db().query(`SELECT id, coin_id, symbol, direction, target_price::text AS target_price, status,
+                  triggered_price::text AS triggered_price, triggered_at, created_at
+                  FROM price_alerts WHERE user_id=$1 ORDER BY created_at DESC LIMIT 200`, [uid]),
+      alertLimitFor(uid)
+    ]);
+    return send(res, 200, { ok: true, alerts: list.rows, plan: lim.plan, limit: lim.limit });
+  }
+  if (req.method === "POST") {
+    const b = req.body || {};
+    const coin = String(b.coinId || "");
+    const sym = String(b.symbol || "").slice(0, 12).toUpperCase();
+    const dir = b.direction;
+    const target = Number(b.targetPrice);
+    if (!/^[a-z0-9-]{1,80}$/.test(coin) || !sym || !["above", "below"].includes(dir) || !Number.isFinite(target) || target <= 0 || target > 1e15) {
+      return send(res, 400, { ok: false, error: "INVALID_ALERT" });
+    }
+    const lim = await alertLimitFor(uid);
+    const cnt = await db().query(`SELECT COUNT(*)::int AS n FROM price_alerts WHERE user_id=$1 AND status='active'`, [uid]);
+    if (cnt.rows[0].n >= lim.limit) return send(res, 403, { ok: false, error: "ALERT_LIMIT_REACHED", limit: lim.limit, plan: lim.plan });
+    const ins = await db().query(
+      `INSERT INTO price_alerts (user_id, coin_id, symbol, direction, target_price)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id`, [uid, coin, sym, dir, String(target)]);
+    return send(res, 201, { ok: true, id: ins.rows[0].id });
+  }
+  if (req.method === "DELETE") {
+    const id = Number(new URL(req.url, "https://x.invalid").searchParams.get("id"));
+    if (!Number.isSafeInteger(id)) return send(res, 400, { ok: false, error: "INVALID_ID" });
+    await db().query(`DELETE FROM price_alerts WHERE id=$1 AND user_id=$2`, [id, uid]);
+    return send(res, 200, { ok: true });
+  }
+  return methodNotAllowed(res, ["GET", "POST", "DELETE"]);
+}
+
+function cronAuthorized(req) {
+  const secret = process.env.CRON_SECRET || "";
+  const given = getBearer(req) || String(req.headers["x-cron-secret"] || "");
+  const a = Buffer.from(given), b = Buffer.from(secret);
+  return secret.length >= 16 && a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+async function cronAlerts(req, res) {
+  if (!cronAuthorized(req)) return send(res, 401, { ok: false, error: "UNAUTHORIZED" });
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const rows = (await db().query(
+    `SELECT a.id, a.coin_id, a.symbol, a.direction, a.target_price::float8 AS target, u.telegram_user_id
+     FROM price_alerts a JOIN users u ON u.id=a.user_id
+     WHERE a.status='active' AND NOT u.is_blocked LIMIT 1000`)).rows;
+  if (!rows.length) return send(res, 200, { ok: true, checked: 0, triggered: 0 });
+  const ids = [...new Set(rows.map(r => r.coin_id))];
+  const prices = {};
+  for (let i = 0; i < ids.length; i += 200) {
+    const r = await fetch("https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=" + encodeURIComponent(ids.slice(i, i + 200).join(",")));
+    if (!r.ok) return send(res, 502, { ok: false, error: "PRICE_SOURCE_UNAVAILABLE", status: r.status });
+    Object.assign(prices, await r.json());
+  }
+  let triggered = 0;
+  for (const r of rows) {
+    const p = prices[r.coin_id]?.usd;
+    if (typeof p !== "number") continue;
+    if (!(r.direction === "above" ? p >= r.target : p <= r.target)) continue;
+    const claim = await db().query(
+      `UPDATE price_alerts SET status='triggered', triggered_at=NOW(), triggered_price=$2
+       WHERE id=$1 AND status='active' RETURNING id`, [r.id, String(p)]);
+    if (!claim.rowCount) continue;
+    triggered++;
+    const fmt = n => n >= 1 ? n.toLocaleString("en-US", { maximumFractionDigits: 4 }) : String(Number(n.toPrecision(4)));
+    const text = `🔔 ${r.symbol} is ${r.direction === "above" ? "above" : "below"} $${fmt(r.target)}\nPrice now: $${fmt(p)}`;
+    try {
+      const t = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: r.telegram_user_id, text })
+      });
+      if (!t.ok) await db().query(`UPDATE price_alerts SET delivery_error=$2 WHERE id=$1`, [r.id, "TELEGRAM_" + t.status]);
+    } catch {
+      await db().query(`UPDATE price_alerts SET delivery_error='TELEGRAM_UNREACHABLE' WHERE id=$1`, [r.id]);
+    }
+  }
+  return send(res, 200, { ok: true, checked: rows.length, triggered });
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -465,6 +562,14 @@ export default async function handler(req, res) {
 
     if (path === "/api/auth/me") {
       return await me(req, res);
+    }
+
+    if (path === "/api/alerts") {
+      return await priceAlerts(req, res, path);
+    }
+
+    if (path === "/api/cron/alerts") {
+      return await cronAlerts(req, res);
     }
 
     if (path === "/api/subscription/plans") {
