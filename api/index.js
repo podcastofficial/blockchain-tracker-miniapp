@@ -9,6 +9,13 @@ import { portfolioBalances, portfolioHistory } from "../lib/portfolio.js";
 import { onchainAlerts, cronOnchain } from "../lib/onchain_alerts.js";
 import { networkStatus } from "../lib/netstatus.js";
 import { marketOverview, whaleFeed } from "../lib/market.js";
+import { rateLimited, clientKey } from "../lib/ratelimit.js";
+import { limitsFor } from "../lib/plans.js";
+import { watchlist } from "../lib/watchlist.js";
+import { adminApi } from "../lib/admin.js";
+import { defiOverview } from "../lib/defi.js";
+import { txHistory } from "../lib/txhistory.js";
+import { telegramWebhook } from "../lib/bot.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -30,6 +37,7 @@ function requireMethod(req, res, method) {
 
 async function telegramLogin(req, res) {
   if (!requireMethod(req, res, "POST")) return;
+  if (rateLimited(req, res, "login", clientKey(req), 20)) return;
 
   try {
     const telegramUser = verifyTelegramInitData(req.body?.initData);
@@ -231,6 +239,7 @@ async function createPayment(req, res) {
     return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
   }
 
+  if (rateLimited(req, res, "pay-create", session.id, 6)) return;
   const planCode = String(req.body?.planCode || "").toLowerCase();
   const chain = String(req.body?.chain || "").toUpperCase();
 
@@ -398,6 +407,7 @@ async function verifyPayment(req, res) {
     return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
   }
 
+  if (rateLimited(req, res, "pay-verify", session.id, 12)) return;
   const paymentId = String(req.body?.paymentId || "");
   const txHash = String(req.body?.txHash || "").trim();
 
@@ -525,12 +535,8 @@ async function verifyPayment(req, res) {
 const ALERT_LIMITS = { free: 3, pro: 20, business: 100, enterprise: 500 };
 
 async function alertLimitFor(userId) {
-  const r = await db().query(
-    `SELECT plan_code FROM user_subscriptions
-     WHERE user_id=$1 AND status='active' AND (expires_at IS NULL OR expires_at > NOW())
-     ORDER BY expires_at DESC NULLS FIRST LIMIT 1`, [userId]);
-  const plan = r.rows[0]?.plan_code || "free";
-  return { plan, limit: ALERT_LIMITS[plan] ?? ALERT_LIMITS.free };
+  const l = await limitsFor(userId);
+  return { plan: l.plan, limit: l.alerts };
 }
 
 async function priceAlerts(req, res, path) {
@@ -556,7 +562,7 @@ async function priceAlerts(req, res, path) {
       return send(res, 400, { ok: false, error: "INVALID_ALERT" });
     }
     const lim = await alertLimitFor(uid);
-    const cnt = await db().query(`SELECT COUNT(*)::int AS n FROM price_alerts WHERE user_id=$1 AND status='active'`, [uid]);
+    const cnt = await db().query(`SELECT ((SELECT COUNT(*) FROM price_alerts WHERE user_id=$1 AND status='active') + (SELECT COUNT(*) FROM onchain_alerts WHERE user_id=$1 AND status='active'))::int AS n`, [uid]);
     if (cnt.rows[0].n >= lim.limit) return send(res, 403, { ok: false, error: "ALERT_LIMIT_REACHED", limit: lim.limit, plan: lim.plan });
     const ins = await db().query(
       `INSERT INTO price_alerts (user_id, coin_id, symbol, direction, target_price)
@@ -641,6 +647,12 @@ export default async function handler(req, res) {
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
+
+    if (path === "/api/watchlist") return await watchlist(req, res);
+    if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
+    if (path === "/api/defi/overview") return await defiOverview(req, res);
+    if (path === "/api/tx/history") return await txHistory(req, res);
+    if (path === "/api/telegram/webhook") return await telegramWebhook(req, res);
 
     if (path === "/api/alerts") {
       return await priceAlerts(req, res, path);
