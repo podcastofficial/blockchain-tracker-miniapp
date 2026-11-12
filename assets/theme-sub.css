@@ -1,0 +1,20 @@
+/* Dark navy theme for launch.html / swap.html / swap-widget.html */
+:root{--ink:#eaf2ff;--mut:#8da2d3;--line:#234aa8;--bg:#0f1d44;--grad:linear-gradient(135deg,#22d3ee 0%,#2f6bff 55%,#6d4aff 100%);color-scheme:dark}
+html,body{background:radial-gradient(800px 480px at 90% -10%,#1d4ed855,transparent 60%),#050b1f;background-attachment:fixed;color:var(--ink)}
+#bar{background:#050b1fee;border-bottom:1px solid #16306f;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#bar .bar-logo{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #2f6bff66}
+.btn,#bar button,.tabs button,.chips button,select,.fix{background:#0b1634;border-color:#234aa8;color:#dbe7ff}
+.tabs button.on,.chips button.on{background:var(--grad);color:#fff;border-color:transparent}
+.main{box-shadow:0 8px 24px #2f6bff66}
+.card,.box,.seg button{background:linear-gradient(160deg,#12245a,#0a1535);border:1px solid #1c3a82}
+.seg .buy.on{background:var(--up)}.seg .sell.on{background:var(--dn)}
+.card img,.ph{background:#142556}
+.bar{background:#142556}
+.fld input,.fld textarea{background:#0b1634;border-color:#234aa8;color:var(--ink)}
+.fld input::placeholder,.fld textarea::placeholder{color:#6d84bb}
+.box input{color:var(--ink)}
+.info,#status{color:#b9c8ee}.info b{color:#fff}
+#status a,#msg a{color:#7db2ff}
+#msg{color:#9fb2dd}#msg a{background:#142556}
+.note{color:#7f95c9}
+select option{background:#0b1634;color:#eaf2ff}

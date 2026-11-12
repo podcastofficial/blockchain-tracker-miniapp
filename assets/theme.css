@@ -1,0 +1,130 @@
+/* Multi Blockchain Tracker — dark navy / electric-blue theme (matches brand poster) */
+:root{
+  --bg:#050b1f;--panel:#0b1634;--panel2:#0f1d44;--panel3:#142556;
+  --border:#1c3a82;--text:#eaf2ff;--muted:#8da2d3;
+  --blue:#3b82f6;--cyan:#22d3ee;--violet:#8b5cf6;
+  --grad:linear-gradient(135deg,#22d3ee 0%,#2f6bff 55%,#6d4aff 100%);
+  --grad-hot:linear-gradient(135deg,#22d3ee 0%,#2f6bff 50%,#8b5cf6 100%);
+  --shadow:0 18px 44px #00000099;
+  --glass:linear-gradient(160deg,#12245a 0%,#0a1535 100%);
+  --edge:#2a6bff80;
+  color-scheme:dark;
+}
+html{background:#050b1f}
+body{
+  background:
+    radial-gradient(900px 520px at 85% -8%,#1d4ed855,transparent 60%),
+    radial-gradient(700px 480px at -5% 105%,#6d4aff33,transparent 60%),
+    #050b1f;
+  background-attachment:fixed;color:var(--text);
+}
+::-webkit-scrollbar-thumb{background:#244089}
+button:focus-visible,input:focus-visible,select:focus-visible{outline-color:var(--cyan)}
+
+/* brand / sidebar */
+.sidebar{background:linear-gradient(180deg,#071030,#050b1f);border-right:1px solid #16306f}
+.brand{padding-bottom:20px}
+.brand-logo{width:46px;height:46px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #2f6bff66,0 8px 26px #2f6bff66}
+.brand-name{font-style:italic;font-weight:800;letter-spacing:.2px;font-size:12.5px;line-height:1.15;background:none;color:#fff;-webkit-text-fill-color:#fff}
+.brand-name em{display:inline-block;font-style:italic;background:var(--grad);padding:2px 9px;border-radius:7px;margin-top:3px;-webkit-text-fill-color:#fff;box-shadow:0 4px 14px #2f6bff66}
+.brand-sub{color:#7f95c9}
+.nav-label{color:#5f78b6}
+.nav button{color:#b9c8ee}
+.nav button:hover{background:#13245866}
+.nav button.active{box-shadow:0 8px 22px var(--cs,#2f6bff66)}
+.network-pill{background:var(--glass);border:1px solid var(--edge);color:var(--muted)}
+
+/* topbar */
+.topbar{background:#050b1fe6;border-bottom:1px solid #16306f}
+.top-search input{background:#0b1634;border:1.5px solid #1c3a82;color:var(--text)}
+.top-search input:focus{background:#0d1b40;border-color:var(--cyan)}
+.top-search input::placeholder{color:#6d84bb}
+.search-icon{color:var(--cyan)}
+.icon-btn{background:#0f1d44;color:#7db2ff;border:1px solid #1c3a82}
+.icon-btn:hover{background:var(--blue);color:#fff}
+.top-logo{display:none;width:34px;height:34px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #2f6bff66}
+
+/* buttons */
+.btn{background:var(--glass);border:1.5px solid #234aa8;color:#dbe7ff}
+.btn:hover{border-color:var(--cyan);background:#13265e}
+.btn.primary{box-shadow:0 8px 24px #2f6bff77}
+
+/* cards */
+.stat-card,.card{background:var(--glass);border:1px solid #1c3a82;box-shadow:0 8px 28px #00000066,inset 0 1px 0 #3b82f61f}
+.stat-card{background:linear-gradient(160deg,var(--cg,#22d3ee22) 0%,#0a1535 65%)}
+.stat-symbol{box-shadow:0 6px 16px var(--cg,#22d3ee44)}
+.tag{background:#142556;color:#a9c3ff}
+.chart-wrap{background:linear-gradient(180deg,#0f1d44 0%,#0a1535 100%);border:1px solid #1c3a82}
+.chart-note{background:#0b1634ee;border:1px solid #234aa8;box-shadow:0 10px 26px #00000088}
+.chart-wrap svg text{fill:#8da2d3}
+
+/* table */
+th{background:linear-gradient(90deg,#1d4ed8,#4f46e5)}
+td{border-bottom:1px solid #16306f}
+tbody tr:hover{background:#12255a88}
+.address{color:#7db2ff}
+.status.pending{color:#fbbf24}.status.offline{color:#7083b3}.status.ok{color:#34d399}
+.status.bad{color:#f87171}.status.warn{color:#fbbf24}
+
+/* network + plans */
+.network-card{background:linear-gradient(180deg,var(--cg,#22d3ee1c),#0a1535 72%);border-color:#1c3a82}
+.plan-card .plan-features{color:#b9c8ee}
+.plan-card.featured{background:linear-gradient(#0b1634,#0b1634) padding-box,var(--grad-hot) border-box;box-shadow:0 14px 44px #2f6bff55}
+
+/* forms */
+.control,.field input,.field select,.field textarea{background:#0b1634;border:1.5px solid #1c3a82;color:var(--text)}
+.control:focus,.field input:focus,.field select:focus,.field textarea:focus{background:#0d1b40;border-color:var(--cyan)}
+.control::placeholder,.field input::placeholder,.field textarea::placeholder{color:#6d84bb}
+.field label{color:#b9c8ee}
+select option{background:#0b1634;color:var(--text)}
+.tab.active{color:var(--cyan);border-color:var(--cyan)}
+.empty-icon,.lbl{color:var(--cyan)}
+.notice{background:linear-gradient(90deg,#3a2a0a,#1f1708);border:1px solid #6b4a10;border-left:4px solid var(--yellow);color:#f5c97a}
+
+/* modal + sheets */
+.modal,.cm{background:#02061acc}
+.modal-box,.cm-box{background:linear-gradient(180deg,#0f1d44,#08122f);color:var(--text)}
+.close,.cm-x{background:#142556;color:#9cc0ff}
+.toast{background:#0b1634;border:1px solid #234aa8}
+.mobile-nav{background:#07102ff5!important;border-top:1px solid #1c3a82!important;box-shadow:0 -8px 24px #00000088!important}
+
+/* ticker */
+.ticker{background:#071030;border-bottom:1px solid #16306f}
+.tk{background:#0b1634;border:1px solid #1c3a82}
+.tk .ch.up{color:#34d399;background:#10b98128}.tk .ch.down{color:#f87171;background:#ef444428}
+
+/* tools */
+.calc-out,.res-cell{background:linear-gradient(135deg,#102552,#1a1c52)}
+.calc-row{border-bottom-color:#234aa8}
+.calc-row .pos,.cm .up{color:#34d399}.calc-row .neg,.cm .down{color:#f87171}
+#tvChart{background:#0a1535;border:1px solid #1c3a82}
+.chk{border-bottom-color:#16306f}
+.res-link,.cm-c code,.cm-links a,.cm-src a{color:#7db2ff}
+.cm-links a{background:#142556}
+
+/* search results / detail sheet */
+.sr-box{background:#0b1634;border-color:#234aa8;box-shadow:0 18px 50px #000000aa}
+.sr-row:hover,.sr-row:active{background:#142556}
+.cm-s,.cm-frame iframe{background:#0f1d44}
+.cm-r,.cm-b,.cm-sd,.cm-quick button,.dx-tab,.dx-chip{border-color:#234aa8;background:#0b1634;color:#dbe7ff}
+.cm-r.on,.cm-b.pri,.dx-tab.on{background:var(--grad);border-color:transparent;color:#fff}
+.cm-trade{background:#0a1535;border-color:#234aa8}
+.cm-desc,.cm-est{color:#b9c8ee}
+.dx-chip.on{border-color:var(--cyan);background:#12306b}
+.dx-card{background:var(--glass);border-color:#1c3a82}
+.dx-card:hover{box-shadow:0 10px 28px #2f6bff44}
+.dx-grid div{background:#0f1d44}
+.dx-ico img,.ico img,.logo-img,.coin img{background:#0b1634}
+.bar-track{background:#142556}
+.dirtag.in{color:#34d399;background:#10b98128}.dirtag.out{color:#f87171;background:#ef444428}
+.pf-check input{accent-color:#2f6bff}
+
+/* inline-styled light surfaces coming from JS templates */
+[style*="background:#fff"],[style*="background: #fff"],[style*="background:#f3f5fc"],[style*="background:#eef2ff"],[style*="background:#fafbff"]{background:#0f1d44!important;color:var(--text)}
+[style*="border-bottom:1px solid #e"],[style*="border:1px solid #e"]{border-color:#1c3a82!important}
+[style*="color:#1e2a52"],[style*="color:#3a4566"],[style*="color:#0f1730"]{color:#dbe7ff!important}
+
+@media(max-width:760px){
+  .top-logo{display:block}
+  .topbar{gap:10px}
+}
