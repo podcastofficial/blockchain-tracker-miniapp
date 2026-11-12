@@ -62,3 +62,9 @@ Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpa
 - CoinGecko recently added coins are loaded from `GET /api/market/new-coins` using CoinGecko's `/coins/list/new` endpoint. Availability depends on the CoinGecko API plan and rate limits; set `COINGECKO_API_KEY` in Vercel Environment Variables if your plan provides a key. If CoinGecko denies access, the dashboard shows a clear unavailable state and DEX Screener discovery remains usable.
 - CoinGecko's recently-added list does not include a guaranteed chain-specific swap contract, so it is shown as discovery information only. Always use a verified DEX Screener pair/contract to initiate an in-app swap.
 - Swap remains non-custodial: users connect their own wallet and approve transactions themselves. `WALLETCONNECT_PROJECT_ID` must be configured for wallet connection.
+
+## Community Crypto Monitor — Phase 1 (foundation)
+- Run `db/community.sql` in Neon (after `db/profile.sql`), deploy, then re-run `npm run webhook` so Telegram also sends `my_chat_member` and `channel_post` updates.
+- `lib/community.js`: update_id de-duplication (`telegram_updates`, purged after 7 days by the 5-minute maintenance worker), bot add/remove/permission lifecycle for groups, supergroups and channels, admin cache sync, audit log.
+- `lib/bot.js` routes group/channel updates to the module; private-chat commands are unchanged.
+- Detection, `/track` commands and notifications follow in Phases 2–3.
