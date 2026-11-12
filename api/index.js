@@ -17,6 +17,7 @@ import { defiOverview } from "../lib/defi.js";
 import { txHistory } from "../lib/txhistory.js";
 import { telegramWebhook } from "../lib/bot.js";
 import { cronChannels } from "../lib/channels.js";
+import { dexApi } from "../lib/dex.js";
 import { profile } from "../lib/profile.js";
 import { codeLogin, logout } from "../lib/loginCode.js";
 import { referral, attachReferral } from "../lib/referral.js";
@@ -669,6 +670,7 @@ export default async function handler(req, res) {
     if (path === "/api/watchlist") return await watchlist(req, res);
     if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
     if (path === "/api/defi/overview") return await defiOverview(req, res);
+    if (path.startsWith("/api/dex/")) return await dexApi(req, res, path);
     if (path === "/api/tx/history") return await txHistory(req, res);
     if (path === "/api/telegram/webhook") return await telegramWebhook(req, res);
 
