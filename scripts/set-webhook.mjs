@@ -24,7 +24,7 @@ if (info) {
   if (!appUrl) { console.error("Missing APP_URL (e.g. https://your-app.vercel.app)"); process.exit(1); }
   const body = {
     url: `${appUrl}/api/telegram/webhook`,
-    allowed_updates: ["message", "callback_query"],
+    allowed_updates: ["message", "callback_query", "my_chat_member", "channel_post"],
     drop_pending_updates: true
   };
   if (secret) body.secret_token = secret;
