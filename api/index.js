@@ -8,7 +8,7 @@ import { verifyOnChain } from "../lib/chain.js";
 import { portfolioBalances, portfolioHistory } from "../lib/portfolio.js";
 import { onchainAlerts, cronOnchain } from "../lib/onchain_alerts.js";
 import { networkStatus } from "../lib/netstatus.js";
-import { marketOverview, whaleFeed } from "../lib/market.js";
+import { marketOverview, whaleFeed, coinProxy } from "../lib/market.js";
 import { rateLimited, clientKey } from "../lib/ratelimit.js";
 import { limitsFor } from "../lib/plans.js";
 import { watchlist } from "../lib/watchlist.js";
@@ -645,6 +645,7 @@ export default async function handler(req, res) {
 
     if (path === "/api/market/overview") return await marketOverview(req, res);
     if (path === "/api/market/whales") return await whaleFeed(req, res);
+    if (path === "/api/market/coin") return await coinProxy(req, res);
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
