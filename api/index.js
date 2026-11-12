@@ -316,7 +316,8 @@ async function createPayment(req, res) {
       // FIXED:
       // USDT supports 6 decimal places.
       // Pro: 1.000001 to 1.009999
-      // Business: 5.000001 to 5.009999
+      // Business: 2.500001 to 2.509999
+      // Enterprise: 5.000001 to 5.009999
 
       const base = Math.round(
         Number(plan.rows[0].price_usdt) * 1_000_000
@@ -595,6 +596,7 @@ async function priceAlertsRun() {
     Object.assign(prices, await r.json());
   }
   let triggered = 0;
+  const dailyAlertSent = new Map();
   for (const r of rows) {
     const p = prices[r.coin_id]?.usd;
     if (typeof p !== "number") continue;
@@ -608,6 +610,18 @@ async function priceAlertsRun() {
       await db().query(`UPDATE price_alerts SET delivery_error='MUTED' WHERE id=$1`, [r.id]);
       continue;
     }
+    if (!dailyAlertSent.has(r.telegram_user_id)) {
+      const count = await db().query(
+        `SELECT COUNT(*)::int AS n FROM price_alerts WHERE user_id=(SELECT id FROM users WHERE telegram_user_id=$1)
+         AND triggered_at >= date_trunc('day', NOW()) AND id <> $2 AND COALESCE(delivery_error,'') <> 'MUTED'`, [r.telegram_user_id, r.id]);
+      dailyAlertSent.set(r.telegram_user_id, count.rows[0].n);
+    }
+    const userRow = await db().query(`SELECT id FROM users WHERE telegram_user_id=$1`, [r.telegram_user_id]);
+    const planLimits = userRow.rowCount ? await limitsFor(userRow.rows[0].id) : { alerts: 50 };
+    if (dailyAlertSent.get(r.telegram_user_id) >= planLimits.alerts) {
+      await db().query(`UPDATE price_alerts SET delivery_error='DAILY_LIMIT_REACHED' WHERE id=$1`, [r.id]);
+      continue;
+    }
     const fmt = n => n >= 1 ? n.toLocaleString("en-US", { maximumFractionDigits: 4 }) : String(Number(n.toPrecision(4)));
     const text = `🔔 ${r.symbol} is ${r.direction === "above" ? "above" : "below"} $${fmt(r.target)}\nPrice now: $${fmt(p)}`;
     try {
@@ -616,6 +630,7 @@ async function priceAlertsRun() {
         body: JSON.stringify({ chat_id: r.telegram_user_id, text })
       });
       if (!t.ok) await db().query(`UPDATE price_alerts SET delivery_error=$2 WHERE id=$1`, [r.id, "TELEGRAM_" + t.status]);
+      else dailyAlertSent.set(r.telegram_user_id, dailyAlertSent.get(r.telegram_user_id) + 1);
     } catch {
       await db().query(`UPDATE price_alerts SET delivery_error='TELEGRAM_UNREACHABLE' WHERE id=$1`, [r.id]);
     }
