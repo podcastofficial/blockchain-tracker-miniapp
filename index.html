@@ -1520,7 +1520,7 @@ window.addEventListener("bt-portfolio",drawPnl);
 /* =====================================================
    2) Transaction explorer
    ===================================================== */
-const TXMSG={AUTH_REQUIRED:"Sign in through Telegram to search transactions.",INVALID_QUERY:"Enter a valid transaction hash, or a wallet address that matches the selected network.",UNSUPPORTED_NETWORK:"That network is not supported.",INDEXER_NOT_CONFIGURED:"Wallet history on EVM chains needs an Etherscan API key on the server (ETHERSCAN_API_KEY). Transaction-hash lookups still work.",INDEXER_KEY_INVALID:"The Etherscan API key on the server is missing or invalid. The app admin needs to check it. Transaction-hash lookups still work.",INDEXER_PLAN_LIMIT:"Etherscan's free plan no longer covers this network (BNB Chain, Base, Optimism and Avalanche need a paid key). Try Ethereum, Polygon or Arbitrum.",INDEXER_RATE_LIMITED:"Etherscan rate limit reached. Wait a few seconds and try again.",INDEXER_TIMEOUT:"This address has too much activity to load (very busy addresses like the zero address time out). Try a normal wallet address.",UPSTREAM_UNAVAILABLE:"The data provider is busy or unreachable. Try again in a moment.",RATE_LIMITED:"Too many searches. Wait a minute and try again."};
+const TXMSG={AUTH_REQUIRED:"Sign in through Telegram to search transactions.",INVALID_QUERY:"Enter a valid transaction hash, or a wallet address that matches the selected network.",UNSUPPORTED_NETWORK:"That network is not supported.",INDEXER_NOT_CONFIGURED:"Wallet history on EVM chains needs an Etherscan API key on the server (ETHERSCAN_API_KEY). Transaction-hash lookups still work.",INDEXER_KEY_INVALID:"The data provider API key on the server (Etherscan or NodeReal) is missing or invalid. The app admin needs to check it. Transaction-hash lookups still work.",INDEXER_PLAN_LIMIT:"Etherscan's free plan no longer covers this network (BNB Chain, Base, Optimism and Avalanche need a paid key). Try Ethereum, Polygon or Arbitrum.",INDEXER_RATE_LIMITED:"Etherscan rate limit reached. Wait a few seconds and try again.",INDEXER_TIMEOUT:"This address has too much activity to load (very busy addresses like the zero address time out). Try a normal wallet address.",UPSTREAM_UNAVAILABLE:"The data provider is busy or unreachable. Try again in a moment.",RATE_LIMITED:"Too many searches. Wait a minute and try again."};
 const stCls=s=>s==="success"?"ok":s==="failed"?"bad":"pending";
 const KIND={native:"Native",token:"Token",contract:"Contract"};
 function txDetail(t){
@@ -1568,6 +1568,8 @@ async function txSearch(){
     }
   }catch(e){
     out.innerHTML=empty("Search failed",TXMSG[e.message]||"Something went wrong. Please try again.");
+    const AX={bsc:["BscScan","https://bscscan.com/address/"],base:["BaseScan","https://basescan.org/address/"],optimism:["Optimistic Etherscan","https://optimistic.etherscan.io/address/"],avalanche:["Snowtrace","https://snowtrace.io/address/"]};
+    if(AX[net]&&/^0x[a-fA-F0-9]{40}$/.test(q)&&e.message!=="AUTH_REQUIRED"&&e.message!=="RATE_LIMITED")out.insertAdjacentHTML("beforeend",`<a class="res-link" style="display:block;text-align:center;margin-top:10px" href="${E(AX[net][1]+q)}" target="_blank" rel="noopener noreferrer">Open this address on ${E(AX[net][0])} ↗</a>`);
   }
   txBusy=false;btn.disabled=false;
 }
