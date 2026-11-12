@@ -771,17 +771,17 @@ function renderPlanCards(plans){
     const duration=plan.duration_days?`${Number(plan.duration_days)} days`:"Lifetime";
     const features=Array.isArray(plan.features)?plan.features.map(x=>`<div>✓ ${esc(x)}</div>`).join(""):"";
     const isCurrent=code===currentCode;
-    const paid=price>0 && ["pro","business"].includes(code);
-    const label=isCurrent?"Current plan":paid?"Choose network":code==="enterprise"?"Contact admin":"Free plan";
-    const disabled=isCurrent||code==="enterprise"||code==="free";
-    const featured=code==="pro"?' featured':'';
+    const paid=price>0 && ["pro","business","enterprise"].includes(code);
+    const label=isCurrent?"Current plan":paid?"Buy package": "Free plan";
+    const disabled=isCurrent||code==="free";
+    const featured=code==="business"?' featured':'';
     return `<div class="card plan-card${featured}">
-      <span class="tag ${code==="pro"?"yellow":""}">${esc(code.toUpperCase())}</span>
+      <span class="tag ${code==="business"?"yellow":""}">${code==="business"?"★ RECOMMENDED":esc(code.toUpperCase())}</span>
       <div style="font-size:17px;font-weight:750;margin-top:8px">${name}</div>
       <div class="plan-price">${price===0?(code==="free"?"Free":"Custom"):`${window.BTLogos?BTLogos.coin("tether","USDT","ico-s"):""}${price.toLocaleString("en-US",{maximumFractionDigits:6})} USDT`}</div>
-      <div class="muted" style="font-size:10px">/${esc(duration)}</div>
+      <div class="muted" style="font-size:10px">/${esc(duration)}${price>0?" · USDT":""}</div>
       <div class="plan-features">${features||'<div>Plan details available soon</div>'}</div>
-      <button class="btn ${code==="pro"?"primary":""}" ${disabled?"disabled":""} ${paid?`data-buy-plan="${esc(code)}"`:""}>${esc(label)}</button>
+      <button class="btn ${code==="business"?"primary":""}" ${disabled?"disabled":""} ${paid?`data-buy-plan="${esc(code)}"`:""}>${esc(label)}</button>
     </div>`;
   }).join("");
 }
@@ -897,7 +897,7 @@ if(!name||!address){$("formMessage").textContent="Complete all required fields."
 if(!validAddress(address,network)){$("formMessage").textContent="Address format does not match the selected network.";return}
 const key=normAddress(address,network),dup=watchlist.some(i=>i.network===network&&normAddress(i.address,i.network)===key);
 if(dup){$("formMessage").textContent="This address already exists in your watchlist for this network.";return}
-const cl=window.BTcloud;if(cl&&cl.on&&cl.limit&&watchlist.length>=cl.limit){$("formMessage").textContent="Watchlist limit reached for your plan ("+cl.limit+"). Remove an item or upgrade.";return}
+const cl=window.BTcloud;if(cl&&cl.on){const used=watchlist.filter(i=>i.type===type).length,cap=type==="wallet"?cl.walletLimit:cl.contractLimit;if(cap&&used>=cap){$("formMessage").textContent=(type==="wallet"?"Wallet":"Contract")+" tracking limit reached ("+cap+"). Remove an item or upgrade.";return}}
 const item={id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2),type,name,network,address,category:$("category").value,createdAt:new Date().toISOString()};
 watchlist.unshift(item);if(!persist()){watchlist.shift();$("formMessage").textContent="Browser storage unavailable; item was not saved.";return}
 render();closeModal("itemModal");toast(type==="wallet"?"Wallet saved":"Contract saved");if(type==="wallet"||EVM_MON.includes(network))window.dispatchEvent(new CustomEvent("bt-auto-monitor",{detail:{kind:type,network,address}}));if(tg?.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");
@@ -1776,7 +1776,7 @@ const ago=iso=>{if(!iso)return null;const s=Math.max(0,(Date.now()-new Date(iso)
 /* =====================================================
    1) Cloud watchlist sync + invested amount
    ===================================================== */
-const cloud={on:false,limit:null};window.BTcloud=cloud;
+const cloud={on:false,limit:null,walletLimit:null,contractLimit:null};window.BTcloud=cloud;
 const IK="bt_invested_v1";
 let uid=null,invested=null,timer=null,pushing=false,started=false;
 {const v=parseFloat(ls.get(IK));invested=isFinite(v)&&v>=0?v:null}
@@ -1784,7 +1784,7 @@ const WK=()=>"bt_wl_synced_"+uid,DK=()=>"bt_wl_dirty_"+uid;
 const keyOf=i=>i.type+":"+i.network+":"+String(i.address).toLowerCase();
 function status(){
   const n=BT.watchlist.length;
-  const t=cloud.on?"☁ Cloud sync on · "+n+(cloud.limit?" / "+cloud.limit:"")+" items":"Local watchlist · sign in to sync";
+  const t=cloud.on?"☁ Cloud sync on · "+BT.watchlist.filter(i=>i.type==="wallet").length+"/"+cloud.walletLimit+" wallets · "+BT.watchlist.filter(i=>i.type==="contract").length+"/"+cloud.contractLimit+" contracts":"Local watchlist · sign in to sync";
   const a=g("syncState"),b=g("syncTag");
   if(a)a.textContent=t;
   if(b){b.textContent=cloud.on?"☁ Synced":"This browser only";b.className="tag"+(cloud.on?" green":"")}
@@ -1812,7 +1812,7 @@ async function pull(){
     const seen=new Set(remote.map(keyOf)),add=local.filter(i=>!seen.has(keyOf(i)));
     if(add.length){merged=remote.concat(add);extra=true}
   }
-  cloud.limit=d.limit||null;cloud.on=true;
+  cloud.limit=d.limit||null;cloud.walletLimit=d.walletLimit||10;cloud.contractLimit=d.contractLimit||10;cloud.on=true;
   if(JSON.stringify(merged.map(keyOf))!==JSON.stringify(local.map(keyOf)))BT.setWatchlist(merged);
   if(d.investedUsd!=null){invested=Number(d.investedUsd);ls.set(IK,String(invested))}
   else if(invested!=null)extra=true;
@@ -1822,13 +1822,15 @@ async function pull(){
 async function push(){
   if(!cloud.on||!uid||pushing)return;
   pushing=true;
-  const all=BT.watchlist,list=cloud.limit?all.slice(0,cloud.limit):all.slice();
+  const list=BT.watchlist.slice();
   try{
     await api("/watchlist",{method:"PUT",body:JSON.stringify({items:list,investedUsd:invested})});
     ls.del(DK());ls.set(WK(),"1");
     if(all.length>list.length)toast((all.length-list.length)+" item(s) exceed your plan limit and won't sync");
   }catch(e){
-    if(e.message==="WATCHLIST_LIMIT_REACHED")toast("Watchlist limit reached for your plan");
+    if(e.message==="WALLET_LIMIT_REACHED")toast("Wallet tracking limit reached for your plan");
+    else if(e.message==="CONTRACT_LIMIT_REACHED")toast("Contract tracking limit reached for your plan");
+    else if(e.message==="WATCHLIST_LIMIT_REACHED")toast("Watchlist limit reached for your plan");
     else if(e.status===429)toast("Syncing too fast. Will retry on your next change.");
     else if(e.status!==401)toast("Cloud sync failed. Changes are kept in this browser.");
   }
