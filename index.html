@@ -258,6 +258,15 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .cm-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .cm-links a{font-size:11px;font-weight:700;color:var(--blue);text-decoration:none;background:#eef2ff;padding:7px 12px;border-radius:20px}
 .cm-src{font-size:10px;color:var(--muted);margin:12px 0 0;line-height:1.6}.cm-src a{color:var(--blue);font-weight:700;text-decoration:none}
+.cm-trade{border:1.5px solid #d5dcf0;border-radius:14px;padding:12px;background:#fafbff}
+.cm-side{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.cm-sd{border:1.5px solid #d5dcf0;background:#fff;color:#1e2a52;border-radius:10px;padding:9px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.cm-sd.buy.on{background:#10b981;border-color:#10b981;color:#fff}.cm-sd.sell.on{background:#ef4444;border-color:#ef4444;color:#fff}
+.cm-trade .control{width:100%;box-sizing:border-box}
+.cm-est{font-family:var(--mono);font-size:11px;line-height:1.8;margin:10px 0;color:#3a4566}
+.cm-ex{display:flex;gap:8px;flex-wrap:wrap}.cm-ex .cm-b{flex:1 1 140px;padding:10px 12px;font-size:11px}
+.cm-ex .cm-b.buy{background:#10b981;border-color:#10b981;color:#fff}.cm-ex .cm-b.sell{background:#ef4444;border-color:#ef4444;color:#fff}
+.cm-quick{display:flex;gap:6px;margin-top:6px}.cm-quick button{flex:1;border:1.5px solid #d5dcf0;background:#fff;border-radius:8px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;color:#1e2a52}
 .cm-al{display:flex;gap:8px;flex-wrap:wrap}.cm-al .control{min-width:0;flex:1 1 120px}
 .pa-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:11px}.pa-row small{display:block;color:var(--muted);font-size:9.5px;margin-top:3px}
 .cm-frame iframe{display:block;width:100%;height:380px;border:0;border-radius:12px;background:#f3f5fc}
@@ -1126,7 +1135,7 @@ const modal=document.createElement("div");modal.className="cm";
 modal.innerHTML='<div class="cm-box" role="dialog" aria-modal="true"><button class="cm-x" type="button" aria-label="Close">✕</button><div id="cmBody"></div></div>';
 document.body.appendChild(modal);
 const body=modal.querySelector("#cmBody");
-let token=0,cur={id:"",days:7};
+let token=0,cur={id:"",days:7},pend={side:"",focus:false};
 function show(html){body.innerHTML=html;if(!modal.classList.contains("open")){modal.classList.add("open");document.documentElement.style.overflow="hidden"}}
 function closeModal(){modal.classList.remove("open");document.documentElement.style.overflow="";token++}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(modal.classList.contains("open"))closeModal();else box.hidden=true}});
@@ -1135,12 +1144,52 @@ const stat=(l,v)=>`<div class="cm-s"><small>${l}</small><b>${v}</b></div>`;
 const errHtml=(msg,retry)=>`<div class="cm-load">${msg}${retry?'<br><button class="cm-b" type="button" data-retry="1">Retry</button>':""}</div>`;
 const errText=e=>e&&e.message==="rate"?"Too many requests. Wait a few seconds and retry.":"Could not load data. Check your internet and retry.";
 async function openCoin(id,hint){
-  box.hidden=true;const my=++token;hint=hint||{};cur={id,days:7,kind:"coin",hint};
+  box.hidden=true;const my=++token;hint=hint||{};cur={id,days:7,kind:"coin",hint,side:pend.side,focus:pend.focus};pend={side:"",focus:false};
   show(head(hint.img,hint.sym,hint.name||id,esc(String(hint.sym||"").toUpperCase()))+'<div class="cm-load">Loading details…</div>');
   try{
     const d=await getJSON(CG+"coins/"+encodeURIComponent(id)+"?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false",60000);
     if(my!==token)return;renderCoin(d);
   }catch(e){if(my!==token)return;show(head(hint.img,hint.sym,hint.name||id,"")+errHtml(errText(e),true))}
+}
+/* ---------- trade ticket: opens the order on a non-custodial DEX swap or a spot exchange ---------- */
+const FEE=0.1; // % shown in the estimate; the real fee is set by the venue you trade on
+const DEXURL={
+  ethereum:(a,b)=>`https://app.uniswap.org/swap?chain=ethereum&inputCurrency=${b?a:"ETH"}&outputCurrency=${b?"ETH":a}`,
+  base:(a,b)=>`https://app.uniswap.org/swap?chain=base&inputCurrency=${b?a:"ETH"}&outputCurrency=${b?"ETH":a}`,
+  arbitrum:(a,b)=>`https://app.uniswap.org/swap?chain=arbitrum&inputCurrency=${b?a:"ETH"}&outputCurrency=${b?"ETH":a}`,
+  polygon:(a,b)=>`https://app.uniswap.org/swap?chain=polygon&inputCurrency=${b?a:"NATIVE"}&outputCurrency=${b?"NATIVE":a}`,
+  optimism:(a,b)=>`https://app.uniswap.org/swap?chain=optimism&inputCurrency=${b?a:"ETH"}&outputCurrency=${b?"ETH":a}`,
+  bsc:(a,b)=>`https://pancakeswap.finance/swap?chain=bsc&inputCurrency=${b?a:"BNB"}&outputCurrency=${b?"BNB":a}`,
+  solana:(a,b)=>`https://jup.ag/swap/${b?a+"-SOL":"SOL-"+a}`
+};
+function tradeHtml(d,sym,px){
+  const pl=Object.entries(d.platforms||{}).filter(([k,v])=>v&&CGP[k]&&DEXURL[CGP[k]]&&/^[A-Za-z0-9]{20,64}$/.test(String(v)));
+  const side=cur.side==="sell"?"sell":"buy";
+  cur.coin={id:d.id,sym,px:Number(px)||0,dex:pl.length?{chain:CGP[pl[0][0]],addr:String(pl[0][1])}:null};
+  return '<div class="cm-sec" id="cmTradeSec">Trade '+esc(sym)+'</div><div class="cm-trade">'+
+    '<div class="cm-side"><button type="button" class="cm-sd buy'+(side==="buy"?" on":"")+'" data-side="buy">🟢 Buy</button><button type="button" class="cm-sd sell'+(side==="sell"?" on":"")+'" data-side="sell">🔴 Sell</button></div>'+
+    '<input class="control" id="cmAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Amount in USD, e.g. 100">'+
+    '<div class="cm-quick">'+[10,50,100,500].map(v=>`<button type="button" data-amt="${v}">$${v}</button>`).join("")+'</div>'+
+    '<div class="cm-est" id="cmEst">Enter an amount to see the estimate.</div>'+
+    '<div class="cm-ex" id="cmEx"></div>'+
+    '<p class="cm-src">Orders are completed on the venue you pick (your own wallet or exchange account). Your keys and funds never pass through this app. Estimate only; real price, slippage and fees may differ.</p></div>';
+}
+function tradeRefresh(){
+  const c=cur.coin;if(!c)return;const side=cur.side==="sell"?"sell":"buy",amt=parseFloat(($("cmAmt")||{}).value),est=$("cmEst"),ex=$("cmEx");if(!est||!ex)return;
+  if(isFinite(amt)&&amt>0&&c.px>0){
+    const qty=amt/c.px,fee=amt*FEE/100;
+    est.innerHTML=side==="buy"?`≈ <b>${price(qty*(1-FEE/100))} ${esc(c.sym)}</b> for $${price(amt)}<br>Price $${price(c.px)} · est. fee ~$${price(fee)} (${FEE}%)`:`Sell ≈ <b>${price(qty)} ${esc(c.sym)}</b><br>You get ≈ $${price(amt-fee)} · price $${price(c.px)} · est. fee ~$${price(fee)}`;
+  }else est.textContent="Enter an amount to see the estimate.";
+  const b=[],cls=side;
+  b.push(`<button type="button" class="cm-b ${cls}" data-exec="cex">${side==="buy"?"Buy":"Sell"} ${esc(c.sym)} on Binance ↗</button>`);
+  if(c.dex)b.push(`<button type="button" class="cm-b" data-exec="dex">${side==="buy"?"Buy":"Sell"} via DEX swap ↗</button>`);
+  ex.innerHTML=b.join("");
+}
+function openExt(u){try{const t=window.Telegram&&window.Telegram.WebApp;if(t&&t.openLink){t.openLink(u);return}}catch(e){}window.open(u,"_blank","noopener,noreferrer")}
+function tradeExec(kind){
+  const c=cur.coin;if(!c)return;const sell=cur.side==="sell";
+  if(kind==="dex"&&c.dex){const f=DEXURL[c.dex.chain];if(f)openExt(f(c.dex.addr,sell));return}
+  openExt("https://www.binance.com/en/trade/"+encodeURIComponent(c.sym)+"_USDT?type=spot");
 }
 function renderCoin(d){
   const md=d.market_data||{},u=o=>o&&o.usd,sym=String(d.symbol||"").toUpperCase();
@@ -1149,7 +1198,7 @@ function renderCoin(d){
   const stats=[
     stat("Market cap",big(u(md.market_cap))),stat("24h volume",big(u(md.total_volume))),stat("FDV",big(u(md.fully_diluted_valuation))),
     stat("Circulating",sup(md.circulating_supply,sym)),stat("Total supply",sup(md.total_supply,sym)),stat("Max supply",sup(md.max_supply,sym)),
-    stat("24h high","$"+price(u(md.high_24h))),stat("24h low","$"+price(u(md.low_24h))),stat("7d",pct(md.price_change_percentage_7d)),
+    stat("24h high","$"+price(u(md.high_24h))),stat("24h low","$"+price(u(md.low_24h))),stat("1h",pct(md.price_change_percentage_1h_in_currency&&md.price_change_percentage_1h_in_currency.usd)),stat("7d",pct(md.price_change_percentage_7d)),
     stat("30d",pct(md.price_change_percentage_30d)),stat("1y",pct(md.price_change_percentage_1y)),stat("Rank",d.market_cap_rank?"#"+d.market_cap_rank:"—"),
     stat("All-time high","$"+price(ath)+"<br>"+pct(u(md.ath_change_percentage))+(u(md.ath_date)?'<br><small>'+esc(new Date(u(md.ath_date)).toLocaleDateString())+"</small>":"")),
     stat("All-time low","$"+price(atl)+"<br>"+pct(u(md.atl_change_percentage))+(u(md.atl_date)?'<br><small>'+esc(new Date(u(md.atl_date)).toLocaleDateString())+"</small>":""))
@@ -1164,13 +1213,14 @@ function renderCoin(d){
     head(img,sym,d.name,esc(sym)+(d.market_cap_rank?" · #"+d.market_cap_rank:"")+(cats?" · "+esc(cats):""))+
     `<div class="cm-price">$${price(u(md.current_price))} ${pct(md.price_change_percentage_24h)} <small>24h</small></div>`+
     '<div class="cm-ranges">'+[[1,"1D"],[7,"7D"],[30,"30D"],[90,"90D"],[365,"1Y"]].map(r=>`<button type="button" class="cm-r${r[0]===cur.days?" on":""}" data-days="${r[0]}">${r[1]}</button>`).join("")+"</div>"+
-    '<div class="cm-tip" id="cmTip"></div><div class="cm-chart" id="cmChart"></div>'+
+    '<div class="cm-tip" id="cmTip"></div><div class="cm-chart" id="cmChart"></div>'+tradeHtml(d,sym,u(md.current_price))+
     '<div class="cm-sec">Price alert (Telegram)</div><div class="cm-al"><select class="control" id="cmAlDir"><option value="above">Goes above</option><option value="below">Goes below</option></select><input class="control" id="cmAlPrice" inputmode="decimal" placeholder="Target price (USD)"><button type="button" class="cm-b pri" data-setalert="'+esc(d.id)+'|'+esc(sym)+'">Set alert</button></div><p class="cm-src" id="cmAlMsg"></p>'+
     '<div class="cm-sec">Market data</div><div class="cm-stats">'+stats+"</div>"+contracts+
     (desc?`<div class="cm-sec">About</div><p class="cm-desc">${esc(desc.slice(0,360))}${desc.length>360?"…":""}</p>`:"")+links+
     '<p class="cm-src">Data: CoinGecko. Not financial advice.</p>'
   );
-  loadChart();
+  loadChart();tradeRefresh();
+  if(cur.focus){cur.focus=false;setTimeout(()=>{const t=$("cmTradeSec");if(t&&t.scrollIntoView)t.scrollIntoView({behavior:"smooth",block:"start"})},250)}
 }
 const RL={1:"24h",7:"7d",30:"30d",90:"90d",365:"1y"};
 async function loadChart(){
@@ -1243,10 +1293,17 @@ function scan(net,addr){
   if(sa)sa.value=addr;
   setTimeout(()=>{const b=$("scanBtn");if(b&&!b.disabled)b.click()},350);
 }
+modal.addEventListener("input",e=>{if(e.target&&e.target.id==="cmAmt")tradeRefresh()});
 modal.addEventListener("click",e=>{
   if(e.target===modal||e.target.closest(".cm-x")){closeModal();return}
   const r=e.target.closest("[data-days]");
   if(r&&cur.kind==="coin"){cur.days=Number(r.dataset.days);modal.querySelectorAll(".cm-r").forEach(b=>b.classList.toggle("on",b===r));loadChart();return}
+  const sd=e.target.closest("[data-side]");
+  if(sd){cur.side=sd.dataset.side;modal.querySelectorAll(".cm-sd").forEach(b=>b.classList.toggle("on",b===sd));tradeRefresh();return}
+  const qa=e.target.closest("[data-amt]");
+  if(qa){const i=$("cmAmt");if(i){i.value=qa.dataset.amt;tradeRefresh()}return}
+  const ex=e.target.closest("[data-exec]");
+  if(ex){tradeExec(ex.dataset.exec);return}
   const c=e.target.closest("[data-copy]");
   if(c){const a=c.dataset.copy;const done=()=>{c.textContent="Copied";setTimeout(()=>{c.textContent="Copy"},1200)};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(a).then(done,()=>{});else{const t=document.createElement("textarea");t.value=a;document.body.appendChild(t);t.select();try{document.execCommand("copy");done()}catch(x){}t.remove()}return}
   const sa=e.target.closest("[data-setalert]");
@@ -1255,6 +1312,20 @@ modal.addEventListener("click",e=>{
   if(s){const i=s.dataset.scan.indexOf("|");scan(s.dataset.scan.slice(0,i),s.dataset.scan.slice(i+1));return}
   if(e.target.closest("[data-retry]")){if(cur.kind==="coin"){if($("cmChart"))loadChart();else openCoin(cur.id,cur.hint)}}
 });
+/* ---------- deep links from Telegram posts: ?startapp=c_<coin> (chart) | b_<coin> (buy) | s_<coin> (sell), or ?coin=<id>&act=chart|buy|sell ---------- */
+(function route(){
+  let act="",coin="";
+  try{
+    const t=window.Telegram&&window.Telegram.WebApp;
+    let sp=(t&&t.initDataUnsafe&&t.initDataUnsafe.start_param)||new URLSearchParams(location.search).get("tgWebAppStartParam")||new URLSearchParams(location.hash.replace(/^#/,"")).get("tgWebAppStartParam")||"";
+    const m=/^([cbs])_([a-z0-9-]{1,80})$/.exec(sp);
+    if(m){act={c:"chart",b:"buy",s:"sell"}[m[1]];coin=m[2]}
+    const q=new URLSearchParams(location.search),qc=q.get("coin");
+    if(!coin&&qc&&/^[a-z0-9-]{1,80}$/.test(qc)){coin=qc;act=["chart","buy","sell"].includes(q.get("act"))?q.get("act"):"chart"}
+  }catch(e){}
+  if(!coin)return;
+  setTimeout(()=>{pend={side:act==="buy"||act==="sell"?act:"",focus:act==="buy"||act==="sell"};openCoin(coin,{})},500);
+})();
 })();
 </script>
 <script>
