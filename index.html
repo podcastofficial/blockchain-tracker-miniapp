@@ -465,6 +465,71 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <div class="stat-card"><div class="stat-top">Revenue (30d) <span class="stat-symbol">＄</span></div><div class="stat-value" id="adRev">—</div><div class="stat-foot" id="adRevFoot"></div></div>
   </div>
   <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Network Provider Health</div><button class="btn small" id="adRefresh" type="button">↻ Refresh</button></div><div id="adminNetworks"></div></div><div class="card"><div class="card-head"><div class="card-title">Workers &amp; Plans</div></div><div id="adWorker"></div></div></div>
+  <div class="card" style="margin-top:15px" id="chCard">
+    <div class="card-head"><div><div class="card-title">Telegram Channels &amp; Auto Alerts</div><div class="card-sub">Unlimited channels per blockchain. Each channel gets its own scheduled alerts: price, new token, liquidity, whale, gainers/losers, trending.</div></div><button class="btn primary small" id="chAddBtn" type="button">+ Add channel</button></div>
+    <div class="kv"><span>Posts sent (24h)</span><span id="chSent">—</span></div><div class="kv"><span>Failed posts (24h)</span><span id="chFail">—</span></div>
+    <div class="notice" style="margin-top:12px">First add the bot to your Telegram channel as an <b>admin</b> with permission to post messages. The scheduler checks every 5 minutes, so 5 minutes is the shortest interval.</div>
+
+    <div id="chEd" style="display:none;margin-top:14px;padding:14px;border:1.5px solid var(--border);border-radius:12px">
+      <div class="card-title" id="chEdTitle" style="margin-bottom:10px">Add channel</div>
+      <div class="form-grid">
+        <div class="field"><label for="chEdName">Display name (optional)</label><input id="chEdName" maxlength="60" placeholder="BNB Price Alerts"></div>
+        <div class="field"><label for="chEdChat">Channel @username or ID</label><input id="chEdChat" maxlength="80" placeholder="@mychannel or -1001234567890" autocapitalize="off" autocomplete="off"></div>
+        <div class="field"><label for="chEdNet">Blockchain</label><select id="chEdNet"></select></div>
+        <div class="field"><label for="chEdOn">Notifications</label><select id="chEdOn"><option value="1">ON</option><option value="0">OFF</option></select></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn primary" id="chEdSave" type="button">Save channel</button><button class="btn" id="chEdCancel" type="button">Cancel</button></div>
+      <div class="form-message" id="chEdMsg"></div>
+    </div>
+
+    <div id="chRu" style="display:none;margin-top:14px;padding:14px;border:1.5px solid var(--border);border-radius:12px">
+      <div class="card-title" id="chRuTitle" style="margin-bottom:4px">Add alert</div>
+      <div class="card-sub" id="chRuFor" style="margin:0 0 10px"></div>
+      <div class="form-grid">
+        <div class="field"><label for="chrType">Alert type</label><select id="chrType"><option value="price">📈 Price alert</option><option value="new_token">🆕 New token alert</option><option value="liquidity">💧 Liquidity alert</option><option value="whale">🐋 Whale alert</option><option value="movers">🚀 Gainers &amp; losers</option><option value="trending">🔥 Trending coins</option></select></div>
+        <div class="field"><label for="chrOn">Notifications</label><select id="chrOn"><option value="1">ON</option><option value="0">OFF</option></select></div>
+        <div class="field"><label for="chrSched">Schedule</label><select id="chrSched"><option value="interval">Repeat every…</option><option value="daily">Once a day at a fixed time</option></select></div>
+        <div class="field" id="chrIntW"><label for="chrInt">Time interval</label><select id="chrInt"><option value="5">Every 5 minutes</option><option value="15">Every 15 minutes</option><option value="30">Every 30 minutes</option><option value="60" selected>Every 1 hour</option><option value="120">Every 2 hours</option><option value="240">Every 4 hours</option><option value="360">Every 6 hours</option><option value="720">Every 12 hours</option><option value="1440">Every 24 hours</option><option value="10080">Every 7 days</option></select></div>
+        <div class="field" id="chrTimeW" style="display:none"><label for="chrTime">Post at (24h)</label><input id="chrTime" type="time" value="09:00"></div>
+        <div class="field" id="chrTzW" style="display:none"><label for="chrTz">Time zone</label><select id="chrTz"><option value="Asia/Kolkata">India (IST)</option><option value="UTC">UTC</option><option value="Asia/Dubai">Dubai</option><option value="Asia/Singapore">Singapore</option><option value="Europe/London">London</option><option value="America/New_York">New York</option></select></div>
+      </div>
+      <div data-ruf="price" style="margin-top:12px"><div class="form-grid">
+        <div class="field full"><label for="chrCoins">Coins (CoinGecko ids, comma separated)</label><textarea id="chrCoins" placeholder="bitcoin, ethereum, binancecoin" style="min-height:56px"></textarea><div class="muted" style="font-size:9px;margin-top:5px">Leave empty to use the channel's native coin (for example BNB for a BNB Chain channel).</div></div>
+        <div class="field full"><label for="chrCoinQ">Find a coin id</label><div class="toolbar" style="margin:0"><input class="control" id="chrCoinQ" placeholder="Search name or symbol" style="flex:1;min-width:140px"><button class="btn small" id="chrCoinBtn" type="button">Search</button></div><div id="chrCoinRes" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div></div>
+        <div class="field"><label for="chrMode">Post mode</label><select id="chrMode"><option value="digest">Price list every time</option><option value="change">Only when price moves</option></select></div>
+        <div class="field" id="chrPctW" style="display:none"><label for="chrPct">Move since last post (%)</label><input id="chrPct" type="number" min="0.1" max="100" step="any" inputmode="decimal" value="2"></div>
+      </div></div>
+      <div data-ruf="new_token" style="margin-top:12px;display:none"><div class="form-grid">
+        <div class="field"><label for="chrAge">Token younger than (hours)</label><input id="chrAge" type="number" min="1" max="168" step="1" inputmode="numeric" value="24"></div>
+        <div class="field"><label for="chrNtLiq">Minimum liquidity (USD)</label><input id="chrNtLiq" type="number" min="0" step="any" inputmode="decimal" value="5000"></div>
+        <div class="field"><label for="chrNtMax">Max tokens per post</label><input id="chrNtMax" type="number" min="1" max="10" step="1" inputmode="numeric" value="3"></div>
+      </div><div class="muted" style="font-size:9px;margin-top:6px">Uses the channel's blockchain (or all blockchains for an "All" channel). Data: DexScreener.</div></div>
+      <div data-ruf="liquidity" style="margin-top:12px;display:none"><div class="form-grid">
+        <div class="field full"><label for="chrTokens">Tokens to watch (one per line: chain:address label)</label><textarea id="chrTokens" placeholder="bsc:0x55d398326f99059fF775485246999027B3197955 USDT&#10;0xTokenAddress MyToken" style="min-height:76px"></textarea><div class="muted" style="font-size:9px;margin-top:5px">The chain prefix can be left out when the channel belongs to one blockchain.</div></div>
+        <div class="field"><label for="chrDrop">Alert if liquidity drops by (%)</label><input id="chrDrop" type="number" min="5" max="99" step="any" inputmode="decimal" value="20"></div>
+        <div class="field"><label for="chrRise">Alert if liquidity rises by (%, 0 = off)</label><input id="chrRise" type="number" min="0" step="any" inputmode="decimal" value="0"></div>
+        <div class="field"><label for="chrLiqMin">Alert below (USD, 0 = off)</label><input id="chrLiqMin" type="number" min="0" step="any" inputmode="decimal" value="0"></div>
+      </div></div>
+      <div data-ruf="whale" style="margin-top:12px;display:none"><div class="form-grid">
+        <div class="field"><label for="chrWMin">Minimum transfer (USD)</label><input id="chrWMin" type="number" min="10000" step="any" inputmode="decimal" value="100000"></div>
+        <div class="field"><label for="chrWMax">Max transfers per post</label><input id="chrWMax" type="number" min="1" max="10" step="1" inputmode="numeric" value="5"></div>
+      </div><div class="muted" style="font-size:9px;margin-top:6px">Works on Ethereum, BNB Chain and Polygon channels (or an "All" channel).</div></div>
+      <div data-ruf="top" style="margin-top:12px;display:none"><div class="form-grid"><div class="field"><label for="chrTop">How many coins to list</label><input id="chrTop" type="number" min="3" max="10" step="1" inputmode="numeric" value="5"></div></div></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn primary" id="chRuSave" type="button">Save alert</button><button class="btn" id="chRuCancel" type="button">Cancel</button></div>
+      <div class="form-message" id="chRuMsg"></div>
+    </div>
+
+    <div id="chMsgP" style="display:none;margin-top:14px;padding:14px;border:1.5px solid var(--border);border-radius:12px">
+      <div class="card-title" id="chMsgTitle" style="margin-bottom:10px">Send a message</div>
+      <div class="field"><textarea id="chMsgText" maxlength="3500" placeholder="Type the message to post now…" style="min-height:90px"></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn primary" id="chMsgSend" type="button">Post now</button><button class="btn" id="chMsgCancel" type="button">Cancel</button></div>
+      <div class="form-message" id="chMsgMsg"></div>
+    </div>
+
+    <div id="chList" style="margin-top:14px"><div class="muted">Loading…</div></div>
+    <div class="card-title" style="margin-top:18px;font-size:12px">Recent channel posts</div>
+    <div class="table-wrap"><table><thead><tr><th>Time</th><th>Channel</th><th>Type</th><th>Status</th><th>Message</th></tr></thead><tbody id="chLog"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
+  </div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Payments</div><div class="card-sub">Latest 50 invoices</div></div><select class="control" id="adPayFilter"><option value="">All</option><option value="confirmed">Confirmed</option><option value="pending">Pending</option><option value="verifying">Verifying</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div><div class="table-wrap"><table><thead><tr><th>Created</th><th>User</th><th>Plan</th><th>Network</th><th>Amount</th><th>Status</th><th>Tx</th></tr></thead><tbody id="adPayRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Users</div><div class="card-sub">Search by @username, Telegram ID or internal ID</div></div></div><div class="toolbar"><input class="control" id="adUserQ" placeholder="Search users" style="flex:1;min-width:160px"><button class="btn" id="adUserBtn" type="button">Search</button></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>User</th><th>Plan</th><th>Joined</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adUserRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Grant Plan</div><div class="card-sub">Gives a paid plan without payment. Every grant is audit-logged.</div></div></div><div class="form-grid"><div class="field"><label for="adGrantUser">Internal user ID</label><input id="adGrantUser" type="number" min="1" step="1" inputmode="numeric" placeholder="Tap Grant on a user row"></div><div class="field"><label for="adGrantPlan">Plan</label><select id="adGrantPlan"><option value="pro">Pro</option><option value="business">Business</option><option value="enterprise">Enterprise</option></select></div><div class="field"><label for="adGrantDays">Days (1 to 3650)</label><input id="adGrantDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30"></div></div><button class="btn primary" id="adGrantBtn" type="button" style="margin-top:12px">Grant plan</button><div class="form-message" id="adGrantMsg"></div></div>
@@ -1684,7 +1749,7 @@ async function loadAdmin(force){
     const d=await api("/admin/stats");
     isAdmin=true;adShown=true;adT=Date.now();showAdminUi();
     gate.style.display="none";bodyEl.style.display="";
-    drawAdminStats(d);drawProviders();loadPayments();loadUsers();
+    drawAdminStats(d);drawProviders();loadPayments();loadUsers();loadChannels();
   }catch(e){
     isAdmin=false;adShown=false;gate.style.display="";bodyEl.style.display="none";
     gate.textContent=e.status===403?"This account is not on the admin list.":(ADMSG[e.message]||"Could not load admin data. Try again.");
@@ -1721,6 +1786,162 @@ document.addEventListener("click",async e=>{
     try{await api("/admin/user",{method:"POST",body:JSON.stringify({userId:id,action:act})});toast("User "+(act==="block"?"blocked":"unblocked"))}
     catch(err){toast(ADMSG[err.message]||"Action failed")}
     loadUsers();
+  }
+});
+/* ---- Telegram channels & auto alerts ---- */
+const CH_TYPES={price:["📈","Price alert"],new_token:["🆕","New token alert"],liquidity:["💧","Liquidity alert"],whale:["🐋","Whale alert"],movers:["🚀","Gainers & losers"],trending:["🔥","Trending coins"],manual:["✉️","Manual message"],test:["✅","Test"]};
+const CHMSG={INVALID_CHAT_ID:"Enter the channel @username or numeric ID (-100…).",CHANNEL_NOT_FOUND:"Telegram cannot find this channel. Check the @username or ID.",BOT_NOT_IN_CHANNEL:"The bot is not in this channel. Add it first.",BOT_NOT_ADMIN:"Make the bot an admin of the channel with permission to post.",BOT_CANNOT_POST:"The bot is admin but cannot post. Turn on 'Post messages' for it.",CHANNEL_EXISTS:"This channel is already added for this blockchain.",SEND_FAILED:"Telegram refused the message.",BOT_TOKEN_MISSING:"TELEGRAM_BOT_TOKEN is not set on the server.",INVALID_ALERT_TYPE:"Pick an alert type.",INVALID_INTERVAL:"Interval must be 5 minutes or more.",INVALID_TIMEZONE:"Invalid time zone.",INVALID_DAILY_TIME:"Enter the time as HH:MM.",INVALID_COINS:"Coin ids look like bitcoin, ethereum (max 25).",COINS_REQUIRED:"Add at least one coin id (this channel covers all blockchains).",INVALID_THRESHOLD:"One of the numbers is out of range.",INVALID_TOKENS:"One line per token: chain:address label. Check chain and address (max 20).",WHALE_NETWORK_UNSUPPORTED:"Whale alerts work on Ethereum, BNB Chain and Polygon channels (or All).",CHANNEL_NOT_FOUND_DB:"Channel not found.",RULE_NOT_FOUND:"Alert not found.",CHANNELS_FAILED:"Server error. Try again.",PRICE_SOURCE_UNAVAILABLE:"Coin search is busy. Try again."};
+const chMsg=e=>{const d=e.payload&&e.payload.detail;return (CHMSG[e.message]||ADMSG[e.message]||"Request failed.")+(d?" ("+d+")":"")};
+const chNet=n=>n==="all"?"All blockchains":netName(n);
+const chInt=m=>m<60?m+" min":m<1440?(m/60)+" h":(m/1440)+" day";
+const chSched=r=>r.schedule_type==="daily"?"Daily at "+r.daily_time+" ("+r.tz+")":"Every "+chInt(r.interval_min);
+function chCfg(r){
+  const c=r.config||{};
+  if(r.alert_type==="price")return (c.coins&&c.coins.length?c.coins.join(", "):"native coin")+(c.mode==="change"?" · only if moves ≥ "+c.minChangePct+"%":" · full list");
+  if(r.alert_type==="new_token")return "younger than "+c.maxAgeHours+"h · liquidity ≥ "+usd(c.minLiquidityUsd)+" · max "+c.maxPerRun;
+  if(r.alert_type==="liquidity")return (c.tokens||[]).length+" token(s) · drop ≥ "+c.dropPct+"%"+(c.risePct>0?" · rise ≥ "+c.risePct+"%":"")+(c.minLiquidityUsd>0?" · below "+usd(c.minLiquidityUsd):"");
+  if(r.alert_type==="whale")return "transfers ≥ "+usd(c.minUsd)+" · max "+c.maxPerRun;
+  return "top "+c.top;
+}
+let chData=null,chBusy=false,chRuleCtx=null,chMsgId=null,chEditId=null;
+const chFind=id=>chData&&chData.channels.find(c=>c.id===id);
+function chShow(panel){["chEd","chRu","chMsgP"].forEach(x=>g(x).style.display=x===panel?"":"none");if(panel)g(panel).scrollIntoView({behavior:"smooth",block:"center"})}
+function renderChannels(){
+  const d=chData;if(!d)return;
+  g("chSent").textContent=d.stats.sent24;g("chFail").textContent=d.stats.failed24;
+  g("chList").innerHTML=d.channels.length?d.channels.map(c=>{
+    const rules=c.rules.length?c.rules.map(r=>{
+      const t=CH_TYPES[r.alert_type]||["",r.alert_type],on=r.enabled&&c.enabled;
+      return `<div style="padding:10px 0;border-top:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><strong style="font-size:12px">${t[0]} ${E(t[1])}</strong><span class="tag ${r.enabled?"green":"red"}">${r.enabled?"ON":"OFF"}</span></div><div class="muted" style="font-size:10px;margin:4px 0">${E(chSched(r))} · ${E(chCfg(r))}</div><div class="muted" style="font-size:10px">${r.last_run_at?"Last run "+E(ago(r.last_run_at)):"Not run yet"}${r.last_posted_at?" · last post "+E(ago(r.last_posted_at)):""}${!on?" · paused":""}</div>${r.last_error?`<div class="negative" style="font-size:10px;margin-top:3px">Error: ${E(r.last_error)}</div>`:""}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn small" type="button" data-ru-act="toggle" data-id="${r.id}">${r.enabled?"Turn OFF":"Turn ON"}</button><button class="btn small" type="button" data-ru-act="edit" data-id="${r.id}">Edit</button><button class="btn small" type="button" data-ru-act="run" data-id="${r.id}">Send now</button><button class="btn small danger" type="button" data-ru-act="del" data-id="${r.id}">Delete</button></div></div>`;
+    }).join(""):`<div class="muted" style="font-size:10px;padding:10px 0;border-top:1px solid var(--border)">No alerts yet. Tap "+ Add alert".</div>`;
+    return `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><div style="min-width:0"><strong style="font-size:13px">${E(c.name)}</strong><div class="muted mono" style="font-size:10px">${E(c.chat_id)} · ${E(chNet(c.network))}</div></div><span class="tag ${c.enabled?"green":"red"}">${c.enabled?"ON":"OFF"}</span></div>${c.last_error?`<div class="negative" style="font-size:10px;margin-top:6px">Last error: ${E(c.last_error)}</div>`:""}<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px"><button class="btn small" type="button" data-ch-act="toggle" data-id="${c.id}">${c.enabled?"Turn OFF":"Turn ON"}</button><button class="btn small" type="button" data-ch-act="edit" data-id="${c.id}">Edit</button><button class="btn small" type="button" data-ch-act="test" data-id="${c.id}">Test</button><button class="btn small" type="button" data-ch-act="send" data-id="${c.id}">Send message</button><button class="btn small primary" type="button" data-ch-act="addrule" data-id="${c.id}">+ Add alert</button><button class="btn small danger" type="button" data-ch-act="del" data-id="${c.id}">Delete</button></div>${rules}</div>`;
+  }).join(""):empty("No channels yet","Tap + Add channel, then add alerts to it.");
+  g("chLog").innerHTML=d.log.length?d.log.map(l=>{const t=CH_TYPES[l.alert_type]||["",l.alert_type];return `<tr><td>${E(ago(l.created_at))}</td><td>${E(l.channel_name)}</td><td>${t[0]} ${E(t[1])}</td><td><span class="status ${l.status==="sent"?"ok":"bad"}" ${l.error?`title="${E(l.error)}"`:""}>${E(l.status)}</span></td><td class="muted" style="max-width:260px;white-space:pre-wrap">${E(String(l.summary||l.error||"").slice(0,140))}</td></tr>`}).join(""):'<tr><td colspan="5" class="muted">No posts yet.</td></tr>';
+}
+async function loadChannels(){
+  if(chBusy)return;chBusy=true;
+  try{
+    const d=await api("/admin/channels");chData=d;
+    g("chEdNet").innerHTML='<option value="all">All blockchains</option>'+d.networks.map(n=>`<option value="${E(n)}">${E(netName(n))}</option>`).join("");
+    renderChannels();
+  }catch(e){g("chList").innerHTML=e.message==="CHANNELS_NOT_MIGRATED"?empty("Channels not set up yet","Run db/channels.sql in your Neon database, then refresh."):empty("Could not load channels",chMsg(e))}
+  chBusy=false;
+}
+/* channel editor */
+function openChEditor(c){
+  chEditId=c?c.id:null;g("chEdTitle").textContent=c?"Edit channel":"Add channel";
+  g("chEdName").value=c?c.name:"";g("chEdChat").value=c?c.chat_id:"";g("chEdNet").value=c?c.network:"all";g("chEdOn").value=c&&!c.enabled?"0":"1";g("chEdMsg").textContent="";chShow("chEd");
+}
+g("chAddBtn").addEventListener("click",()=>openChEditor(null));
+g("chEdCancel").addEventListener("click",()=>chShow(null));
+g("chEdSave").addEventListener("click",async()=>{
+  const msg=g("chEdMsg"),b=g("chEdSave");msg.style.color="";
+  if(!g("chEdChat").value.trim()){msg.textContent="Enter the channel @username or ID.";return}
+  b.disabled=true;msg.textContent="Checking the channel with Telegram…";
+  try{
+    await api("/admin/channel-save",{method:"POST",body:JSON.stringify({id:chEditId,name:g("chEdName").value,chatId:g("chEdChat").value,network:g("chEdNet").value,enabled:g("chEdOn").value==="1"})});
+    toast("Channel saved");chShow(null);await loadChannels();
+  }catch(e){msg.textContent=chMsg(e)}
+  b.disabled=false;
+});
+/* rule editor */
+const RUF={price:"price",new_token:"new_token",liquidity:"liquidity",whale:"whale",movers:"top",trending:"top"};
+function syncRuleForm(){
+  const type=g("chrType").value;
+  document.querySelectorAll("[data-ruf]").forEach(el=>el.style.display=el.dataset.ruf===RUF[type]?"":"none");
+  const daily=g("chrSched").value==="daily";
+  g("chrIntW").style.display=daily?"none":"";g("chrTimeW").style.display=daily?"":"none";g("chrTzW").style.display=daily?"":"none";
+  g("chrPctW").style.display=g("chrMode").value==="change"?"":"none";
+  if(type==="trending"&&!chRuleCtx.ruleId)g("chrTop").value=7;
+}
+["chrType","chrSched","chrMode"].forEach(id=>g(id).addEventListener("change",syncRuleForm));
+function openRuleEditor(channelId,rule){
+  const c=chFind(channelId);if(!c)return;
+  chRuleCtx={channelId,ruleId:rule?rule.id:null};
+  g("chRuTitle").textContent=rule?"Edit alert":"Add alert";
+  g("chRuFor").textContent="Channel: "+c.name+" · "+chNet(c.network);
+  const cf=rule?rule.config||{}:{};
+  g("chrType").value=rule?rule.alert_type:"price";g("chrOn").value=rule&&!rule.enabled?"0":"1";
+  g("chrSched").value=rule?rule.schedule_type:"interval";
+  g("chrInt").value=rule&&[5,15,30,60,120,240,360,720,1440,10080].includes(rule.interval_min)?rule.interval_min:60;
+  g("chrTime").value=rule&&rule.daily_time?rule.daily_time:"09:00";g("chrTz").value=rule?rule.tz:"Asia/Kolkata";
+  g("chrCoins").value=(cf.coins||[]).join(", ");g("chrMode").value=cf.mode||"digest";g("chrPct").value=cf.minChangePct||2;
+  g("chrAge").value=cf.maxAgeHours||24;g("chrNtLiq").value=cf.minLiquidityUsd??5000;g("chrNtMax").value=rule&&rule.alert_type==="new_token"?cf.maxPerRun||3:3;
+  g("chrTokens").value=(cf.tokens||[]).map(t=>t.chain+":"+t.address+(t.label?" "+t.label:"")).join("\n");
+  g("chrDrop").value=cf.dropPct||20;g("chrRise").value=cf.risePct||0;g("chrLiqMin").value=rule&&rule.alert_type==="liquidity"?cf.minLiquidityUsd||0:0;
+  g("chrWMin").value=cf.minUsd||100000;g("chrWMax").value=rule&&rule.alert_type==="whale"?cf.maxPerRun||5:5;
+  g("chrTop").value=cf.top||5;g("chrCoinQ").value="";g("chrCoinRes").innerHTML="";g("chRuMsg").textContent="";
+  syncRuleForm();chShow("chRu");
+}
+g("chRuCancel").addEventListener("click",()=>chShow(null));
+g("chrCoinBtn").addEventListener("click",async()=>{
+  const q=g("chrCoinQ").value.trim(),box=g("chrCoinRes");if(q.length<2)return;
+  box.innerHTML='<span class="muted" style="font-size:10px">Searching…</span>';
+  try{const d=await api("/admin/coin-search?q="+encodeURIComponent(q));
+    box.innerHTML=d.coins.length?d.coins.map(c=>`<button class="btn small" type="button" data-coin="${E(c.id)}">${E(c.symbol)} · ${E(c.id)}</button>`).join(""):'<span class="muted" style="font-size:10px">No coin found.</span>';
+  }catch(e){box.innerHTML=`<span class="negative" style="font-size:10px">${E(chMsg(e))}</span>`}
+});
+g("chrCoinQ").addEventListener("keydown",e=>{if(e.key==="Enter")g("chrCoinBtn").click()});
+g("chRuSave").addEventListener("click",async()=>{
+  const msg=g("chRuMsg"),b=g("chRuSave"),type=g("chrType").value,num=id=>Number(g(id).value);let config={};
+  msg.style.color="";
+  if(type==="price")config={coins:g("chrCoins").value,mode:g("chrMode").value,minChangePct:num("chrPct")};
+  else if(type==="new_token")config={maxAgeHours:num("chrAge"),minLiquidityUsd:num("chrNtLiq"),maxPerRun:num("chrNtMax")};
+  else if(type==="liquidity"){
+    const net=chFind(chRuleCtx.channelId).network,nets=chData.networks;
+    const tokens=g("chrTokens").value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{
+      const [tok,...rest]=l.split(/\s+/),i=tok.indexOf(":"),pre=i>0?tok.slice(0,i).toLowerCase():"";
+      return nets.includes(pre)?{chain:pre,address:tok.slice(i+1),label:rest.join(" ")}:{chain:net==="all"?"":net,address:tok,label:rest.join(" ")};
+    });
+    config={tokens,dropPct:num("chrDrop"),risePct:num("chrRise"),minLiquidityUsd:num("chrLiqMin")};
+  }
+  else if(type==="whale")config={minUsd:num("chrWMin"),maxPerRun:num("chrWMax")};
+  else config={top:num("chrTop")};
+  b.disabled=true;msg.textContent="Saving…";
+  try{
+    await api("/admin/rule-save",{method:"POST",body:JSON.stringify({id:chRuleCtx.ruleId,channelId:chRuleCtx.channelId,alertType:type,enabled:g("chrOn").value==="1",scheduleType:g("chrSched").value,intervalMin:num("chrInt"),dailyTime:g("chrTime").value,tz:g("chrTz").value,config})});
+    toast("Alert saved");chShow(null);await loadChannels();
+  }catch(e){msg.textContent=chMsg(e)}
+  b.disabled=false;
+});
+/* manual message */
+g("chMsgCancel").addEventListener("click",()=>chShow(null));
+g("chMsgSend").addEventListener("click",async()=>{
+  const msg=g("chMsgMsg"),text=g("chMsgText").value.trim(),b=g("chMsgSend");msg.style.color="";
+  if(!text){msg.textContent="Type a message first.";return}
+  b.disabled=true;msg.textContent="Posting…";
+  try{await api("/admin/channel-send",{method:"POST",body:JSON.stringify({id:chMsgId,text})});g("chMsgText").value="";toast("Message posted");chShow(null);loadChannels()}
+  catch(e){msg.textContent=chMsg(e)}
+  b.disabled=false;
+});
+/* list actions */
+g("chCard").addEventListener("click",async e=>{
+  const coin=e.target.closest("[data-coin]");
+  if(coin){const t=g("chrCoins"),have=t.value.split(/[\s,;]+/).filter(Boolean);if(!have.includes(coin.dataset.coin))have.push(coin.dataset.coin);t.value=have.join(", ");return}
+  const ca=e.target.closest("[data-ch-act]"),ra=e.target.closest("[data-ru-act]");
+  const post=async(path,body,ok)=>{try{const d=await api(path,{method:"POST",body:JSON.stringify(body)});if(ok)toast(typeof ok==="function"?ok(d):ok);await loadChannels();return d}catch(err){toast(chMsg(err));await loadChannels()}};
+  if(ca){
+    const id=Number(ca.dataset.id),c=chFind(id);if(!c)return;
+    switch(ca.dataset.chAct){
+      case"toggle":await post("/admin/channel-toggle",{id,enabled:!c.enabled},c.enabled?"Channel OFF":"Channel ON");break;
+      case"edit":openChEditor(c);break;
+      case"addrule":openRuleEditor(id,null);break;
+      case"send":chMsgId=id;g("chMsgTitle").textContent="Send a message to "+c.name;g("chMsgMsg").textContent="";chShow("chMsgP");break;
+      case"test":ca.disabled=true;await post("/admin/channel-test",{id},"Test message sent");break;
+      case"del":if(confirm("Delete channel \""+c.name+"\" and all of its alerts?"))await post("/admin/channel-delete",{id},"Channel deleted");break;
+    }
+    return;
+  }
+  if(ra){
+    const id=Number(ra.dataset.id);let rule=null,ch=null;
+    for(const c of chData.channels){const r=c.rules.find(x=>x.id===id);if(r){rule=r;ch=c}}
+    if(!rule)return;
+    switch(ra.dataset.ruAct){
+      case"toggle":await post("/admin/rule-toggle",{id,enabled:!rule.enabled},rule.enabled?"Alert OFF":"Alert ON");break;
+      case"edit":openRuleEditor(ch.id,rule);break;
+      case"run":ra.disabled=true;await post("/admin/rule-run",{id},d=>d.posted?"Posted to channel":d.error?"Failed: "+d.error:"Nothing to post right now");break;
+      case"del":if(confirm("Delete this alert?"))await post("/admin/rule-delete",{id},"Alert deleted");break;
+    }
   }
 });
 onPage("admin",()=>loadAdmin(false));
