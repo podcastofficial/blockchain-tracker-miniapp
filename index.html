@@ -261,6 +261,16 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .cm-al{display:flex;gap:8px;flex-wrap:wrap}.cm-al .control{min-width:0;flex:1 1 120px}
 .pa-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:11px}.pa-row small{display:block;color:var(--muted);font-size:9.5px;margin-top:3px}
 .cm-frame iframe{display:block;width:100%;height:380px;border:0;border-radius:12px;background:#f3f5fc}
+.bar-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px}
+.bar-name{width:118px;flex:none;font-weight:700;display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap}
+.bar-track{flex:1;height:9px;border-radius:6px;background:#eef2ff;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;background:var(--grad)}
+.bar-val{width:74px;text-align:right;font-family:var(--mono);font-weight:700;flex:none}
+.dirtag{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:6px;margin-right:6px;font-family:Sora,sans-serif}
+.dirtag.in{color:#059669;background:#10b98120}.dirtag.out{color:#dc2626;background:#ef444420}
+.mono{font-family:var(--mono)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:11px}.kv span:first-child{color:var(--muted)}
+.lbl{color:var(--violet);font-weight:800}
 </style>
 </head>
 <body>
@@ -283,9 +293,9 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="nav-label">ACCOUNT</div>
   <nav class="nav">
     <button data-page="subscription"><span class="nav-icon">◇</span>Subscription & API</button>
-    <button data-page="admin"><span class="nav-icon">⚙</span>Admin Panel</button>
+    <button data-page="admin" id="adminNav" style="display:none"><span class="nav-icon">⚙</span>Admin Panel</button>
   </nav>
-  <div class="sidebar-bottom"><div class="network-pill"><strong><span class="status pending" id="backendStatus">Connecting backend…</span></strong>UI preview mode · Local watchlist only</div></div>
+  <div class="sidebar-bottom"><div class="network-pill"><strong><span class="status pending" id="backendStatus">Connecting backend…</span></strong><span id="syncState">Local watchlist · sign in to sync</span></div></div>
 </aside>
 <main class="main">
 <header class="topbar">
@@ -298,9 +308,9 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <section class="page active" id="page-dashboard">
   <div class="page-head"><div><div class="eyebrow">OVERVIEW / MULTI-CHAIN</div><h1 class="page-title">Market & Network Overview</h1><p class="page-desc">Your blockchain monitoring workspace at a glance.</p></div><div class="head-actions"><button class="btn" id="dashRefresh">↻ Refresh</button><button class="btn primary" data-open="wallet">＋ Add Wallet</button></div></div>
   <div class="grid stats-grid">
-    <div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="dashWallets">0</div><div class="stat-foot">Saved in this browser</div></div>
-    <div class="stat-card"><div class="stat-top">Smart Contracts <span class="stat-symbol">⌘</span></div><div class="stat-value" id="dashContracts">0</div><div class="stat-foot">Saved in this browser</div></div>
-    <div class="stat-card"><div class="stat-top">Alert Events <span class="stat-symbol">♧</span></div><div class="stat-value">—</div><div class="stat-foot">Backend connection required</div></div>
+    <div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="dashWallets">0</div><div class="stat-foot">In your watchlist</div></div>
+    <div class="stat-card"><div class="stat-top">Smart Contracts <span class="stat-symbol">⌘</span></div><div class="stat-value" id="dashContracts">0</div><div class="stat-foot">In your watchlist</div></div>
+    <div class="stat-card"><div class="stat-top">Alert Events <span class="stat-symbol">♧</span></div><div class="stat-value" id="dashAlerts">—</div><div class="stat-foot">Triggered in the last 24h</div></div>
     <div class="stat-card"><div class="stat-top">Portfolio Value <span class="stat-symbol">＄</span></div><div class="stat-value" id="dashPortfolioUsd">—</div><div class="stat-foot">From last balance sync</div></div>
   </div>
   <div class="grid section-grid">
@@ -315,6 +325,8 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <button class="quick" data-page="alerts"><div class="q-icon">♧</div><strong>Create Alert</strong><span>Configure alert rules</span></button>
       <button class="quick" data-page="transactions"><div class="q-icon">⇄</div><strong>Transactions</strong><span>Explore chain activity</span></button>
       <button class="quick" data-page="tools"><div class="q-icon">⚖</div><strong>Trading Tools</strong><span>Live chart and calculators</span></button>
+      <button class="quick" data-page="defi"><div class="q-icon">◫</div><strong>DeFi Analytics</strong><span>TVL and top DEX volume</span></button>
+      <button class="quick" data-page="admin" id="adminQuick" style="display:none"><div class="q-icon">⚙</div><strong>Admin Panel</strong><span>Users, payments, health</span></button>
     </div></div>
   </div>
   <div class="section-grid grid">
@@ -326,19 +338,19 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Live health check of each network (updates every 30 seconds)</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
     <div class="card"><div class="card-head"><div><div class="card-title">Recent Watchlist</div><div class="card-sub">Your locally saved wallets and contracts</div></div><button class="btn small" data-page="wallets">View all</button></div><div id="recentWatchlist"></div></div>
   </div>
-  <div class="notice">Prices in the top ticker come from CoinGecko and the sentiment index from alternative.me. This dashboard does not show live wallet balances, transaction counts or network health. These indicators will be populated only after backend providers and indexing workers are connected.</div>
+  <div class="notice">Prices in the top ticker come from CoinGecko and the sentiment index from alternative.me. Network status, gas, whale transfers and portfolio balances load live from the backend. Sign in through Telegram to sync balances and your watchlist across devices. Nothing here is financial advice.</div>
 </section>
 
 <section class="page" id="page-wallets">
-  <div class="page-head"><div><div class="eyebrow">MONITORING / ADDRESSES</div><h1 class="page-title">Wallet Terminal</h1><p class="page-desc">Organize and monitor public wallet addresses across supported networks.</p></div><div class="head-actions"><button class="btn primary" data-open="wallet">＋ Add Wallet</button></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="walletPageCount">0</div><div class="stat-foot">Local watchlist entries</div></div><div class="stat-card"><div class="stat-top">Networks Used <span class="stat-symbol">◎</span></div><div class="stat-value" id="walletNetworkCount">0</div><div class="stat-foot">Across saved wallets</div></div><div class="stat-card"><div class="stat-top">Total Balance <span class="stat-symbol">＄</span></div><div class="stat-value" id="walletTotalUsd">—</div><div class="stat-foot">Sync in Portfolio Analytics</div></div><div class="stat-card"><div class="stat-top">Wallet Alerts <span class="stat-symbol">♧</span></div><div class="stat-value">—</div><div class="stat-foot">Alert engine not connected</div></div></div>
+  <div class="page-head"><div><div class="eyebrow">MONITORING / ADDRESSES</div><h1 class="page-title">Wallet Terminal</h1><p class="page-desc">Organize and monitor public wallet addresses across supported networks.</p></div><div class="head-actions"><span class="tag" id="syncTag" style="align-self:center">This browser only</span><button class="btn primary" data-open="wallet">＋ Add Wallet</button></div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="walletPageCount">0</div><div class="stat-foot">Saved wallets and contracts</div></div><div class="stat-card"><div class="stat-top">Networks Used <span class="stat-symbol">◎</span></div><div class="stat-value" id="walletNetworkCount">0</div><div class="stat-foot">Across saved wallets</div></div><div class="stat-card"><div class="stat-top">Total Balance <span class="stat-symbol">＄</span></div><div class="stat-value" id="walletTotalUsd">—</div><div class="stat-foot">Sync in Portfolio Analytics</div></div><div class="stat-card"><div class="stat-top">Wallet Alerts <span class="stat-symbol">♧</span></div><div class="stat-value" id="walletAlertCount">—</div><div class="stat-foot">Active wallet-activity rules</div></div></div>
   <div class="card" style="margin-top:15px"><div class="toolbar"><input class="control" id="walletFilter" placeholder="Search name or address"><select class="control" id="walletNetworkFilter"><option value="">All networks</option></select><select class="control" id="walletTypeFilter"><option value="">All watchlist types</option><option value="wallet">Wallets</option><option value="contract">Contracts</option></select></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Network</th><th>Address</th><th>Type</th><th>Storage</th><th>Action</th></tr></thead><tbody id="walletRows"></tbody></table></div><div class="empty" id="walletEmpty"><div class="empty-icon">◈</div><strong>No tracked addresses yet</strong>Add a wallet or contract to start building your watchlist.</div></div>
 </section>
 
 <section class="page" id="page-transactions">
   <div class="page-head"><div><div class="eyebrow">ON-CHAIN DATA</div><h1 class="page-title">Transaction Explorer</h1><p class="page-desc">Unified transaction search across your supported blockchain networks.</p></div></div>
-  <div class="card"><div class="toolbar"><input class="control" id="txSearch" style="flex:1;min-width:180px" placeholder="Search transaction hash or wallet address"><select class="control" id="txNetwork"><option value="">All networks</option></select><select class="control"><option>All types</option><option>Transfer</option><option>Swap</option><option>Contract interaction</option></select><button class="btn" id="txSearchBtn">Search</button></div><div class="empty"><div class="empty-icon">⇄</div><strong>Transaction indexer not connected</strong>Connect chain indexers to load confirmed, pending and failed transactions. Search UI is ready; no sample transactions are being presented as real.</div></div>
-  <div class="notice">Historical wallet transaction history usually requires a chain indexer or a dedicated indexing service; standard RPC endpoints alone may not provide complete history.</div>
+  <div class="card"><div class="toolbar"><input class="control" id="txSearch" style="flex:1;min-width:180px" placeholder="Search transaction hash or wallet address"><select class="control" id="txNetwork"><option value="">All networks</option></select><select class="control" id="txType"><option value="">All types</option><option value="native">Native transfers</option><option value="token">Token transfers</option><option value="contract">Contract calls</option></select><button class="btn" id="txSearchBtn">Search</button></div><div id="txOut"><div class="empty"><div class="empty-icon">⇄</div><strong>Search a transaction or wallet</strong>Paste a transaction hash (EVM, TRON or Solana) or a wallet address. Choose a network to search a single chain.</div></div></div>
+  <div class="notice">Transaction hashes are looked up live from chain RPC. Wallet history shows the most recent transactions only. A 0x address searched without choosing a network is shown for Ethereum. Sign in through Telegram to search.</div>
 </section>
 
 <section class="page" id="page-tokens">
@@ -350,10 +362,11 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 
 <section class="page" id="page-whales">
   <div class="page-head"><div><div class="eyebrow">ON-CHAIN INTELLIGENCE</div><h1 class="page-title">Whale Terminal</h1><p class="page-desc">Track large transfers, watched wallets and exchange flows.</p></div><div class="head-actions"><button class="btn primary" id="whaleRuleBtn">＋ Create Whale Rule</button></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Large Transfers <span class="stat-symbol">◉</span></div><div class="stat-value" id="wfCount">—</div><div class="stat-foot" id="wfWindow">Open feed below</div></div><div class="stat-card"><div class="stat-top">Tracked Volume <span class="stat-symbol">＄</span></div><div class="stat-value" id="wfVol">—</div><div class="stat-foot">Shown transfers, USDT/USDC</div></div><div class="stat-card"><div class="stat-top">Exchange Inflow <span class="stat-symbol">↓</span></div><div class="stat-value">—</div><div class="stat-foot">Labels required</div></div><div class="stat-card"><div class="stat-top">Exchange Outflow <span class="stat-symbol">↑</span></div><div class="stat-value">—</div><div class="stat-foot">Labels required</div></div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Large Transfers <span class="stat-symbol">◉</span></div><div class="stat-value" id="wfCount">—</div><div class="stat-foot" id="wfWindow">Open feed below</div></div><div class="stat-card"><div class="stat-top">Tracked Volume <span class="stat-symbol">＄</span></div><div class="stat-value" id="wfVol">—</div><div class="stat-foot">Shown transfers, USDT/USDC</div></div><div class="stat-card"><div class="stat-top">Exchange Inflow <span class="stat-symbol">↓</span></div><div class="stat-value" id="wfIn">—</div><div class="stat-foot" id="wfInFoot">Wallet → known exchange</div></div><div class="stat-card"><div class="stat-top">Exchange Outflow <span class="stat-symbol">↑</span></div><div class="stat-value" id="wfOut">—</div><div class="stat-foot" id="wfOutFoot">Known exchange → wallet</div></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Live Whale Feed</div><div class="card-sub">Large USDT/USDC transfers from the most recent blocks</div></div><span class="tag" id="wfTag">LIVE</span></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select class="control" id="wfNet"><option value="ethereum">Ethereum</option><option value="bsc">BNB Smart Chain</option><option value="polygon">Polygon</option></select><select class="control" id="wfMin"><option value="50000">≥ $50K</option><option value="100000" selected>≥ $100K</option><option value="250000">≥ $250K</option><option value="500000">≥ $500K</option><option value="1000000">≥ $1M</option></select><button class="btn" id="wfRefresh">↻ Refresh</button></div>
     <div id="wfList" class="muted" style="font-size:12px">Open this page to load the feed.</div></div>
+  <div class="notice">Exchange names are matched against a small built-in list of well-known Ethereum wallets, so inflow and outflow totals are partial. Labels are shown on Ethereum only.</div>
 </section>
 
 <section class="page" id="page-contracts">
@@ -362,15 +375,25 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 </section>
 
 <section class="page" id="page-defi">
-  <div class="page-head"><div><div class="eyebrow">DECENTRALIZED FINANCE</div><h1 class="page-title">DeFi Analytics</h1><p class="page-desc">Explore DEX pools, liquidity changes, swaps and volume across chains.</p></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Tracked Pools <span class="stat-symbol">◫</span></div><div class="stat-value">—</div><div class="stat-foot">DEX data not connected</div></div><div class="stat-card"><div class="stat-top">Total Liquidity <span class="stat-symbol">＄</span></div><div class="stat-value">—</div><div class="stat-foot">No live valuation</div></div><div class="stat-card"><div class="stat-top">24H Volume <span class="stat-symbol">⇄</span></div><div class="stat-value">—</div><div class="stat-foot">Indexer required</div></div><div class="stat-card"><div class="stat-top">New Pools <span class="stat-symbol">＋</span></div><div class="stat-value">—</div><div class="stat-foot">Event monitoring required</div></div></div>
-  <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">DEX Integrations Roadmap</div><span class="tag yellow">PLANNED</span></div><div class="grid network-grid" id="dexGrid"></div></div>
-  <div class="notice">DEX integrations will be enabled chain by chain after validating pool addresses, event formats, decimals and provider availability.</div>
+  <div class="page-head"><div><div class="eyebrow">DECENTRALIZED FINANCE</div><h1 class="page-title">DeFi Analytics</h1><p class="page-desc">Total value locked by chain and the most active DEXs, from DeFiLlama.</p></div><div class="head-actions"><button class="btn" id="dfRefresh" type="button">↻ Refresh</button></div></div>
+  <div class="grid stats-grid">
+    <div class="stat-card"><div class="stat-top">Total TVL <span class="stat-symbol">◫</span></div><div class="stat-value" id="dfTvl">—</div><div class="stat-foot">All chains with TVL</div></div>
+    <div class="stat-card"><div class="stat-top">DEX 24H Volume <span class="stat-symbol">⇄</span></div><div class="stat-value" id="dfVol">—</div><div class="stat-foot" id="dfVolFoot">All tracked DEXs</div></div>
+    <div class="stat-card"><div class="stat-top">DEX Protocols <span class="stat-symbol">◉</span></div><div class="stat-value" id="dfProt">—</div><div class="stat-foot">With volume data</div></div>
+    <div class="stat-card"><div class="stat-top">Top Chain <span class="stat-symbol">⛓</span></div><div class="stat-value" id="dfTop" style="font-size:20px">—</div><div class="stat-foot" id="dfTopFoot">By TVL</div></div>
+  </div>
+  <div class="grid section-grid">
+    <div class="card"><div class="card-head"><div><div class="card-title">TVL by Chain</div><div class="card-sub">Top 12 chains</div></div><span class="tag" id="dfUpdated">LIVE</span></div><div id="dfChains"><div class="empty">Open this page to load data.</div></div></div>
+    <div class="card"><div class="card-head"><div><div class="card-title">Top DEXs by 24H Volume</div><div class="card-sub">Top 10 protocols</div></div></div><div id="dfDex"><div class="empty">Open this page to load data.</div></div></div>
+  </div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">Pool-level DEX Tracking</div><span class="tag yellow">PLANNED</span></div><div class="grid network-grid" id="dexGrid"></div></div>
+  <div class="notice">TVL and volume come from DeFiLlama's public API and are cached for a few minutes. Pool-level liquidity, swaps and new-pool alerts need per-chain indexing and are not live yet.</div>
 </section>
 
 <section class="page" id="page-portfolio">
   <div class="page-head"><div><div class="eyebrow">ASSET MANAGEMENT</div><h1 class="page-title">Portfolio Analytics</h1><p class="page-desc">Live balances (native coins + USDT/USDC) for your saved wallets, allocation and value history.</p></div><div class="head-actions"><button class="btn" id="pfSync">↻ Sync balances</button><button class="btn" id="portfolioExport">Export report</button></div></div>
-  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Total Value <span class="stat-symbol">＄</span></div><div class="stat-value" id="pfTotal">—</div><div class="stat-foot" id="pfUpdated">Tap “Sync balances”</div></div><div class="stat-card"><div class="stat-top">24H Change <span class="stat-symbol">↗</span></div><div class="stat-value" id="pfChange">—</div><div class="stat-foot">Native coin price moves only</div></div><div class="stat-card"><div class="stat-top">Realized P&amp;L <span class="stat-symbol">◩</span></div><div class="stat-value">—</div><div class="stat-foot">Cost basis required</div></div><div class="stat-card"><div class="stat-top">Assets <span class="stat-symbol">◉</span></div><div class="stat-value" id="pfAssets">—</div><div class="stat-foot">Native + USDT/USDC</div></div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Total Value <span class="stat-symbol">＄</span></div><div class="stat-value" id="pfTotal">—</div><div class="stat-foot" id="pfUpdated">Tap “Sync balances”</div></div><div class="stat-card"><div class="stat-top">24H Change <span class="stat-symbol">↗</span></div><div class="stat-value" id="pfChange">—</div><div class="stat-foot">Native coin price moves only</div></div><div class="stat-card"><div class="stat-top">Unrealized P&amp;L <span class="stat-symbol">◩</span></div><div class="stat-value" id="pfPnl">—</div><div class="stat-foot" id="pfPnlFoot">Enter your invested amount below</div></div><div class="stat-card"><div class="stat-top">Assets <span class="stat-symbol">◉</span></div><div class="stat-value" id="pfAssets">—</div><div class="stat-foot">Native + USDT/USDC</div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Invested Capital</div><div class="card-sub">Total USD you put into these wallets, used to estimate profit or loss</div></div><span class="tag">P&amp;L</span></div><div class="toolbar" style="margin-bottom:0"><input class="control" id="pfInvested" type="number" min="0" step="any" inputmode="decimal" placeholder="e.g. 5000" style="flex:1;min-width:160px"><button class="btn primary" id="pfInvSave" type="button">Save</button></div><div class="muted" id="pfInvMsg" style="font-size:10px;margin-top:8px;min-height:14px"></div><div class="calc-hint">Unrealized P&amp;L = current wallet value − invested amount. It does not track individual trades, withdrawals or per-token cost basis, so treat it as a rough overview.</div></div>
   <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Portfolio Value History</div><span class="tag" id="pfHistTag">30 DAYS</span></div><div id="pfHistory" class="empty"><div class="empty-icon">⌁</div><strong>No history yet</strong>Each sync saves a snapshot. The chart builds up over time.</div></div><div class="card"><div class="card-head"><div class="card-title">Asset Allocation</div></div><div id="pfAlloc" class="empty"><strong>No asset allocation yet</strong>Add a wallet, then sync balances.</div></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Wallet Balances</div><div class="card-sub">Login via Telegram required · up to 10 wallets per sync</div></div></div><div style="overflow-x:auto"><table><thead><tr><th>Wallet</th><th>Network</th><th>Native</th><th>Stablecoins</th><th>Value (USD)</th></tr></thead><tbody id="pfRows"><tr><td colspan="5" class="muted">Nothing synced yet.</td></tr></tbody></table></div></div>
 </section>
@@ -424,15 +447,25 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr))" id="plans">
     <div class="card"><span class="tag">LOADING</span><h2 style="font-size:23px">Loading plans…</h2><p class="muted" style="font-size:11px">Fetching plan configuration from backend.</p></div>
   </div>
-  <div class="notice" id="paymentNotice">Choose a payment network to create an invoice. On-chain verification is not active yet. Do not transfer funds until the app explicitly confirms that payment verification is live.</div>
+  <div class="notice" id="paymentNotice">Choose a payment network to create an invoice. Send the exact USDT amount on the selected network to the invoice address, then paste the transaction hash to verify. Double-check the network (BEP20 or TRC20) before sending, because funds sent on the wrong network cannot be recovered.</div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">Developer API</div><span class="tag">COMING SOON</span></div><div class="empty"><div class="empty-icon">⌘</div><strong>API key management is not active</strong>Key generation, hashing, rate limits, usage logs and webhook signing will be implemented server-side.</div></div>
 </section>
 
 <section class="page" id="page-admin">
-  <div class="page-head"><div><div class="eyebrow">CONTROL CENTER / RESTRICTED</div><h1 class="page-title">Admin Panel</h1><p class="page-desc">Platform operations, provider health, users, jobs and revenue.</p></div><span class="tag red">ADMIN AUTH REQUIRED</span></div>
-  <div class="notice">Admin panel is a design preview only. It is not protected by production authentication yet. Do not expose this route publicly until server-side roles, sessions and audit logging are implemented.</div>
-  <div class="grid stats-grid" style="margin-top:15px"><div class="stat-card"><div class="stat-top">Total Users <span class="stat-symbol">♙</span></div><div class="stat-value">—</div><div class="stat-foot">Admin API required</div></div><div class="stat-card"><div class="stat-top">Active Workers <span class="stat-symbol">⚙</span></div><div class="stat-value">—</div><div class="stat-foot">Worker heartbeat required</div></div><div class="stat-card"><div class="stat-top">Failed Jobs <span class="stat-symbol">!</span></div><div class="stat-value">—</div><div class="stat-foot">Queue integration required</div></div><div class="stat-card"><div class="stat-top">Monthly Revenue <span class="stat-symbol">₹</span></div><div class="stat-value">—</div><div class="stat-foot">Payment integration required</div></div></div>
-  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Network Provider Health</div></div><div id="adminNetworks"></div></div><div class="card"><div class="card-head"><div class="card-title">Worker Status</div></div><div class="empty"><strong>No worker telemetry</strong>Worker heartbeats and queue metrics will appear after VPS services are deployed.</div></div></div>
+  <div class="page-head"><div><div class="eyebrow">CONTROL CENTER / RESTRICTED</div><h1 class="page-title">Admin Panel</h1><p class="page-desc">Users, payments, alert delivery and provider health. Access is checked on the server against the admin Telegram ID list.</p></div><span class="tag red">ADMIN ONLY</span></div>
+  <div class="notice" id="adminGate" style="margin-top:0">Checking admin access…</div>
+  <div id="adminBody" style="display:none">
+  <div class="grid stats-grid">
+    <div class="stat-card"><div class="stat-top">Total Users <span class="stat-symbol">♙</span></div><div class="stat-value" id="adUsers">—</div><div class="stat-foot" id="adUsersFoot"></div></div>
+    <div class="stat-card"><div class="stat-top">Active Alerts <span class="stat-symbol">♧</span></div><div class="stat-value" id="adAlerts">—</div><div class="stat-foot" id="adAlertsFoot"></div></div>
+    <div class="stat-card"><div class="stat-top">Failed Deliveries <span class="stat-symbol">!</span></div><div class="stat-value" id="adFailed">—</div><div class="stat-foot" id="adFailedFoot"></div></div>
+    <div class="stat-card"><div class="stat-top">Revenue (30d) <span class="stat-symbol">＄</span></div><div class="stat-value" id="adRev">—</div><div class="stat-foot" id="adRevFoot"></div></div>
+  </div>
+  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Network Provider Health</div><button class="btn small" id="adRefresh" type="button">↻ Refresh</button></div><div id="adminNetworks"></div></div><div class="card"><div class="card-head"><div class="card-title">Workers &amp; Plans</div></div><div id="adWorker"></div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Payments</div><div class="card-sub">Latest 50 invoices</div></div><select class="control" id="adPayFilter"><option value="">All</option><option value="confirmed">Confirmed</option><option value="pending">Pending</option><option value="verifying">Verifying</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div><div class="table-wrap"><table><thead><tr><th>Created</th><th>User</th><th>Plan</th><th>Network</th><th>Amount</th><th>Status</th><th>Tx</th></tr></thead><tbody id="adPayRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Users</div><div class="card-sub">Search by @username, Telegram ID or internal ID</div></div></div><div class="toolbar"><input class="control" id="adUserQ" placeholder="Search users" style="flex:1;min-width:160px"><button class="btn" id="adUserBtn" type="button">Search</button></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>User</th><th>Plan</th><th>Joined</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adUserRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Grant Plan</div><div class="card-sub">Gives a paid plan without payment. Every grant is audit-logged.</div></div></div><div class="form-grid"><div class="field"><label for="adGrantUser">Internal user ID</label><input id="adGrantUser" type="number" min="1" step="1" inputmode="numeric" placeholder="Tap Grant on a user row"></div><div class="field"><label for="adGrantPlan">Plan</label><select id="adGrantPlan"><option value="pro">Pro</option><option value="business">Business</option><option value="enterprise">Enterprise</option></select></div><div class="field"><label for="adGrantDays">Days (1 to 3650)</label><input id="adGrantDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30"></div></div><button class="btn primary" id="adGrantBtn" type="button" style="margin-top:12px">Grant plan</button><div class="form-message" id="adGrantMsg"></div></div>
+  </div>
 </section>
 </div>
 </main>
@@ -448,7 +481,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <div class="field full"><label for="address">Public wallet / contract address</label><input id="address" maxlength="120" placeholder="Enter public address" autocomplete="off" spellcheck="false" required></div>
 <div class="field full"><label for="category">Category</label><select id="category"><option>Personal</option><option>Whale</option><option>Exchange</option><option>Project</option><option>Smart Money</option><option>Custom</option></select></div>
 </div><button class="btn primary" id="saveItem" style="width:100%;margin-top:7px">Save to watchlist</button><div class="form-message" id="formMessage" role="status"></div></form></div></div>
-<div class="modal" id="paymentModal"><div class="modal-box"><div class="modal-head"><h3>Choose payment network</h3><button class="close" data-close="paymentModal" type="button">✕</button></div><p class="muted" id="paymentPlanLabel" style="font-size:12px">Select how you want to pay.</p><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin:14px 0"><button class="btn" type="button" data-pay-chain="BEP20">BEP20<br><small>BNB Smart Chain · USDT</small></button><button class="btn" type="button" data-pay-chain="TRC20">TRC20<br><small>TRON · USDT</small></button></div><div id="invoiceDetails" class="notice" style="display:none;overflow-wrap:anywhere"></div><div class="form-message" id="paymentMessage"></div><p class="muted" style="font-size:10px;line-height:1.5">Safety notice: payment verification is not enabled yet. Creating an invoice does not mean funds will be detected or your plan activated. Do not send USDT.</p></div></div>
+<div class="modal" id="paymentModal"><div class="modal-box"><div class="modal-head"><h3>Choose payment network</h3><button class="close" data-close="paymentModal" type="button">✕</button></div><p class="muted" id="paymentPlanLabel" style="font-size:12px">Select how you want to pay.</p><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin:14px 0"><button class="btn" type="button" data-pay-chain="BEP20">BEP20<br><small>BNB Smart Chain · USDT</small></button><button class="btn" type="button" data-pay-chain="TRC20">TRC20<br><small>TRON · USDT</small></button></div><div id="invoiceDetails" class="notice" style="display:none;overflow-wrap:anywhere"></div><div class="form-message" id="paymentMessage"></div><p class="muted" style="font-size:10px;line-height:1.5">Safety notice: send only USDT, only on the network you chose, and the exact amount shown. After sending, paste the transaction hash and tap Verify payment. Invoices expire after 30 minutes.</p></div></div>
 <div class="modal" id="alertModal"><div class="modal-box"><div class="modal-head"><h3>Create Alert Rule</h3><button class="close" data-close="alertModal">✕</button></div><form id="alertForm"><div class="form-grid"><div class="field"><label>Alert type</label><select id="alertType"><option>Large wallet transfer</option><option>Incoming transaction</option><option>Outgoing transaction</option><option>Token security finding</option><option>Liquidity change</option><option>Smart contract event</option><option>Token price threshold</option></select></div><div class="field"><label>Blockchain</label><select id="alertNetwork"></select></div><div class="field"><label>Threshold (USD, optional)</label><input id="alertThreshold" type="number" min="0" step="any" placeholder="e.g. 100000"></div><div class="field"><label>Destination</label><select id="alertDestination"><option>Personal Telegram (after bot connection)</option><option>Authorized group/channel</option></select></div></div><button class="btn primary" style="width:100%">Save draft rule</button><div class="form-message" id="alertMessage"></div></form></div></div>
 <div class="toast" id="toast" role="status"></div>
 <script>
@@ -459,19 +492,19 @@ const STORAGE="blockchain_tracker_watchlist_v2",ALERTS="blockchain_tracker_alert
 const NETWORKS=[
 {id:"ethereum",name:"Ethereum",symbol:"ETH",abbr:"ETH"},{id:"bsc",name:"BNB Smart Chain",symbol:"BNB",abbr:"BNB"},{id:"polygon",name:"Polygon",symbol:"POL",abbr:"POL"},{id:"arbitrum",name:"Arbitrum One",symbol:"ARB",abbr:"ARB"},{id:"base",name:"Base",symbol:"ETH",abbr:"BASE"},{id:"optimism",name:"Optimism",symbol:"ETH",abbr:"OP"},{id:"avalanche",name:"Avalanche C-Chain",symbol:"AVAX",abbr:"AVAX"},{id:"solana",name:"Solana",symbol:"SOL",abbr:"SOL"},{id:"tron",name:"TRON",symbol:"TRX",abbr:"TRX"},{id:"ton",name:"TON",symbol:"TON",abbr:"TON"}];
 const DEX=[["Ethereum","Uniswap"],["BNB Smart Chain","PancakeSwap"],["Polygon","QuickSwap"],["Arbitrum One","Uniswap"],["Base","Uniswap · Aerodrome"],["Optimism","Uniswap"],["Avalanche C-Chain","Trader Joe"],["Solana","Raydium · Orca"],["TRON","SunSwap"],["TON","STON.fi · DeDust"]];
-let watchlist=read(STORAGE,[]),alerts=read(ALERTS,[]);
+let watchlist=read(STORAGE,[]),alerts=read(ALERTS,[]),cloudOn=false,quiet=false;
 if(!watchlist.length){try{const legacy=JSON.parse(localStorage.getItem("blockchain_tracker_demo_watchlist_v1")||"[]");if(Array.isArray(legacy)&&legacy.length){watchlist=legacy.map(i=>({...i,category:i.category||"Custom"}));localStorage.setItem(STORAGE,JSON.stringify(watchlist));}}catch(e){}}
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function read(key,fallback){try{const x=JSON.parse(localStorage.getItem(key)||"null");return Array.isArray(x)?x:fallback}catch(e){return fallback}}
-function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(watchlist));return true}catch(e){toast("Could not save in browser storage");return false}}
+function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(watchlist));if(!quiet)window.dispatchEvent(new Event("bt-watchlist-changed"));return true}catch(e){toast("Could not save in browser storage");return false}}
 function persistAlerts(){try{localStorage.setItem(ALERTS,JSON.stringify(alerts));return true}catch(e){toast("Could not save alert draft");return false}}
 function toast(s){const el=$("toast");el.textContent=s;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2600)}
 function normAddress(address,network){return ["ethereum","bsc","polygon","arbitrum","base","optimism","avalanche"].includes(network)?address.toLowerCase():address}
 function validAddress(a,n){if(["ethereum","bsc","polygon","arbitrum","base","optimism","avalanche"].includes(n))return /^0x[a-fA-F0-9]{40}$/.test(a);if(n==="tron")return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a);if(n==="solana")return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a);if(n==="ton")return /^(0:[a-fA-F0-9]{64}|EQ[A-Za-z0-9_-]{46,50}|UQ[A-Za-z0-9_-]{46,50})$/.test(a);return false}
 function fillNetworks(){const opts=NETWORKS.map(n=>`<option value="${n.id}">${n.name}</option>`).join("");["network","scanNetwork","alertNetwork"].forEach(id=>$(id).innerHTML=opts);["walletNetworkFilter","contractNetworkFilter","txNetwork"].forEach(id=>$(id).innerHTML='<option value="">All networks</option>'+opts)}
 function netName(id){return NETWORKS.find(n=>n.id===id)?.name||id}
-function networkCards(){const html=NETWORKS.map(n=>`<div class="network-card"><div class="network-top"><span class="network-logo">${n.abbr.slice(0,3)}</span>${n.name}</div><div class="network-meta"><span class="status offline">Not connected</span><span>${n.symbol}</span></div></div>`).join("");$("networkGrid").innerHTML=html;$("adminNetworks").innerHTML=NETWORKS.map(n=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:10px"><span>${n.name}</span><span class="status offline">Provider not configured</span></div>`).join("");$("dexGrid").innerHTML=DEX.map(d=>`<div class="network-card"><div class="network-top">${d[0]}</div><div class="network-meta"><span>${d[1]}</span><span class="status offline">Planned</span></div></div>`).join("")}
-function itemRows(items){return items.map(i=>`<tr><td><strong>${esc(i.name)}</strong><div class="muted" style="font-size:9px">${esc(i.category||"Custom")}</div></td><td>${esc(netName(i.network))}</td><td class="address">${esc(short(i.address))}</td><td>${i.type==="wallet"?"Wallet":"Contract"}</td><td><span class="tag">This browser</span></td><td><button class="btn danger small" data-remove="${esc(i.id)}">Remove</button></td></tr>`).join("")}
+function networkCards(){const html=NETWORKS.map(n=>`<div class="network-card"><div class="network-top"><span class="network-logo">${n.abbr.slice(0,3)}</span>${n.name}</div><div class="network-meta"><span class="status pending">Checking…</span><span>${n.symbol}</span></div></div>`).join("");$("networkGrid").innerHTML=html;$("adminNetworks").innerHTML=NETWORKS.map(n=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:10px"><span>${n.name}</span><span class="status pending">Checking…</span></div>`).join("");$("dexGrid").innerHTML=DEX.map(d=>`<div class="network-card"><div class="network-top">${d[0]}</div><div class="network-meta"><span>${d[1]}</span><span class="status offline">Planned</span></div></div>`).join("")}
+function itemRows(items){return items.map(i=>`<tr><td><strong>${esc(i.name)}</strong><div class="muted" style="font-size:9px">${esc(i.category||"Custom")}</div></td><td>${esc(netName(i.network))}</td><td class="address">${esc(short(i.address))}</td><td>${i.type==="wallet"?"Wallet":"Contract"}</td><td><span class="tag${cloudOn?" green":""}">${cloudOn?"Cloud":"This browser"}</span></td><td style="white-space:nowrap"><button class="btn small" style="margin-right:6px" data-hist="${esc(i.network)}|${esc(i.address)}">History</button><button class="btn danger small" data-remove="${esc(i.id)}">Remove</button></td></tr>`).join("")}
 function short(a){return a.length>22?a.slice(0,10)+"…"+a.slice(-8):a}
 let backendUser=null, currentSubscription=null, planCache=[];
 async function apiRequest(path,options={}){
@@ -549,6 +582,7 @@ async function connectBackend(){
     backendUser=me.user||backendUser;
     setBackendStatus("Backend connected",true);
     await loadSubscription();
+    window.dispatchEvent(new Event("bt-auth"));
   }catch(error){
     backendUser=null;currentSubscription=null;renderAccount();
     setBackendStatus(error.status===401?"Telegram login expired":"Backend login error",false);
@@ -602,7 +636,7 @@ const page=e.target.closest("[data-page]");if(page){go(page.dataset.page);return
 const buy=e.target.closest("[data-buy-plan]");if(buy){selectedPaymentPlan=buy.dataset.buyPlan;$("paymentPlanLabel").textContent=`${selectedPaymentPlan.toUpperCase()} subscription · Select BEP20 or TRC20`;$("paymentMessage").textContent="";$("invoiceDetails").style.display="none";$("paymentModal").classList.add("open");return}
 const chain=e.target.closest("[data-pay-chain]");if(chain&&selectedPaymentPlan){startPayment(selectedPaymentPlan,chain.dataset.payChain);return}
 const open=e.target.closest("[data-open]");if(open){openItem(open.dataset.open);return}
-const rm=e.target.closest("[data-remove]");if(rm){const item=watchlist.find(i=>i.id===rm.dataset.remove);if(item&&confirm(`Remove ${item.name} from this browser's watchlist?`)){watchlist=watchlist.filter(i=>i.id!==item.id);persist();render();toast("Watchlist item removed")}return}
+const rm=e.target.closest("[data-remove]");if(rm){const item=watchlist.find(i=>i.id===rm.dataset.remove);if(item&&confirm(`Remove ${item.name} from your watchlist?`)){watchlist=watchlist.filter(i=>i.id!==item.id);persist();render();toast("Watchlist item removed")}return}
 const ar=e.target.closest("[data-alert-remove]");if(ar){alerts=alerts.filter(a=>a.id!==ar.dataset.alertRemove);persistAlerts();render();toast("Alert draft deleted");return}
 const close=e.target.closest("[data-close]");if(close)closeModal(close.dataset.close);
 
@@ -615,9 +649,10 @@ if(!name||!address){$("formMessage").textContent="Complete all required fields."
 if(!validAddress(address,network)){$("formMessage").textContent="Address format does not match the selected network.";return}
 const key=normAddress(address,network),dup=watchlist.some(i=>i.network===network&&normAddress(i.address,i.network)===key);
 if(dup){$("formMessage").textContent="This address already exists in your watchlist for this network.";return}
+const cl=window.BTcloud;if(cl&&cl.on&&cl.limit&&watchlist.length>=cl.limit){$("formMessage").textContent="Watchlist limit reached for your plan ("+cl.limit+"). Remove an item or upgrade.";return}
 const item={id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2),type,name,network,address,category:$("category").value,createdAt:new Date().toISOString()};
 watchlist.unshift(item);if(!persist()){watchlist.shift();$("formMessage").textContent="Browser storage unavailable; item was not saved.";return}
-render();closeModal("itemModal");toast(type==="wallet"?"Wallet saved locally":"Contract saved locally");if(tg?.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");
+render();closeModal("itemModal");toast(type==="wallet"?"Wallet saved":"Contract saved");if(tg?.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");
 });
 ["walletFilter","walletNetworkFilter","walletTypeFilter","contractFilter","contractNetworkFilter"].forEach(id=>$(id).addEventListener("input",render));
 $("createAlert").onclick=()=>$("alertModal").classList.add("open");
@@ -625,13 +660,12 @@ $("whaleRuleBtn").onclick=()=>{go("alerts");$("alertModal").classList.add("open"
 $("alertForm").addEventListener("submit",e=>{e.preventDefault();const threshold=$("alertThreshold").value;if(threshold&&Number(threshold)<0){$("alertMessage").textContent="Threshold must be positive.";return}alerts.unshift({id:Date.now().toString(36),type:$("alertType").value,network:$("alertNetwork").value,threshold,destination:$("alertDestination").value,createdAt:new Date().toISOString(),status:"draft"});persistAlerts();render();closeModal("alertModal");toast("Alert draft saved locally")});
 $("scanBtn").onclick=()=>{const n=$("scanNetwork").value,a=$("scanAddress").value.trim();$("scanMessage").textContent=!a?"Enter a token contract address.":!validAddress(a,n)?"Address format does not match the selected network.":"Scanner backend is not connected yet. Address format validated; no safety result has been generated."};
 $("securityChecks").innerHTML=["Contract verification","Mint / freeze authority","Owner privileges","Honeypot / sellability","Buy and sell tax","Holder concentration","Liquidity lock evidence","Proxy / upgrade permissions"].map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);font-size:10px"><span>${x}</span><span class="status offline">Not scanned</span></div>`).join("");
-$("txSearchBtn").onclick=()=>toast($("txSearch").value.trim()?"Transaction indexer is not connected":"Enter a hash or address to search");
 $("portfolioExport").onclick=()=>{const rows=[["Name","Network","Address","Type"],...watchlist.map(i=>[i.name,netName(i.network),i.address,i.type])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="blockchain-tracker-watchlist.csv";a.click();URL.revokeObjectURL(url);toast("Local watchlist CSV exported")};
 $("globalSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){const q=e.target.value.trim();if(!q)return;const match=watchlist.find(i=>i.address.toLowerCase().includes(q.toLowerCase())||i.name.toLowerCase().includes(q.toLowerCase()));if(match){go(match.type==="wallet"?"wallets":"contracts");$("walletFilter").value=q;$("contractFilter").value=q;render()}else{window.dispatchEvent(new CustomEvent("bt-search",{detail:q}))}}});
-$("refreshBtn").onclick=$("dashRefresh").onclick=()=>{render();toast("Local dashboard refreshed. Live chain sync is not connected.")};
+$("refreshBtn").onclick=$("dashRefresh").onclick=()=>{render();window.dispatchEvent(new Event("bt-refresh"));toast("Refreshed")};
 $("notificationBtn").onclick=()=>{go("alerts");toast("Alert center opened")};
 fillNetworks();networkCards();render();renderAccount();connectBackend();
-window.BT={NETWORKS,apiRequest,toast,get watchlist(){return watchlist},get backendUser(){return backendUser}};
+window.BT={NETWORKS,apiRequest,toast,get watchlist(){return watchlist},get backendUser(){return backendUser},setWatchlist(items){quiet=true;watchlist=Array.isArray(items)?items:[];persist();quiet=false;render()},setCloud(v){cloudOn=!!v;render()}};
 })();
 </script>
 
@@ -1004,7 +1038,7 @@ box.addEventListener("click",e=>{
   else if(k==="dex")openDex(last.dex[Number(b.dataset.i)]);
   else if(k==="tx")gotoTx(last.q);
 });
-function gotoTx(q){box.hidden=true;const nav=document.querySelector('[data-page="transactions"]');if(nav)nav.click();const t=$("txSearch");if(t)t.value=q}
+function gotoTx(q){box.hidden=true;const nav=document.querySelector('[data-page="transactions"]');if(nav)nav.click();const t=$("txSearch");if(t){t.value=q;const b=$("txSearchBtn");if(b)b.click()}}
 window.addEventListener("bt-search",async e=>{
   const q=String(e.detail||"").trim();if(!q)return;
   if(/^0x[a-fA-F0-9]{64}$/.test(q)){gotoTx(q);return}
@@ -1207,6 +1241,7 @@ function drawHistory(pts){
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:200px"><defs><linearGradient id="pfFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity=".3"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs><path d="${d} L${W-P} ${H} L${P} ${H} Z" fill="url(#pfFill)"/><path d="${d}" fill="none" stroke="#2563eb" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="muted" style="font-size:10px;display:flex;justify-content:space-between"><span>${new Date(pts[0].t).toLocaleDateString()} · ${usd(pts[0].v)}</span><span>${new Date(pts.at(-1).t).toLocaleDateString()} · ${usd(pts.at(-1).v)}</span></div>`;
 }
 function draw(d){
+  window.BT_PF=d;window.dispatchEvent(new Event("bt-portfolio"));
   g("pfTotal").textContent=usd(d.totalUsd);
   const c=g("pfChange"),up=d.change24hUsd>=0;c.textContent=(up?"+":"")+usd(d.change24hUsd)+" ("+(up?"+":"")+d.change24hPct.toFixed(2)+"%)";c.style.color=up?"var(--green)":"var(--red)";c.style.fontSize="20px";
   g("pfAssets").textContent=d.allocation.length;
@@ -1257,6 +1292,7 @@ function fillSaved(){
 function draw(d){
   g("ocCount").textContent=d.rules.length+" / "+d.limit;
   g("ocToday").textContent=d.stats.today;g("ocSent").textContent=d.stats.sent;g("ocFailed").textContent=d.stats.failed;
+  const wa=g("walletAlertCount");if(wa)wa.textContent=d.rules.filter(r=>r.kind==="wallet").length;const da=g("dashAlerts");if(da)da.textContent=d.stats.today;
   g("ocRules").innerHTML=d.rules.length?d.rules.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${r.kind==="whale"?"🐋 Whale transfer":"👛 Wallet activity"}</strong><div class="muted" style="font-size:9px;margin-top:5px">${E(r.network)}${r.address?" · "+E(r.address.slice(0,8)+"…"+r.address.slice(-6)):""} · ≥ $${Number(r.min_usd).toLocaleString()}${r.last_error?" · ⚠ "+E(r.last_error):""}${r.last_run_at?"":" · waiting for first scan"}</div></div><button class="btn danger small" data-oc-del="${r.id}">Delete</button></div>`).join(""):'<div class="empty"><strong>No on-chain rules</strong>Add a wallet or whale rule above.</div>';
   g("ocEvents").innerHTML=d.events.length?d.events.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);white-space:pre-line">${E(e.summary.split("\n").slice(0,2).join("\n"))}<div style="font-size:9px">${new Date(e.created_at).toLocaleString()} · ${E(e.delivery_status)}</div></div>`).join(""):"No events yet.";
 }
@@ -1334,8 +1370,12 @@ async function loadWhales(){
   try{
     const d=await getJ("/api/market/whales?network="+encodeURIComponent(g("wfNet").value)+"&min="+encodeURIComponent(g("wfMin").value));
     g("wfCount").textContent=d.events.length;g("wfVol").textContent=money(d.totalUsd);
+    g("wfIn").textContent=d.labelsSupported?money(d.exchangeInflowUsd||0):"—";g("wfOut").textContent=d.labelsSupported?money(d.exchangeOutflowUsd||0):"—";
+    g("wfInFoot").textContent=d.labelsSupported?"Wallet → known exchange":"Labels on Ethereum only";g("wfOutFoot").textContent=d.labelsSupported?"Known exchange → wallet":"Labels on Ethereum only";
+    const who=(a,l)=>l?`<b class="lbl">${E(l)}</b>`:E(short(a));
+    const flow=e=>e.toLabel&&!e.fromLabel?" · exchange deposit":e.fromLabel&&!e.toLabel?" · exchange withdrawal":"";
     g("wfWindow").textContent="Last ~"+Math.max(1,Math.round(d.windowSec/60))+" min on "+(NAME[d.network]||d.network);
-    g("wfList").innerHTML=d.events.length?d.events.map(e=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:14px">🐋 ${money(e.usd)} ${E(e.symbol)}</strong><span class="muted" style="font-size:10px">~${age(e.ageSec)} ago</span></div><div class="muted address" style="font-size:10px;margin:4px 0">${E(short(e.from))} → ${E(short(e.to))}</div>${String(e.link).startsWith("https://")?`<a href="${E(e.link)}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue)">View transaction ↗</a>`:""}</div>`).join(""):"No transfers above this size in the scanned blocks. Try a lower minimum.";
+    g("wfList").innerHTML=d.events.length?d.events.map(e=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:14px">🐋 ${money(e.usd)} ${E(e.symbol)}</strong><span class="muted" style="font-size:10px">~${age(e.ageSec)} ago</span></div><div class="muted address" style="font-size:10px;margin:4px 0">${who(e.from,e.fromLabel)} → ${who(e.to,e.toLabel)}<span style="font-family:Sora,sans-serif">${flow(e)}</span></div>${String(e.link).startsWith("https://")?`<a href="${E(e.link)}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue)">View transaction ↗</a>`:""}</div>`).join(""):"No transfers above this size in the scanned blocks. Try a lower minimum.";
     wlast=Date.now();
   }catch(e){g("wfList").textContent=e.message==="RPC_BUSY"?"Network RPC is busy. Tap Refresh in a few seconds.":"Could not load whale feed."}
   wbusy=false;b.disabled=false;
@@ -1350,4 +1390,328 @@ g("wfNet").addEventListener("change",loadWhales);g("wfMin").addEventListener("ch
 loadMp();setInterval(()=>{if(!document.hidden)loadMp()},60000);
 })();
 </script>
+<script>
+(function(){
+"use strict";
+const BT=window.BT;if(!BT)return;
+const g=id=>document.getElementById(id);
+const E=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const api=(p,o)=>BT.apiRequest(p,o);
+const toast=m=>BT.toast(m);
+const usd=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const cm=n=>{n=Number(n);if(!isFinite(n))return"—";const a=Math.abs(n);return(n<0?"-":"")+"$"+(a>=1e12?(a/1e12).toFixed(2)+"T":a>=1e9?(a/1e9).toFixed(2)+"B":a>=1e6?(a/1e6).toFixed(2)+"M":a>=1e3?(a/1e3).toFixed(1)+"K":a.toFixed(2))};
+const short=a=>{a=String(a||"");return a.length>16?a.slice(0,8)+"…"+a.slice(-6):a};
+const safeHttps=u=>/^https:\/\//i.test(String(u||""))?String(u):"";
+const netName=id=>(BT.NETWORKS.find(n=>n.id===id)||{}).name||id;
+const empty=(t,s)=>`<div class="empty"><strong>${E(t)}</strong>${E(s||"")}</div>`;
+const chainIco=id=>window.BTLogos?window.BTLogos.chain(id,""):"";
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const onPage=(page,fn)=>document.addEventListener("click",e=>{if(e.target.closest('[data-page="'+page+'"]'))setTimeout(fn,120)});
+const isActive=p=>{const el=g("page-"+p);return !!el&&el.classList.contains("active")};
+const ago=iso=>{if(!iso)return null;const s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);return s<90?Math.round(s)+"s ago":s<5400?Math.round(s/60)+" min ago":s<172800?Math.round(s/3600)+" h ago":Math.round(s/86400)+" days ago"};
+
+/* =====================================================
+   1) Cloud watchlist sync + invested amount
+   ===================================================== */
+const cloud={on:false,limit:null};window.BTcloud=cloud;
+const IK="bt_invested_v1";
+let uid=null,invested=null,timer=null,pushing=false,started=false;
+{const v=parseFloat(ls.get(IK));invested=isFinite(v)&&v>=0?v:null}
+const WK=()=>"bt_wl_synced_"+uid,DK=()=>"bt_wl_dirty_"+uid;
+const keyOf=i=>i.type+":"+i.network+":"+String(i.address).toLowerCase();
+function status(){
+  const n=BT.watchlist.length;
+  const t=cloud.on?"☁ Cloud sync on · "+n+(cloud.limit?" / "+cloud.limit:"")+" items":"Local watchlist · sign in to sync";
+  const a=g("syncState"),b=g("syncTag");
+  if(a)a.textContent=t;
+  if(b){b.textContent=cloud.on?"☁ Synced":"This browser only";b.className="tag"+(cloud.on?" green":"")}
+}
+function fillInvested(){const el=g("pfInvested");if(el&&document.activeElement!==el)el.value=invested==null?"":String(invested)}
+function drawPnl(){
+  const el=g("pfPnl"),ft=g("pfPnlFoot");if(!el||!ft)return;
+  const d=window.BT_PF;
+  el.style.fontSize="";el.style.color="";
+  if(!(invested>0)){el.textContent="—";ft.textContent="Enter your invested amount below";return}
+  if(!d||!isFinite(d.totalUsd)){el.textContent="—";ft.textContent="Sync balances to calculate";return}
+  const pnl=d.totalUsd-invested,pct=pnl/invested*100,up=pnl>=0;
+  el.textContent=(up?"+":"-")+usd(Math.abs(pnl));el.style.fontSize="20px";el.style.color=up?"var(--green)":"var(--red)";
+  ft.textContent=(up?"+":"")+pct.toFixed(2)+"% vs invested "+usd(invested);
+}
+async function pull(){
+  if(!BT.backendUser||pushing)return;
+  uid=BT.backendUser.id;
+  let d;
+  try{d=await api("/watchlist")}catch(e){status();return}
+  const remote=Array.isArray(d.items)?d.items:[],local=BT.watchlist;
+  const trusted=ls.get(WK())==="1"&&ls.get(DK())!=="1";
+  let merged=remote,extra=false;
+  if(!trusted){
+    const seen=new Set(remote.map(keyOf)),add=local.filter(i=>!seen.has(keyOf(i)));
+    if(add.length){merged=remote.concat(add);extra=true}
+  }
+  cloud.limit=d.limit||null;cloud.on=true;
+  if(JSON.stringify(merged.map(keyOf))!==JSON.stringify(local.map(keyOf)))BT.setWatchlist(merged);
+  if(d.investedUsd!=null){invested=Number(d.investedUsd);ls.set(IK,String(invested))}
+  else if(invested!=null)extra=true;
+  BT.setCloud(true);fillInvested();drawPnl();status();
+  if(extra)await push();else ls.set(WK(),"1");
+}
+async function push(){
+  if(!cloud.on||!uid||pushing)return;
+  pushing=true;
+  const all=BT.watchlist,list=cloud.limit?all.slice(0,cloud.limit):all.slice();
+  try{
+    await api("/watchlist",{method:"PUT",body:JSON.stringify({items:list,investedUsd:invested})});
+    ls.del(DK());ls.set(WK(),"1");
+    if(all.length>list.length)toast((all.length-list.length)+" item(s) exceed your plan limit and won't sync");
+  }catch(e){
+    if(e.message==="WATCHLIST_LIMIT_REACHED")toast("Watchlist limit reached for your plan");
+    else if(e.status===429)toast("Syncing too fast. Will retry on your next change.");
+    else if(e.status!==401)toast("Cloud sync failed. Changes are kept in this browser.");
+  }
+  pushing=false;status();
+}
+window.addEventListener("bt-watchlist-changed",()=>{
+  status();
+  if(!cloud.on||!uid)return;
+  ls.set(DK(),"1");clearTimeout(timer);
+  const run=()=>{if(pushing){timer=setTimeout(run,500);return}push()};
+  timer=setTimeout(run,800);
+});
+g("pfInvSave").addEventListener("click",async()=>{
+  const raw=g("pfInvested").value.trim().replace(/,/g,""),msg=g("pfInvMsg");
+  let v=null;
+  if(raw!==""){v=Number(raw);if(!isFinite(v)||v<0||v>1e12){msg.textContent="Enter a valid amount in USD.";return}}
+  invested=v;if(v==null)ls.del(IK);else ls.set(IK,String(v));
+  drawPnl();
+  if(cloud.on){
+    ls.set(DK(),"1");await push();
+    msg.textContent=ls.get(DK())==="1"?"Saved in this browser. Cloud sync failed and will retry.":"Saved to your account.";
+  }else msg.textContent="Saved in this browser. Sign in through Telegram to sync it.";
+});
+window.addEventListener("bt-portfolio",drawPnl);
+
+/* =====================================================
+   2) Transaction explorer
+   ===================================================== */
+const TXMSG={AUTH_REQUIRED:"Sign in through Telegram to search transactions.",INVALID_QUERY:"Enter a valid transaction hash, or a wallet address that matches the selected network.",UNSUPPORTED_NETWORK:"That network is not supported.",INDEXER_NOT_CONFIGURED:"Wallet history on EVM chains needs an Etherscan API key on the server (ETHERSCAN_API_KEY). Transaction-hash lookups still work.",UPSTREAM_UNAVAILABLE:"The data provider is busy or unreachable. Try again in a moment.",RATE_LIMITED:"Too many searches. Wait a minute and try again."};
+const stCls=s=>s==="success"?"ok":s==="failed"?"bad":"pending";
+const KIND={native:"Native",token:"Token",contract:"Contract"};
+function txDetail(t){
+  const link=safeHttps(t.link);
+  const c=(l,v)=>`<div class="res-cell"><small>${l}</small><b style="word-break:break-all">${v}</b></div>`;
+  return `<div class="res-head"><div><strong>Transaction</strong><span>${E(netName(t.network))} · <span class="status ${stCls(t.status)}">${E(t.status)}</span></span></div></div>`+
+    `<div class="res-grid">`+
+    c("Hash",E(t.hash))+c("Time",t.time?E(new Date(t.time).toLocaleString()):"—")+
+    c("Amount",t.value==null?"—":E(t.value)+" "+E(t.symbol))+c("Type",E(KIND[t.kind]||t.kind||"—"))+
+    c("From",E(t.from||"—"))+c("To",E(t.to||"—"))+
+    c("Block",t.block!=null?Number(t.block).toLocaleString("en-US"):"—")+c("Confirmations",t.confirmations!=null?Number(t.confirmations).toLocaleString("en-US"):"—")+
+    c("Fee",E(t.fee||"—"))+`</div>`+
+    (link?`<a class="res-link" href="${E(link)}" target="_blank" rel="noopener noreferrer">Open on block explorer ↗</a>`:"");
+}
+function txTable(items,q,net){
+  const me=q.toLowerCase();
+  const rows=items.map(i=>{
+    const f=String(i.from||"").toLowerCase(),t=String(i.to||"").toLowerCase();
+    const dir=f===me&&t===me?"":f===me?'<span class="dirtag out">OUT</span>':t===me?'<span class="dirtag in">IN</span>':"";
+    const h=safeHttps(i.link);
+    return `<tr><td>${E(i.time?new Date(i.time).toLocaleString():"—")}</td>`+
+      `<td class="address">${h?`<a href="${E(h)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">${E(short(i.hash))} ↗</a>`:E(short(i.hash))}</td>`+
+      `<td class="address">${dir}${E(short(i.from)||"—")} → ${E(short(i.to)||"—")}</td>`+
+      `<td class="mono">${i.value==null?"—":E(i.value)+" "+E(i.symbol)}</td>`+
+      `<td>${E(KIND[i.kind]||i.kind||"")}</td>`+
+      `<td><span class="status ${stCls(i.status)}">${E(i.status)}</span></td></tr>`;
+  }).join("");
+  return `<div class="muted" style="font-size:10px;margin-bottom:8px">${items.length} most recent transaction${items.length===1?"":"s"} · ${E(netName(net))}</div>`+
+    `<div class="table-wrap"><table><thead><tr><th>Time</th><th>Hash</th><th>From → To</th><th>Amount</th><th>Type</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+let txBusy=false;
+async function txSearch(){
+  if(txBusy)return;
+  const q=g("txSearch").value.trim(),net=g("txNetwork").value,type=g("txType").value,out=g("txOut"),btn=g("txSearchBtn");
+  if(!q){toast("Enter a hash or address to search");return}
+  if(!BT.backendUser){out.innerHTML=empty("Sign in required","Open this Mini App inside Telegram to search transactions.");return}
+  txBusy=true;btn.disabled=true;out.innerHTML='<div class="empty">Searching…</div>';
+  try{
+    const d=await api("/tx/history?q="+encodeURIComponent(q)+(net?"&network="+encodeURIComponent(net):"")+(type?"&type="+encodeURIComponent(type):""));
+    if(!d.items||!d.items.length){out.innerHTML=empty("Nothing found",d.mode==="tx"?"No transaction with this hash was found on the searched networks. It may be too new, or on a network that is not supported.":"No transactions found for this address.")}
+    else if(d.mode==="tx")out.innerHTML=txDetail(d.items[0]);
+    else{
+      const evmNoNet=/^0x[a-fA-F0-9]{40}$/.test(q)&&!net;
+      out.innerHTML=(evmNoNet?'<div class="notice" style="margin:0 0 12px">Showing Ethereum. Choose another network above to search a different chain.</div>':"")+txTable(d.items,q,d.items[0].network||net||"ethereum");
+    }
+  }catch(e){
+    out.innerHTML=empty("Search failed",TXMSG[e.message]||"Something went wrong. Please try again.");
+  }
+  txBusy=false;btn.disabled=false;
+}
+g("txSearchBtn").addEventListener("click",txSearch);
+g("txSearch").addEventListener("keydown",e=>{if(e.key==="Enter")txSearch()});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-hist]");if(!b)return;
+  const v=b.dataset.hist,i=v.indexOf("|"),net=v.slice(0,i),addr=v.slice(i+1);
+  const nav=document.querySelector('[data-page="transactions"]');if(nav)nav.click();
+  const sel=g("txNetwork");sel.value=net;sel.dispatchEvent(new Event("change"));
+  g("txSearch").value=addr;g("txType").value="";txSearch();
+});
+
+/* =====================================================
+   3) DeFi analytics
+   ===================================================== */
+const LL={"Ethereum":"ethereum","BSC":"bsc","Polygon":"polygon","Arbitrum":"arbitrum","Base":"base","OP Mainnet":"optimism","Optimism":"optimism","Avalanche":"avalanche","Solana":"solana","Tron":"tron","TON":"ton"};
+const df={t:0,busy:false};
+const chg=n=>n==null||!isFinite(n)?"—":`<span class="${n>=0?"positive":"negative"}">${n>=0?"▲":"▼"} ${Math.abs(n).toFixed(2)}%</span>`;
+function renderDefi(d){
+  g("dfTvl").textContent=d.tvlTotal!=null?cm(d.tvlTotal):"—";
+  const x=d.dex;
+  g("dfVol").textContent=x&&x.total24h!=null?cm(x.total24h):"—";
+  g("dfVolFoot").innerHTML=x&&x.change1d!=null?chg(x.change1d)+" vs previous day":"All tracked DEXs";
+  g("dfProt").textContent=x?String(x.protocolCount):"—";
+  const top=d.chains&&d.chains[0];
+  g("dfTop").textContent=top?top.name:"—";
+  g("dfTopFoot").textContent=top?cm(top.tvl)+" TVL":"By TVL";
+  g("dfUpdated").textContent="Updated "+new Date(d.updatedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  const max=top?top.tvl:1;
+  g("dfChains").innerHTML=d.chains&&d.chains.length?d.chains.map(c=>`<div class="bar-row"><span class="bar-name">${LL[c.name]?chainIco(LL[c.name]):""}${E(c.name)}</span><span class="bar-track"><span class="bar-fill" style="display:block;width:${Math.max(2,c.tvl/max*100).toFixed(1)}%"></span></span><span class="bar-val">${cm(c.tvl)}</span></div>`).join("")+'<div class="muted" style="font-size:10px;margin-top:10px">Source: DeFiLlama</div>':empty("No chain data","DeFiLlama returned no chain TVL right now.");
+  g("dfDex").innerHTML=x&&x.top&&x.top.length?`<div class="table-wrap"><table style="min-width:0"><thead><tr><th>Protocol</th><th>24H volume</th><th>1D</th></tr></thead><tbody>${x.top.map((p,i)=>`<tr><td style="white-space:normal"><strong>${i+1}. ${E(p.name)}</strong><div class="muted" style="font-size:9px">${p.chains} chain${p.chains===1?"":"s"}</div></td><td class="mono">${cm(p.volume24h)}</td><td>${chg(p.change1d)}</td></tr>`).join("")}</tbody></table></div>`:empty("No DEX volume data","DeFiLlama returned no DEX volumes right now.");
+}
+async function loadDefi(force){
+  if(df.busy||(!force&&df.t&&Date.now()-df.t<300000))return;
+  df.busy=true;
+  if(!df.t){g("dfChains").innerHTML='<div class="empty">Loading DeFi data…</div>';g("dfDex").innerHTML='<div class="empty">Loading…</div>'}
+  try{
+    const d=await api("/defi/overview");
+    renderDefi(d);df.t=Date.now();
+  }catch(e){
+    if(!df.t){
+      const m=empty("DeFi data unavailable","DeFiLlama could not be reached. Tap Refresh to try again.");
+      g("dfChains").innerHTML=m;g("dfDex").innerHTML=m;
+    }else toast("Could not refresh DeFi data");
+  }
+  df.busy=false;
+}
+g("dfRefresh").addEventListener("click",()=>loadDefi(true));
+onPage("defi",()=>loadDefi(false));
+
+/* =====================================================
+   4) Admin panel
+   ===================================================== */
+let isAdmin=false,adT=0,adBusy=false,adShown=false;
+const ADMSG={FORBIDDEN:"You do not have admin access.",AUTH_REQUIRED:"Sign in through Telegram first.",USER_NOT_FOUND:"User not found.",CANNOT_BLOCK_SELF:"You cannot block yourself.",INVALID_REQUEST:"Check the values and try again.",ADMIN_FAILED:"Server error. Try again.",RATE_LIMITED:"Too many requests. Wait a minute."};
+const PAYST={confirmed:"ok",pending:"pending",verifying:"pending",rejected:"bad",expired:"offline"};
+function showAdminUi(){
+  const n=g("adminNav"),q=g("adminQuick");if(n)n.style.display="";if(q)q.style.display="";
+}
+function drawAdminStats(d){
+  g("adUsers").textContent=Number(d.users.total).toLocaleString("en-US");
+  g("adUsersFoot").textContent="+"+d.users.new24h+" in 24h · "+d.users.blocked+" blocked";
+  g("adAlerts").textContent=Number(d.alerts.price)+Number(d.alerts.onchain);
+  g("adAlertsFoot").textContent=d.alerts.price+" price · "+d.alerts.onchain+" on-chain";
+  g("adFailed").textContent=d.events.failed24h;
+  g("adFailedFoot").textContent="of "+d.events.events24h+" alert events in 24h";
+  g("adRev").textContent=usd(d.revenue30dUsdt);
+  g("adRevFoot").textContent="Confirmed USDT · "+usd(d.revenue24hUsdt)+" in 24h · "+d.openInvoices+" open invoice"+(d.openInvoices===1?"":"s");
+  const lr=d.worker&&d.worker.lastRun,stale=lr&&Date.now()-new Date(lr).getTime()>15*60000;
+  const plans=(d.subscriptions||[]).length?d.subscriptions.map(p=>`<span class="tag" style="margin:0 6px 6px 0">${E(String(p.plan_code).toUpperCase())} · ${Number(p.n)}</span>`).join(""):'<span class="muted">No active paid plans</span>';
+  g("adWorker").innerHTML=
+    `<div class="kv"><span>On-chain worker last run</span><span class="${stale?"negative":""}">${lr?E(ago(lr))+(stale?" · check cron":""):"No scan yet"}</span></div>`+
+    `<div class="kv"><span>Rules with errors</span><span class="${d.worker&&d.worker.rulesWithErrors?"negative":""}">${Number(d.worker?d.worker.rulesWithErrors:0)}</span></div>`+
+    `<div class="kv"><span>Blocked users</span><span>${Number(d.users.blocked)}</span></div>`+
+    `<div style="padding-top:12px"><div class="muted" style="font-size:10px;margin-bottom:8px">Active paid plans</div>${plans}</div>`;
+}
+async function drawProviders(){
+  const box=g("adminNetworks");if(!box)return;
+  let st=null;
+  try{const r=await fetch("/api/network/status",{cache:"no-store"});st=(await r.json()).networks}catch(e){}
+  if(!st){box.innerHTML=empty("Status unavailable","The network status endpoint did not respond.");return}
+  box.innerHTML=BT.NETWORKS.map(n=>{
+    const s=st[n.id],on=s&&s.status==="online";
+    return `<div class="kv"><span style="display:inline-flex;align-items:center;gap:7px">${chainIco(n.id)}${E(n.name)}</span><span class="status ${on?"ok":"offline"}">${on?"Online · "+Number(s.ms)+"ms":s?"Offline":"No data"}</span></div>`;
+  }).join("");
+}
+async function loadPayments(){
+  const body=g("adPayRows"),f=g("adPayFilter").value;
+  try{
+    const d=await api("/admin/payments"+(f?"?status="+encodeURIComponent(f):""));
+    body.innerHTML=d.payments.length?d.payments.map(p=>`<tr><td>${E(new Date(p.created_at).toLocaleString())}</td><td>${p.username?"@"+E(p.username):"tg "+E(p.telegram_user_id)}</td><td><span class="tag">${E(String(p.plan_code).toUpperCase())}</span></td><td>${E(p.chain)}</td><td class="mono">${E(p.amount)} USDT</td><td><span class="status ${PAYST[p.status]||"offline"}" ${p.failure_reason?`title="${E(p.failure_reason)}"`:""}>${E(p.status)}</span></td><td class="address">${p.tx_hash?E(short(p.tx_hash)):"—"}</td></tr>`).join(""):'<tr><td colspan="7" class="muted">No payments found.</td></tr>';
+  }catch(e){body.innerHTML=`<tr><td colspan="7" class="muted">${E(ADMSG[e.message]||"Could not load payments.")}</td></tr>`}
+}
+async function loadUsers(){
+  const body=g("adUserRows"),q=g("adUserQ").value.trim();
+  try{
+    const d=await api("/admin/users"+(q?"?q="+encodeURIComponent(q):""));
+    body.innerHTML=d.users.length?d.users.map(u=>{
+      const name=u.username?"@"+E(u.username):E(u.first_name||"Telegram user");
+      return `<tr><td class="mono">#${E(u.id)}</td><td><strong>${name}</strong><div class="muted" style="font-size:9px">tg ${E(u.telegram_user_id)}</div></td><td><span class="tag">${E(String(u.plan).toUpperCase())}</span></td><td>${E(new Date(u.created_at).toLocaleDateString())}</td><td>${u.last_login_at?E(ago(u.last_login_at)):"—"}</td><td>${u.is_blocked?'<span class="tag red">BLOCKED</span>':'<span class="tag green">ACTIVE</span>'}</td><td style="white-space:nowrap"><button class="btn small" type="button" style="margin-right:6px" data-ad-grant="${E(u.id)}">Grant</button><button class="btn small ${u.is_blocked?"":"danger"}" type="button" data-ad-act="${u.is_blocked?"unblock":"block"}" data-ad-id="${E(u.id)}">${u.is_blocked?"Unblock":"Block"}</button></td></tr>`;
+    }).join(""):'<tr><td colspan="7" class="muted">No users found.</td></tr>';
+  }catch(e){body.innerHTML=`<tr><td colspan="7" class="muted">${E(ADMSG[e.message]||"Could not load users.")}</td></tr>`}
+}
+async function loadAdmin(force){
+  const gate=g("adminGate"),bodyEl=g("adminBody");
+  if(!BT.backendUser){gate.style.display="";gate.textContent="Open this Mini App inside Telegram and sign in to use the admin panel.";bodyEl.style.display="none";return}
+  if(adBusy||(!force&&adShown&&isAdmin&&Date.now()-adT<30000))return;
+  adBusy=true;
+  try{
+    const d=await api("/admin/stats");
+    isAdmin=true;adShown=true;adT=Date.now();showAdminUi();
+    gate.style.display="none";bodyEl.style.display="";
+    drawAdminStats(d);drawProviders();loadPayments();loadUsers();
+  }catch(e){
+    isAdmin=false;adShown=false;gate.style.display="";bodyEl.style.display="none";
+    gate.textContent=e.status===403?"This account is not on the admin list.":(ADMSG[e.message]||"Could not load admin data. Try again.");
+  }
+  adBusy=false;
+}
+async function probeAdmin(){
+  if(!BT.backendUser)return;
+  try{const d=await api("/admin/stats");isAdmin=true;adT=Date.now();showAdminUi();drawAdminStats(d)}catch(e){isAdmin=false}
+}
+g("adRefresh").addEventListener("click",()=>loadAdmin(true));
+g("adPayFilter").addEventListener("change",loadPayments);
+g("adUserBtn").addEventListener("click",loadUsers);
+g("adUserQ").addEventListener("keydown",e=>{if(e.key==="Enter")loadUsers()});
+g("adGrantBtn").addEventListener("click",async()=>{
+  const msg=g("adGrantMsg"),uidv=Number(g("adGrantUser").value),plan=g("adGrantPlan").value,days=Number(g("adGrantDays").value);
+  msg.style.color="";
+  if(!Number.isSafeInteger(uidv)||uidv<1){msg.textContent="Enter the internal user ID.";return}
+  if(!Number.isInteger(days)||days<1||days>3650){msg.textContent="Days must be a whole number from 1 to 3650.";return}
+  if(!confirm("Grant "+plan.toUpperCase()+" for "+days+" days to user #"+uidv+"?"))return;
+  const b=g("adGrantBtn");b.disabled=true;msg.textContent="Granting…";
+  try{await api("/admin/grant",{method:"POST",body:JSON.stringify({userId:uidv,planCode:plan,days})});msg.style.color="var(--green)";msg.textContent="Plan granted.";loadUsers();adT=0}
+  catch(e){msg.textContent=ADMSG[e.message]||"Could not grant the plan."}
+  b.disabled=false;
+});
+document.addEventListener("click",async e=>{
+  const gr=e.target.closest("[data-ad-grant]");
+  if(gr){g("adGrantUser").value=gr.dataset.adGrant;g("adGrantMsg").textContent="";g("adGrantUser").scrollIntoView({behavior:"smooth",block:"center"});return}
+  const ac=e.target.closest("[data-ad-act]");
+  if(ac){
+    const act=ac.dataset.adAct,id=Number(ac.dataset.adId);
+    if(!confirm((act==="block"?"Block":"Unblock")+" user #"+id+"?"))return;
+    ac.disabled=true;
+    try{await api("/admin/user",{method:"POST",body:JSON.stringify({userId:id,action:act})});toast("User "+(act==="block"?"blocked":"unblocked"))}
+    catch(err){toast(ADMSG[err.message]||"Action failed")}
+    loadUsers();
+  }
+});
+onPage("admin",()=>loadAdmin(false));
+
+/* =====================================================
+   5) Refresh + startup
+   ===================================================== */
+window.addEventListener("bt-refresh",()=>{
+  if(isActive("defi"))loadDefi(true);
+  if(isActive("admin"))loadAdmin(true);
+  if(BT.backendUser&&cloud.on)pull();
+});
+async function onAuth(){
+  if(started)return;started=true;
+  await pull();probeAdmin();
+}
+window.addEventListener("bt-auth",onAuth);
+status();fillInvested();drawPnl();
+if(BT.backendUser)onAuth();
+})();
+</script>
+
 </body></html>
