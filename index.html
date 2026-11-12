@@ -708,6 +708,13 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <div class="field full"><label for="address">Public wallet / contract address</label><input id="address" maxlength="120" placeholder="Enter public address" autocomplete="off" spellcheck="false" required></div>
 <div class="field full"><label for="category">Category</label><select id="category"><option>Personal</option><option>Whale</option><option>Exchange</option><option>Project</option><option>Smart Money</option><option>Custom</option></select></div>
 </div><button class="btn primary" id="saveItem" style="width:100%;margin-top:7px">Save to watchlist</button><div class="form-message" id="formMessage" role="status"></div></form></div></div>
+<div class="modal" id="mcModal"><div class="modal-box" style="width:min(900px,100%)"><div class="modal-head"><h3 id="mcTitle">Multi-chain wallet</h3><button class="close" data-close="mcModal" type="button">✕</button></div>
+<div class="muted address" id="mcAddr" style="font-size:10px;word-break:break-all;margin-bottom:10px"></div>
+<div id="mcBal"></div>
+<div class="card-title" style="margin:16px 0 8px">Transactions by chain</div>
+<div class="chips" id="mcChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+<div id="mcTx"></div>
+<p class="muted" style="font-size:10px;line-height:1.5;margin-top:10px">The same 0x address exists on every EVM chain. Balances (native + USDT/USDC) and history are read live from each chain; chains that do not respond are listed instead of hidden.</p></div></div>
 <div class="modal" id="paymentModal"><div class="modal-box"><div class="modal-head"><h3>Choose payment network</h3><button class="close" data-close="paymentModal" type="button">✕</button></div><p class="muted" id="paymentPlanLabel" style="font-size:12px">Select how you want to pay.</p><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin:14px 0"><button class="btn" type="button" data-pay-chain="BEP20">BEP20<br><small>BNB Smart Chain · USDT</small></button><button class="btn" type="button" data-pay-chain="TRC20">TRC20<br><small>TRON · USDT</small></button></div><div id="invoiceDetails" class="notice" style="display:none;overflow-wrap:anywhere"></div><div class="form-message" id="paymentMessage"></div><p class="muted" style="font-size:10px;line-height:1.5">Safety notice: send only USDT, only on the network you chose, and the exact amount shown. After sending, paste the transaction hash and tap Verify payment. Invoices expire after 30 minutes.</p></div></div>
 <div class="modal" id="alertModal"><div class="modal-box"><div class="modal-head"><h3>Create Alert Rule</h3><button class="close" data-close="alertModal">✕</button></div><form id="alertForm"><div class="form-grid"><div class="field"><label>Alert type</label><select id="alertType"><option>Large wallet transfer</option><option>Incoming transaction</option><option>Outgoing transaction</option><option>Token security finding</option><option>Liquidity change</option><option>Smart contract event</option><option>Token price threshold</option></select></div><div class="field"><label>Blockchain</label><select id="alertNetwork"></select></div><div class="field"><label>Threshold (USD, optional)</label><input id="alertThreshold" type="number" min="0" step="any" placeholder="e.g. 100000"></div><div class="field"><label>Destination</label><select id="alertDestination"><option>Personal Telegram (after bot connection)</option><option>Authorized group/channel</option></select></div></div><button class="btn primary" style="width:100%">Save draft rule</button><div class="form-message" id="alertMessage"></div></form></div></div>
 <div class="cm" id="dxModal"><div class="cm-box" role="dialog" aria-modal="true"><button class="cm-x" id="dxmClose" type="button" aria-label="Close">✕</button><div id="dxmBody"></div></div></div>
@@ -737,7 +744,7 @@ function monCell(i){
   const on=(window.BT_OC&&window.BT_OC.rules||[]).some(r=>r.kind===i.type&&r.network===i.network&&String(r.address||"").toLowerCase()===String(i.address).toLowerCase());
   return on?`<span class="tag green">Watching</span>`:`<button class="btn small primary" data-mon-contract="${esc(i.type)}|${esc(i.network)}|${esc(i.address)}">Monitor</button>`;
 }
-function itemRows(items,mode){return items.map(i=>`<tr><td><strong>${esc(i.name)}</strong><div class="muted" style="font-size:9px">${esc(i.category||"Custom")}</div></td><td>${esc(netName(i.network))}</td><td class="address">${esc(short(i.address))}</td><td>${i.type==="wallet"?"Wallet":"Contract"}</td><td>${monCell(i)}</td><td style="white-space:nowrap"><button class="btn small" style="margin-right:6px" data-hist="${esc(i.network)}|${esc(i.address)}">History</button><button class="btn danger small" data-remove="${esc(i.id)}">Remove</button></td></tr>`).join("")}
+function itemRows(items,mode){return items.map(i=>`<tr><td><strong>${esc(i.name)}</strong><div class="muted" style="font-size:9px">${esc(i.category||"Custom")}</div></td><td>${esc(netName(i.network))}</td><td class="address">${esc(short(i.address))}</td><td>${i.type==="wallet"?"Wallet":"Contract"}</td><td>${monCell(i)}</td><td style="white-space:nowrap"><button class="btn small" style="margin-right:6px" data-hist="${esc(i.network)}|${esc(i.address)}">History</button>${EVM_MON.includes(i.network)?`<button class="btn small" style="margin-right:6px" data-mc="${esc(i.address)}" data-mc-name="${esc(i.name)}">Multi-chain</button>`:""}<button class="btn danger small" data-remove="${esc(i.id)}">Remove</button></td></tr>`).join("")}
 function short(a){return a.length>22?a.slice(0,10)+"…"+a.slice(-8):a}
 let backendUser=null, currentSubscription=null, planCache=[];
 async function apiRequest(path,options={}){
@@ -1895,7 +1902,7 @@ async function txSearch(){
     else if(d.mode==="tx")out.innerHTML=txDetail(d.items[0]);
     else{
       const multi=/^0x[a-fA-F0-9]{40}$/.test(q)&&!net;
-      out.innerHTML=(bad?`<div class="notice" style="margin:0 0 12px">Could not load: ${E(bad)}. Choose that network above to see the exact reason.</div>`:"")+txTable(d.items,q,d.items[0].network||net||"ethereum",multi);
+      out.innerHTML=(multi?`<button class="btn small primary" style="margin-bottom:10px" data-mc="${E(q)}">View balances on all chains</button>`:"")+(bad?`<div class="notice" style="margin:0 0 12px">Could not load: ${E(bad)}. Choose that network above to see the exact reason.</div>`:"")+txTable(d.items,q,d.items[0].network||net||"ethereum",multi);
     }
   }catch(e){
     out.innerHTML=empty("Search failed",TXMSG[e.message]||"Something went wrong. Please try again.");
@@ -1912,6 +1919,48 @@ document.addEventListener("click",e=>{
   const nav=document.querySelector('[data-page="transactions"]');if(nav)nav.click();
   const sel=g("txNetwork");sel.value=net;sel.dispatchEvent(new Event("change"));
   g("txSearch").value=addr;g("txType").value="";txSearch();
+});
+
+/* Multi-chain view: balances on every EVM chain + per-chain transaction history */
+const MC_EVM=["ethereum","bsc","polygon","arbitrum","base","optimism","avalanche"];
+const mcUsd=n=>"$"+Number(n||0).toLocaleString("en-US",{maximumFractionDigits:2});
+const mcAmt=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:6});
+const mcSt={addr:"",net:"",seq:0};
+function mcChips(active){
+  g("mcChips").innerHTML=[["","All chains"],...MC_EVM.map(n=>[n,netName(n)])].map(([v,l])=>`<button type="button" class="btn small${v===active?" on":""}" data-mc-net="${E(v)}">${E(l)}</button>`).join("");
+}
+function mcBalances(d){
+  const rows=d.chains.map(c=>{
+    if(c.error)return `<tr><td>${E(netName(c.network))}</td><td colspan="3" class="muted">Balance unavailable right now</td><td><button class="btn small" data-mc-net="${E(c.network)}">Transactions</button></td></tr>`;
+    const tk=c.tokens.map(t=>`${mcAmt(t.amount)} ${E(t.symbol)}`).join(" · ")||"—";
+    return `<tr><td><strong>${E(netName(c.network))}</strong></td><td class="mono">${mcAmt(c.native.amount)} ${E(c.native.symbol)}</td><td class="mono">${tk}</td><td class="mono">${mcUsd(c.totalUsd)}</td><td><button class="btn small" data-mc-net="${E(c.network)}">Transactions</button></td></tr>`;
+  }).join("");
+  return `<div class="res-grid" style="margin-bottom:10px"><div class="res-cell"><small>Total across ${d.chains.length-d.failed.length} chains</small><b>${mcUsd(d.totalUsd)}</b></div><div class="res-cell"><small>Chains with funds</small><b>${d.chains.filter(c=>c.totalUsd>0).length}</b></div></div>`+
+    (d.failed.length?`<div class="notice" style="margin:0 0 10px">Could not load balance on: ${E(d.failed.map(netName).join(", "))}. Total excludes these.</div>`:"")+
+    `<div class="table-wrap"><table><thead><tr><th>Chain</th><th>Native</th><th>USDT / USDC</th><th>Value</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+async function mcTx(net){
+  const my=++mcSt.seq,out=g("mcTx");mcSt.net=net;mcChips(net);
+  out.innerHTML='<div class="empty">Loading transactions…</div>';
+  try{
+    const d=await api("/tx/history?q="+encodeURIComponent(mcSt.addr)+(net?"&network="+encodeURIComponent(net):""));
+    if(my!==mcSt.seq)return;
+    const bad=(d.failed||[]).map(f=>netName(f.network)).join(", ");
+    out.innerHTML=(bad?`<div class="notice" style="margin:0 0 12px">Could not load: ${E(bad)}. Pick that chain above to see the exact reason.</div>`:"")+
+      (d.items&&d.items.length?txTable(d.items,mcSt.addr,net||"ethereum",!net):empty("No transactions","Nothing found for this address on "+(net?netName(net):"the chains that responded")+"."));
+  }catch(e){if(my===mcSt.seq)out.innerHTML=empty("Could not load",TXMSG[e.message]||"Something went wrong. Please try again.")}
+}
+async function mcOpen(addr,name){
+  if(!BT.backendUser){toast("Sign in through Telegram to use multi-chain view");return}
+  mcSt.addr=addr;g("mcTitle").textContent=name?name+" · multi-chain":"Multi-chain wallet";g("mcAddr").textContent=addr;
+  g("mcBal").innerHTML='<div class="empty">Loading balances on all chains…</div>';g("mcModal").classList.add("open");
+  mcTx("");
+  try{const d=await api("/wallet/multichain?address="+encodeURIComponent(addr));if(mcSt.addr===addr)g("mcBal").innerHTML=mcBalances(d)}
+  catch(e){g("mcBal").innerHTML=empty("Balances unavailable",e.message==="RATE_LIMITED"?TXMSG.RATE_LIMITED:"Could not load balances. Please try again.")}
+}
+document.addEventListener("click",e=>{
+  const m=e.target.closest("[data-mc]");if(m){mcOpen(m.dataset.mc,m.dataset.mcName||"");return}
+  const n=e.target.closest("#mcModal [data-mc-net]");if(n){mcTx(n.dataset.mcNet);g("mcTx").scrollIntoView({behavior:"smooth",block:"nearest"})}
 });
 
 /* =====================================================
