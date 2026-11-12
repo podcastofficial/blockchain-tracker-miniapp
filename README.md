@@ -25,6 +25,15 @@ Admin Panel → **Telegram Channels & Auto Alerts**. Unlimited channels, each ti
 - Timing: the worker runs when the cron calls it (GitHub Actions: every 5 min, can be delayed a few minutes). For tighter timing call `/api/cron/channels` from cron-job.org with the header `Authorization: Bearer <CRON_SECRET>`.
 - Telegram limit: about 20 messages per minute per group, so avoid many 5-minute alerts on one channel.
 
+## DEX Screener (trending, new coins, buy/sell, charts)
+Frontend page **DEX Screener** (sidebar + dashboard quick action). Backend: `lib/dex.js`, routed from `api/index.js` (public GET, 90 req/min per IP, cached 10–60 s; no API key).
+- `GET /api/dex/trending?source=top|latest` — most boosted / latest boosted coins with price, liquidity, volume, buys/sells.
+- `GET /api/dex/new?source=profiles|updates|boosts` — new coins (tokens with a new profile/boost), newest pair first.
+- `GET /api/dex/buysell?tf=m5|h1|h6|h24&sort=buyPct|buys|sells|volume` — buy/sell pressure ranking.
+- `GET /api/dex/search?q=` · `GET /api/dex/pair?chain=&pair=` · `GET /api/dex/token?chain=&address=` (all pools of a token).
+- `GET /api/dex/metas` · `GET /api/dex/meta?slug=` — trending narratives and their coins.
+- Charts and the live trade list use DexScreener's own embed (`?embed=1`). The public API has no candle history and no trade-by-trade feed, only buy/sell counts per 5m/1h/6h/24h.
+
 ## Setup
 1. Run in Neon (in order): `db/schema.sql`, `db/price_alerts.sql`, `db/portfolio.sql`, `db/onchain_alerts.sql`, `db/phase5.sql`, **`db/channels.sql`**.
 2. Set env vars — see `.env.example`.
@@ -34,6 +43,7 @@ Admin Panel → **Telegram Channels & Auto Alerts**. Unlimited channels, each ti
    `https://api.telegram.org/bot<TOKEN>/setWebhook?url=<APP_URL>/api/telegram/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>`
 
 ## Status
-Backend for watchlist sync, admin, DeFi, tx explorer, contract monitor, exchange labels and bot is done.
-**Frontend wiring for these pages is the next step** (admin UI, DeFi cards, tx search, watchlist sync, stale labels, P&L card).
+Backend and frontend wiring (watchlist sync, admin panel, Telegram channels & auto alerts, DeFi cards, tx search, contract monitor, exchange labels, bot) are done.
+`.env.example` and `scripts/set-webhook.mjs` are included: run `npm run webhook` once after deploy (and `npm run webhook:info` to check).
+`.github/workflows/cron.yml` now runs price, on-chain and **channel** workers every 5 min.
 Exchange labels are a small seed list — verify/extend via `EXCHANGE_LABELS_JSON`.

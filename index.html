@@ -286,6 +286,35 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .pf-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:800;letter-spacing:.14em}
 .pf-msg{font-size:11px;margin-top:10px;min-height:14px}
 @media(max-width:760px){.pf-two{grid-template-columns:1fr!important}}
+.dx-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
+.dx-tab{border:1.5px solid #d5dcf0;background:#fff;color:#1e2a52;border-radius:22px;padding:8px 15px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.dx-tab.on{background:var(--grad);border-color:transparent;color:#fff}
+.dx-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.dx-bar [hidden]{display:none!important}
+.dx-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;-webkit-overflow-scrolling:touch}
+.dx-chip{flex:none;border:1.5px solid #d5dcf0;background:#fff;color:#1e2a52;border-radius:12px;padding:8px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;white-space:nowrap}
+.dx-chip small{display:block;font-size:9.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.dx-chip.on{border-color:#7c3aed;background:#f3edff}
+.dx-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.dx-list{grid-template-columns:1fr}}
+.dx-card{text-align:left;width:100%;border:1px solid var(--border);background:#fff;border-radius:14px;padding:12px;cursor:pointer;font-family:inherit;color:var(--text);display:block;transition:transform .15s,box-shadow .15s}
+.dx-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px #2563eb22}
+.dx-top{display:flex;align-items:center;gap:10px}
+.dx-ico{width:38px;height:38px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;overflow:hidden;flex:none;position:relative}
+.dx-ico img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.dx-t{min-width:0;flex:1}.dx-t strong{font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dx-t strong span{color:var(--muted);font-weight:600}.dx-t small{font-size:10px;color:var(--muted)}
+.dx-p{text-align:right;font-family:var(--mono);flex:none}.dx-p b{display:block;font-size:13px}.dx-p span{font-size:11px;font-weight:700}
+.dx-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px 0 8px}
+.dx-grid div{background:#f3f5fc;border-radius:9px;padding:6px 7px;font-family:var(--mono);font-size:10.5px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx-grid small{display:block;font-size:8.5px;color:var(--muted);font-family:inherit;font-weight:600;margin-bottom:2px}
+.dx-bs{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;font-family:var(--mono)}
+.dx-meter{flex:1;height:7px;border-radius:5px;background:var(--red);overflow:hidden;min-width:30px}
+.dx-meter i{display:block;height:100%;background:var(--green)}
+.dx-tfh,.dx-tfrow{display:grid;grid-template-columns:34px 46px 1fr 46px 64px 58px;gap:8px;align-items:center;font-size:11px;font-family:var(--mono)}
+.dx-tfh{font-size:9px;color:var(--muted);font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.dx-tfrow{padding:8px 0;border-bottom:1px solid var(--border)}
+.dx-pool{display:flex;justify-content:space-between;gap:10px;align-items:center;width:100%;border:0;background:none;border-bottom:1px solid var(--border);padding:9px 0;cursor:pointer;font-family:inherit;color:var(--text);text-align:left;font-size:11px}
+.dx-pool small{color:var(--muted);font-size:10px;display:block}
 </style>
 </head>
 <body>
@@ -298,6 +327,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <button data-page="wallets"><span class="nav-icon">◈</span>Wallet Terminal</button>
     <button data-page="transactions"><span class="nav-icon">⇄</span>Transaction Explorer</button>
     <button data-page="tokens"><span class="nav-icon">◉</span>Token Intelligence</button>
+    <button data-page="dex"><span class="nav-icon">◎</span>DEX Screener</button>
     <button data-page="whales"><span class="nav-icon">◉</span>Whale Terminal</button>
     <button data-page="contracts"><span class="nav-icon">⌘</span>Smart Contracts</button>
     <button data-page="defi"><span class="nav-icon">◫</span>DeFi Analytics</button>
@@ -344,6 +374,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <button class="quick" data-page="tools"><div class="q-icon">⚖</div><strong>Trading Tools</strong><span>Live chart and calculators</span></button>
       <button class="quick" data-page="contracts"><div class="q-icon">🛡</div><strong>Contract Monitor</strong><span>Ownership, upgrades, pause</span></button>
       <button class="quick" data-page="defi"><div class="q-icon">◫</div><strong>DeFi Analytics</strong><span>TVL and top DEX volume</span></button>
+      <button class="quick" data-page="dex"><div class="q-icon">◎</div><strong>DEX Screener</strong><span>Trending, new pairs, buy/sell, charts</span></button>
       <button class="quick" data-page="wallets"><div class="q-icon">◈</div><strong>Wallet Terminal</strong><span>Balances of tracked wallets</span></button>
       <button class="quick" data-page="portfolio"><div class="q-icon">◩</div><strong>Portfolio Analytics</strong><span>Sync balances and P&amp;L</span></button>
       <button class="quick" data-href="/swap.html"><div class="q-icon">⇄</div><strong>Swap</strong><span>Trade tokens across chains</span></button>
@@ -387,6 +418,24 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="card"><div class="card-head"><div><div class="card-title">Token Security Scanner</div><div class="card-sub">Enter a contract address and choose its network</div></div><span class="tag yellow">EVIDENCE-BASED</span></div><div class="form-grid"><div class="field"><label>Blockchain</label><select id="scanNetwork" class="control" style="width:100%"></select></div><div class="field"><label>Token Contract Address</label><input id="scanAddress" placeholder="Paste public contract address"></div></div><button class="btn primary" id="scanBtn">Analyze Token</button><div class="form-message" id="scanMessage"></div></div>
   <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Security Checks</div><span class="tag green">GOPLUS · TONAPI</span></div><div id="securityChecks"></div></div><div class="card"><div class="card-head"><div class="card-title">Token Research</div><span class="tag" id="researchTag">DEXSCREENER</span></div><div id="tokenResearch"><div class="empty"><div class="empty-icon">◉</div><strong>No token selected</strong>Paste a contract address and press Analyze Token.</div></div></div></div>
   <div class="notice">A risk score is not a guarantee of safety. Scanner findings must include evidence, timestamp and chain-specific limitations; unknown checks must remain unknown.</div>
+</section>
+
+<section class="page" id="page-dex">
+  <div class="page-head"><div><div class="eyebrow">MARKET / DEX DATA</div><h1 class="page-title">DEX Screener</h1><p class="page-desc">Trending coins, new pairs, buy/sell pressure and live charts across all chains. Data: DexScreener.</p></div><div class="head-actions"><button class="btn" id="dxRefresh">↻ Refresh</button></div></div>
+  <div class="dx-tabs" id="dxTabs"><button class="dx-tab on" data-dx-tab="trending" type="button">🔥 Trending</button><button class="dx-tab" data-dx-tab="new" type="button">🆕 New Coins</button><button class="dx-tab" data-dx-tab="buysell" type="button">🟢🔴 Buy / Sell</button><button class="dx-tab" data-dx-tab="search" type="button">🔎 Search</button></div>
+  <div class="dx-bar">
+    <select class="control" id="dxChain"><option value="">All chains</option></select>
+    <select class="control" id="dxTrSrc" data-dx-for="trending"><option value="top">Most boosted</option><option value="latest">Latest boosted</option></select>
+    <select class="control" id="dxNewSrc" data-dx-for="new" hidden><option value="profiles">New token profiles</option><option value="updates">Recently updated</option><option value="boosts">Latest boosts</option></select>
+    <select class="control" id="dxAge" data-dx-for="new" hidden><option value="0">Any age</option><option value="1">Under 1 hour</option><option value="6">Under 6 hours</option><option value="24">Under 24 hours</option><option value="168">Under 7 days</option></select>
+    <select class="control" id="dxTf" data-dx-for="buysell" hidden><option value="m5">Last 5 min</option><option value="h1" selected>Last 1 hour</option><option value="h6">Last 6 hours</option><option value="h24">Last 24 hours</option></select>
+    <select class="control" id="dxSort" data-dx-for="buysell" hidden><option value="buyPct">Highest buy %</option><option value="buys">Most buys</option><option value="sells">Most sells</option><option value="volume">Highest volume</option></select>
+    <input class="control" id="dxQ" data-dx-for="search" hidden placeholder="Coin name, symbol or contract" style="flex:1;min-width:180px" autocomplete="off"><button class="btn primary" id="dxQBtn" data-dx-for="search" hidden type="button">Search</button>
+  </div>
+  <div id="dxMetas"></div>
+  <div class="muted" id="dxInfo" style="font-size:10px;margin-bottom:8px"></div>
+  <div id="dxList" class="dx-list"></div>
+  <div class="notice" style="margin-top:14px">Data comes from DexScreener's public API and is cached for 30–60 seconds. "New coins" are tokens that recently published a profile or boost, shown newest pair first; DexScreener has no complete new-pair feed. The public API gives buy/sell <b>counts</b> per time window; open a coin and tap "Chart + trades" to see individual trades inside DexScreener's own chart. New tokens are risky, so scan before you buy. Nothing here is financial advice.</div>
 </section>
 
 <section class="page" id="page-whales">
@@ -649,6 +698,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 </div><button class="btn primary" id="saveItem" style="width:100%;margin-top:7px">Save to watchlist</button><div class="form-message" id="formMessage" role="status"></div></form></div></div>
 <div class="modal" id="paymentModal"><div class="modal-box"><div class="modal-head"><h3>Choose payment network</h3><button class="close" data-close="paymentModal" type="button">✕</button></div><p class="muted" id="paymentPlanLabel" style="font-size:12px">Select how you want to pay.</p><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin:14px 0"><button class="btn" type="button" data-pay-chain="BEP20">BEP20<br><small>BNB Smart Chain · USDT</small></button><button class="btn" type="button" data-pay-chain="TRC20">TRC20<br><small>TRON · USDT</small></button></div><div id="invoiceDetails" class="notice" style="display:none;overflow-wrap:anywhere"></div><div class="form-message" id="paymentMessage"></div><p class="muted" style="font-size:10px;line-height:1.5">Safety notice: send only USDT, only on the network you chose, and the exact amount shown. After sending, paste the transaction hash and tap Verify payment. Invoices expire after 30 minutes.</p></div></div>
 <div class="modal" id="alertModal"><div class="modal-box"><div class="modal-head"><h3>Create Alert Rule</h3><button class="close" data-close="alertModal">✕</button></div><form id="alertForm"><div class="form-grid"><div class="field"><label>Alert type</label><select id="alertType"><option>Large wallet transfer</option><option>Incoming transaction</option><option>Outgoing transaction</option><option>Token security finding</option><option>Liquidity change</option><option>Smart contract event</option><option>Token price threshold</option></select></div><div class="field"><label>Blockchain</label><select id="alertNetwork"></select></div><div class="field"><label>Threshold (USD, optional)</label><input id="alertThreshold" type="number" min="0" step="any" placeholder="e.g. 100000"></div><div class="field"><label>Destination</label><select id="alertDestination"><option>Personal Telegram (after bot connection)</option><option>Authorized group/channel</option></select></div></div><button class="btn primary" style="width:100%">Save draft rule</button><div class="form-message" id="alertMessage"></div></form></div></div>
+<div class="cm" id="dxModal"><div class="cm-box" role="dialog" aria-modal="true"><button class="cm-x" id="dxmClose" type="button" aria-label="Close">✕</button><div id="dxmBody"></div></div></div>
 <div class="toast" id="toast" role="status"></div>
 <script>
 (function(){
@@ -784,7 +834,7 @@ $("alertList").className=alerts.length?"":"empty";
 $("alertList").innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${esc(a.type)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${esc(netName(a.network))} · ${a.threshold?`Threshold $${esc(a.threshold)}`:"No threshold"} · Draft only</div></div><button class="btn danger small" data-alert-remove="${esc(a.id)}">Delete</button></div>`).join(""):'<div class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div>';
 }
 window.addEventListener("bt-oc-rules",()=>{try{render()}catch(e){}});
-function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
+function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",dex:"DEX Screener",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
 function openItem(type){$("itemForm").reset();$("itemType").value=type;$("modalTitle").textContent=type==="wallet"?"Add Wallet":"Add Smart Contract";$("saveItem").textContent=type==="wallet"?"Save Wallet":"Save Contract";$("formMessage").textContent="";$("itemModal").classList.add("open");$("itemName").focus()}
 function closeModal(id){$(id).classList.remove("open")}
 let selectedPaymentPlan=null;
@@ -2396,6 +2446,164 @@ $("pfRefresh").addEventListener("click",()=>{loaded=false;loadAll(true)});
 document.addEventListener("click",e=>{if(e.target.closest('[data-page="profile"]'))setTimeout(()=>loadAll(false),120)});
 window.addEventListener("bt-auth",()=>{loaded=false;showState();if($("page-profile").classList.contains("active"))loadAll(true)});
 showState();
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const BT=window.BT;if(!BT)return;
+const $=id=>document.getElementById(id);
+const E=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const api=p=>BT.apiRequest(p);
+const toast=m=>BT.toast(m);
+const CH={solana:"Solana",ethereum:"Ethereum",bsc:"BNB Chain",base:"Base",arbitrum:"Arbitrum",polygon:"Polygon",optimism:"Optimism",avalanche:"Avalanche",tron:"Tron",ton:"TON",sui:"Sui",pulsechain:"PulseChain",blast:"Blast",linea:"Linea",zksync:"zkSync",abstract:"Abstract",sonic:"Sonic",hyperliquid:"Hyperliquid"};
+const chainName=c=>CH[c]||(c?c.charAt(0).toUpperCase()+c.slice(1):"—");
+const APPNETS=new Set(BT.NETWORKS.map(n=>n.id));
+const SUB="₀₁₂₃₄₅₆₇₈₉";
+const LBL={m5:"5m",h1:"1h",h6:"6h",h24:"24h"};
+function price(n){n=Number(n);if(!isFinite(n)||n<=0)return"—";if(n>=1)return n.toLocaleString("en-US",{maximumFractionDigits:n>=1000?2:4});if(n>=0.0001)return String(Number(n.toFixed(6)));const x=n.toExponential(3).split("e"),z=-Number(x[1])-1,dg=x[0].replace(".","").replace(/0+$/,"")||"0";if(!(z>0))return n.toExponential(2);return"0.0"+String(z).split("").map(d=>SUB[d]).join("")+dg}
+function big(n){if(n==null||!isFinite(Number(n)))return"—";n=Number(n);const a=Math.abs(n);return"$"+(a>=1e12?(n/1e12).toFixed(2)+"T":a>=1e9?(n/1e9).toFixed(2)+"B":a>=1e6?(n/1e6).toFixed(2)+"M":a>=1e3?(n/1e3).toFixed(1)+"K":n.toFixed(a<1?4:2))}
+const nz=v=>v!=null&&isFinite(Number(v));
+function pct(v){if(!nz(v))return'<span class="muted">—</span>';v=Number(v);return'<span class="'+(v>=0?"positive":"negative")+'">'+(v>=0?"▲ ":"▼ ")+Math.abs(v).toFixed(2)+"%</span>"}
+function ago(ms){if(!ms)return"—";const m=(Date.now()-ms)/6e4;if(m<1)return"just now";if(m<60)return Math.floor(m)+"m";const h=m/60;if(h<48)return Math.floor(h)+"h";const d=h/24;return d<60?Math.floor(d)+"d":d<730?Math.floor(d/30)+"mo":(d/365).toFixed(1)+"y"}
+const empty=(t,s)=>'<div class="empty" style="grid-column:1/-1"><strong>'+E(t)+"</strong>"+E(s||"")+"</div>";
+const ico=it=>'<span class="dx-ico">'+E(String((it.base&&it.base.symbol)||"?").slice(0,3).toUpperCase())+((it.icon||it.image)?'<img src="'+E(it.icon||it.image)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':"")+"</span>";
+document.addEventListener("error",e=>{const t=e.target;if(t&&t.tagName==="IMG"&&t.closest&&t.closest(".dx-ico"))t.remove()},true);
+
+const st={tab:"trending",items:[],meta:null,view:[],seq:0,at:0,metas:null,metasAt:0,pools:[]};
+
+/* ---------- list ---------- */
+function curTf(){return st.tab==="buysell"?$("dxTf").value:"h24"}
+function fillChains(){
+  const sel=$("dxChain"),keep=sel.value,set=[...new Set(st.items.map(i=>i.chain))].sort((a,b)=>chainName(a).localeCompare(chainName(b)));
+  sel.innerHTML='<option value="">All chains</option>'+set.map(c=>'<option value="'+E(c)+'">'+E(chainName(c))+"</option>").join("");
+  sel.value=set.includes(keep)?keep:"";
+}
+function view(){
+  let l=st.items.slice();
+  const ch=$("dxChain").value;if(ch)l=l.filter(i=>i.chain===ch);
+  if(st.tab==="new"){const h=Number($("dxAge").value);if(h)l=l.filter(i=>i.created&&Date.now()-i.created<h*36e5)}
+  return l;
+}
+function card(it,i){
+  const tf=curTf(),x=(it.txns&&it.txns[tf])||{buys:0,sells:0},t=x.buys+x.sells,bp=t?x.buys/t*100:50;
+  const sub=E(chainName(it.chain))+" · "+E(it.dex)+" · "+E(ago(it.created))+(it.boosts?" · ⚡"+it.boosts:"");
+  return '<button class="dx-card" type="button" data-dx-i="'+i+'"><div class="dx-top">'+ico(it)+'<div class="dx-t"><strong>'+E(it.base.symbol)+"<span>/"+E(it.quote.symbol)+"</span></strong><small>"+sub+'</small></div><div class="dx-p"><b>$'+price(it.priceUsd)+"</b>"+pct(it.change&&it.change.h24)+"</div></div>"+
+  '<div class="dx-grid"><div><small>Liquidity</small>'+big(it.liquidity)+"</div><div><small>Vol "+LBL[tf]+"</small>"+big(it.volume&&it.volume[tf])+"</div><div><small>MCap</small>"+big(it.marketCap||it.fdv)+"</div><div><small>1h</small>"+pct(it.change&&it.change.h1)+"</div></div>"+
+  '<div class="dx-bs"><span class="positive">B '+x.buys.toLocaleString("en-US")+'</span><div class="dx-meter" title="'+bp.toFixed(0)+'% buys ('+LBL[tf]+')"><i style="width:'+bp.toFixed(1)+'%"></i></div><span class="negative">'+x.sells.toLocaleString("en-US")+" S</span></div></button>";
+}
+function render(){
+  st.view=view();
+  $("dxList").innerHTML=st.view.length?st.view.map(card).join(""):empty(st.tab==="search"&&!st.items.length?"Search any coin":"Nothing to show",st.tab==="search"&&!st.items.length?"Type a name, symbol or contract address above.":"Try another chain or filter, or tap Refresh.");
+  const lbl=st.meta?"Narrative: "+st.meta:st.tab==="trending"?"Trending":st.tab==="new"?"New coins":st.tab==="buysell"?"Buy / sell · "+LBL[curTf()]:"Search results";
+  $("dxInfo").textContent=st.items.length?lbl+" · "+st.view.length+" of "+st.items.length+" shown"+(st.at?" · updated "+new Date(st.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""):"";
+}
+async function load(quiet){
+  const seq=++st.seq,tab=st.tab;
+  if(tab==="search")return;
+  if(!quiet)$("dxList").innerHTML=empty("Loading…","Fetching live data from DexScreener.");
+  try{
+    let d;
+    if(tab==="trending")d=st.meta?await api("/dex/meta?slug="+encodeURIComponent(st.meta)):await api("/dex/trending?source="+$("dxTrSrc").value);
+    else if(tab==="new")d=await api("/dex/new?source="+$("dxNewSrc").value);
+    else d=await api("/dex/buysell?tf="+$("dxTf").value+"&sort="+$("dxSort").value);
+    if(seq!==st.seq)return;
+    st.items=d.items||[];st.at=Date.now();fillChains();render();
+  }catch(e){
+    if(seq!==st.seq)return;
+    if(!quiet||!st.items.length)$("dxList").innerHTML=empty("Could not load DexScreener data","DexScreener may be busy. Tap Refresh in a few seconds.");
+  }
+}
+async function doSearch(){
+  const q=$("dxQ").value.trim();
+  if(q.length<2){toast("Type at least 2 characters");return}
+  const seq=++st.seq;$("dxList").innerHTML=empty("Searching…","");
+  try{const d=await api("/dex/search?q="+encodeURIComponent(q));if(seq!==st.seq)return;st.items=d.items||[];st.at=Date.now();fillChains();render();if(!st.items.length)$("dxList").innerHTML=empty("No pairs found","Check the spelling or paste the token contract address.")}
+  catch(e){if(seq===st.seq)$("dxList").innerHTML=empty("Search failed",e.message==="INVALID_QUERY"?"Enter 2–80 characters.":"DexScreener may be busy. Try again.")}
+}
+
+/* ---------- trending narratives ---------- */
+async function loadMetas(){
+  if(st.metas&&Date.now()-st.metasAt<120000){drawMetas();return}
+  try{const d=await api("/dex/metas");st.metas=d.items||[];st.metasAt=Date.now()}catch(e){st.metas=st.metas||[]}
+  drawMetas();
+}
+function drawMetas(){
+  const box=$("dxMetas");
+  if(st.tab!=="trending"||!st.metas||!st.metas.length){box.innerHTML="";return}
+  box.innerHTML='<div class="muted" style="font-size:10px;font-weight:700;margin-bottom:6px">TRENDING NARRATIVES</div><div class="dx-chips"><button class="dx-chip'+(st.meta?"":" on")+'" data-dx-meta="" type="button">🔥 Top boosted<small>All coins</small></button>'+
+  st.metas.map(m=>'<button class="dx-chip'+(st.meta===m.slug?" on":"")+'" data-dx-meta="'+E(m.slug)+'" type="button">'+(m.icon&&m.icon.type==="emoji"?E(m.icon.value)+" ":"")+E(m.name)+"<small>"+pct(m.change&&m.change.h24)+" 24h · "+big(m.marketCap)+"</small></button>").join("")+"</div>";
+}
+
+/* ---------- detail modal ---------- */
+let cur=null,cseq=0,withTrades=false;
+const frameUrl=(it,tr)=>"https://dexscreener.com/"+encodeURIComponent(it.chain)+"/"+encodeURIComponent(it.pair)+"?embed=1&theme=light&info=0&trades="+(tr?1:0);
+const dsUrl=it=>it.url||"https://dexscreener.com/"+encodeURIComponent(it.chain)+"/"+encodeURIComponent(it.pair);
+const stat=(l,v)=>'<div class="cm-s"><small>'+l+"</small><b>"+v+"</b></div>";
+function liveHtml(it){
+  const ch=it.change||{};
+  const rows=["m5","h1","h6","h24"].map(tf=>{const x=(it.txns&&it.txns[tf])||{buys:0,sells:0},t=x.buys+x.sells,bp=t?x.buys/t*100:50;
+    return '<div class="dx-tfrow"><b>'+LBL[tf]+'</b><span class="positive">'+x.buys.toLocaleString("en-US")+'</span><div class="dx-meter"><i style="width:'+bp.toFixed(1)+'%"></i></div><span class="negative">'+x.sells.toLocaleString("en-US")+"</span><span>"+(t?bp.toFixed(0)+"% buys":"no trades")+"</span><span>"+big(it.volume&&it.volume[tf])+"</span></div>"}).join("");
+  return '<div class="cm-price">$'+price(it.priceUsd)+" "+pct(ch.h24)+" <small>24h</small></div>"+
+  '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;margin:-4px 0 10px">'+["m5","h1","h6"].map(k=>"<span><span class=\"muted\">"+LBL[k]+"</span> "+pct(ch[k])+"</span>").join("")+"</div>"+
+  '<div class="cm-sec">Buy / sell activity</div><div class="dx-tfh"><span></span><span>Buys</span><span></span><span>Sells</span><span>Buy %</span><span>Volume</span></div>'+rows+
+  '<div class="cm-sec">Market data</div><div class="cm-stats">'+stat("Liquidity",big(it.liquidity))+stat("Volume 24h",big(it.volume&&it.volume.h24))+stat("Market cap",big(it.marketCap))+stat("FDV",big(it.fdv))+stat("Pair age",ago(it.created))+stat("Boosts",it.boosts?"⚡ "+it.boosts:"—")+"</div>";
+}
+function openModal(it){
+  if(!it)return;
+  cur=it;const seq=++cseq;withTrades=false;
+  const addr=it.base.address,cn=APPNETS.has(it.chain);
+  const links=[].concat(it.websites.map(u=>({l:"Website",u})),it.socials.map(s=>({l:s.type?s.type.charAt(0).toUpperCase()+s.type.slice(1):"Link",u:s.url}))).slice(0,6);
+  $("dxmBody").innerHTML=
+  '<div class="cm-head"><span class="dx-ico" style="width:42px;height:42px">'+E(it.base.symbol.slice(0,3).toUpperCase())+(it.image?'<img src="'+E(it.image)+'" alt="" referrerpolicy="no-referrer">':"")+'</span><div class="cm-t"><h3>'+E(it.base.name||it.base.symbol)+"</h3><small>"+E(it.base.symbol)+"/"+E(it.quote.symbol)+" · "+E(chainName(it.chain))+" · "+E(it.dex)+"</small></div></div>"+
+  '<div id="dxmLive">'+liveHtml(it)+"</div>"+
+  '<div class="cm-sec">Chart</div><div style="display:flex;gap:8px;margin-bottom:8px"><button class="cm-b pri" id="dxmTr" type="button">Chart + trades</button><a class="cm-b" href="'+E(dsUrl(it))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Open on DexScreener ↗</a></div>'+
+  '<div class="cm-frame"><iframe id="dxmFrame" src="'+E(frameUrl(it,false))+'" title="Live chart" loading="lazy" referrerpolicy="no-referrer"></iframe></div>'+
+  '<p class="cm-src">Chart not loading? Use "Open on DexScreener". "Chart + trades" shows every buy and sell inside DexScreener\'s own chart.</p>'+
+  (addr?'<div class="cm-sec">Token contract</div><div class="cm-c"><span class="cm-cn">'+E(chainName(it.chain))+"</span><code>"+E(addr)+'</code><span class="cm-ca"><button type="button" class="cm-b" data-dx-copy="'+E(addr)+'">Copy</button>'+(cn?'<button type="button" class="cm-b pri" data-dx-scan="'+E(it.chain+"|"+addr)+'">Scan</button>':"")+"</span></div>":"")+
+  (links.length?'<div class="cm-links">'+links.map(x=>'<a href="'+E(x.u)+'" target="_blank" rel="noopener noreferrer">'+E(x.l)+" ↗</a>").join("")+"</div>":"")+
+  '<div class="cm-sec">Other pools for this token</div><div id="dxmPools" class="muted" style="font-size:11px">Loading…</div>';
+  $("dxModal").classList.add("open");
+  api("/dex/pair?chain="+encodeURIComponent(it.chain)+"&pair="+encodeURIComponent(it.pair)).then(d=>{if(seq!==cseq||!d.item)return;cur=Object.assign({},it,d.item,{icon:it.icon});const l=$("dxmLive");if(l)l.innerHTML=liveHtml(cur)}).catch(()=>{});
+  api("/dex/token?chain="+encodeURIComponent(it.chain)+"&address="+encodeURIComponent(addr)).then(d=>{
+    if(seq!==cseq)return;st.pools=(d.items||[]).filter(p=>p.pair!==it.pair);
+    $("dxmPools").innerHTML=st.pools.length?st.pools.map((p,i)=>'<button class="dx-pool" type="button" data-dx-pool="'+i+'"><span><b>'+E(p.dex)+" · "+E(p.base.symbol)+"/"+E(p.quote.symbol)+"</b><small>Liquidity "+big(p.liquidity)+" · Vol 24h "+big(p.volume&&p.volume.h24)+"</small></span><span>$"+price(p.priceUsd)+"</span></button>").join(""):"No other pools found.";
+  }).catch(()=>{if(seq===cseq&&$("dxmPools"))$("dxmPools").textContent="Could not load other pools."});
+}
+function closeModal(){$("dxModal").classList.remove("open");cseq++;$("dxmBody").innerHTML=""}
+
+/* ---------- events ---------- */
+function showControls(){document.querySelectorAll("[data-dx-for]").forEach(el=>{el.hidden=el.dataset.dxFor!==st.tab})}
+function setTab(t){
+  st.tab=t;st.meta=null;st.items=[];st.at=0;
+  document.querySelectorAll("[data-dx-tab]").forEach(b=>b.classList.toggle("on",b.dataset.dxTab===t));
+  showControls();fillChains();drawMetas();
+  if(t==="search"){render();setTimeout(()=>$("dxQ").focus(),50)}else{load(false);if(t==="trending")loadMetas()}
+}
+document.addEventListener("click",async e=>{
+  const tb=e.target.closest("[data-dx-tab]");if(tb){setTab(tb.dataset.dxTab);return}
+  const mt=e.target.closest("[data-dx-meta]");if(mt){st.meta=mt.dataset.dxMeta||null;drawMetas();load(false);return}
+  const cd=e.target.closest("[data-dx-i]");if(cd&&$("dxList").contains(cd)){openModal(st.view[Number(cd.dataset.dxI)]);return}
+  const pl=e.target.closest("[data-dx-pool]");if(pl){openModal(st.pools[Number(pl.dataset.dxPool)]);return}
+  const cp=e.target.closest("[data-dx-copy]");if(cp){try{await navigator.clipboard.writeText(cp.dataset.dxCopy);toast("Contract copied")}catch(err){toast("Press and hold the address to copy it")}return}
+  const sc=e.target.closest("[data-dx-scan]");if(sc){
+    const [net,addr]=sc.dataset.dxScan.split("|");closeModal();
+    const nav=document.querySelector('[data-page="tokens"]');if(nav)nav.click();
+    const sn=$("scanNetwork"),sa=$("scanAddress");if(sn){sn.value=net;sn.dispatchEvent(new Event("change"))}if(sa)sa.value=addr;
+    setTimeout(()=>{const b=$("scanBtn");if(b&&!b.disabled)b.click()},350);return}
+  if(e.target.id==="dxmTr"&&cur){withTrades=!withTrades;const f=$("dxmFrame");f.src=frameUrl(cur,withTrades);f.style.height=withTrades?"560px":"";e.target.textContent=withTrades?"Chart only":"Chart + trades";return}
+  if(e.target===$("dxModal")||e.target.id==="dxmClose")closeModal();
+  if(e.target.closest('[data-page="dex"]')&&Date.now()-st.at>60000)setTimeout(()=>{if(st.tab!=="search")load(false);if(st.tab==="trending")loadMetas()},120);
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("dxModal").classList.contains("open"))closeModal()});
+$("dxChain").addEventListener("change",render);
+$("dxAge").addEventListener("change",render);
+["dxTrSrc","dxNewSrc","dxTf","dxSort"].forEach(id=>$(id).addEventListener("change",()=>load(false)));
+$("dxRefresh").addEventListener("click",()=>{if(st.tab==="search")doSearch();else{load(false);if(st.tab==="trending"){st.metasAt=0;loadMetas()}}});
+$("dxQBtn").addEventListener("click",doSearch);
+$("dxQ").addEventListener("keydown",e=>{if(e.key==="Enter")doSearch()});
+setInterval(()=>{const pg=$("page-dex");if(!document.hidden&&pg&&pg.classList.contains("active")&&!$("dxModal").classList.contains("open")&&st.tab!=="search")load(true)},60000);
+showControls();
 })();
 </script>
 </body></html>
