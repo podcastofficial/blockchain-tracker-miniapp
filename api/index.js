@@ -16,6 +16,7 @@ import { adminApi } from "../lib/admin.js";
 import { defiOverview } from "../lib/defi.js";
 import { txHistory } from "../lib/txhistory.js";
 import { telegramWebhook } from "../lib/bot.js";
+import { cronChannels } from "../lib/channels.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -647,6 +648,7 @@ export default async function handler(req, res) {
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
+    if (path === "/api/cron/channels") return await cronChannels(req, res);
 
     if (path === "/api/watchlist") return await watchlist(req, res);
     if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
