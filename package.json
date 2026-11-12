@@ -7,10 +7,14 @@
     "node": ">=20"
   },
   "dependencies": {
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "@solana/web3.js": "^1.98.0",
+    "@meteora-ag/dynamic-bonding-curve-sdk": "latest",
+    "bn.js": "^5.2.1"
   },
   "scripts": {
     "webhook": "node scripts/set-webhook.mjs",
-    "webhook:info": "node scripts/set-webhook.mjs --info"
+    "webhook:info": "node scripts/set-webhook.mjs --info",
+    "launch:config": "node scripts/create-dbc-config.mjs"
   }
 }

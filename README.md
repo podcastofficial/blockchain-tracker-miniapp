@@ -47,3 +47,10 @@ Backend and frontend wiring (watchlist sync, admin panel, Telegram channels & au
 `.env.example` and `scripts/set-webhook.mjs` are included: run `npm run webhook` once after deploy (and `npm run webhook:info` to check).
 `.github/workflows/cron.yml` now runs price, on-chain and **channel** workers every 5 min.
 Exchange labels are a small seed list — verify/extend via `EXCHANGE_LABELS_JSON`.
+
+## Launchpad (pump.fun-style, Meteora Dynamic Bonding Curve)
+Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpad.js` -> `/api/launch/*`. Non-custodial: server builds unsigned transactions, the user's Phantom wallet signs.
+1. `npm install`, then run `db/launchpad.sql` in Neon.
+2. Create your bonding-curve config once, on your own computer, **on devnet first**: `KEYPAIR_PATH=./owner.json THRESHOLD_SOL=2 SOLANA_RPC_URL=https://api.devnet.solana.com npm run launch:config`
+3. Vercel env: `DBC_CONFIG_KEY` (printed above), `SOLANA_RPC_URL` (a private RPC, e.g. Helius/QuickNode), `APP_URL`, optional `LAUNCH_NETWORK`, `LAUNCH_DAILY_LIMIT`.
+4. Wallet signing needs Phantom: inside Telegram's built-in browser use the "Open in Phantom" button on the page.
