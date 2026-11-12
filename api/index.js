@@ -646,6 +646,10 @@ export default async function handler(req, res) {
     if (path === "/api/market/overview") return await marketOverview(req, res);
     if (path === "/api/market/whales") return await whaleFeed(req, res);
     if (path === "/api/market/coin") return await coinProxy(req, res);
+    if (path === "/api/swap-config") { // public, non-secret settings for the in-app swap page
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(200).json({ ok: true, walletConnectProjectId: process.env.WALLETCONNECT_PROJECT_ID || "", integrator: process.env.LIFI_INTEGRATOR || "" });
+    }
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
