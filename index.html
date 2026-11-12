@@ -1147,7 +1147,7 @@ async function openCoin(id,hint){
   box.hidden=true;const my=++token;hint=hint||{};cur={id,days:7,kind:"coin",hint,side:pend.side,focus:pend.focus};pend={side:"",focus:false};
   show(head(hint.img,hint.sym,hint.name||id,esc(String(hint.sym||"").toUpperCase()))+'<div class="cm-load">Loading details…</div>');
   try{
-    const d=await getJSON(CG+"coins/"+encodeURIComponent(id)+"?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false",60000);
+    const d=await getJSON("/api/market/coin?kind=detail&id="+encodeURIComponent(id),60000).catch(()=>getJSON(CG+"coins/"+encodeURIComponent(id)+"?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false",60000));
     if(my!==token)return;renderCoin(d);
   }catch(e){if(my!==token)return;show(head(hint.img,hint.sym,hint.name||id,"")+errHtml(errText(e),true))}
 }
@@ -1227,7 +1227,7 @@ async function loadChart(){
   const my=token,id=cur.id,days=cur.days,el=$("cmChart");if(!el)return;
   el.innerHTML='<div class="cm-load">Loading chart…</div>';
   try{
-    const d=await getJSON(CG+"coins/"+encodeURIComponent(id)+"/market_chart?vs_currency=usd&days="+days,120000);
+    const d=await getJSON("/api/market/coin?kind=chart&days="+days+"&id="+encodeURIComponent(id),120000).catch(()=>getJSON(CG+"coins/"+encodeURIComponent(id)+"/market_chart?vs_currency=usd&days="+days,120000));
     if(my!==token||cur.days!==days||cur.id!==id)return;
     const raw=d&&Array.isArray(d.prices)?d.prices.filter(p=>Array.isArray(p)&&isFinite(p[0])&&isFinite(p[1])):[];
     if(raw.length<2){el.innerHTML=errHtml("No chart data for this coin.",false);return}
