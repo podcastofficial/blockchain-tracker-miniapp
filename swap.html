@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Swap · Blockchain Tracker</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+html,body{margin:0;background:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1e2a52}
+#bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #e5e9f5;position:sticky;top:0;background:#fff;z-index:5}
+#bar button{border:1.5px solid #d5dcf0;background:#fff;border-radius:10px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;color:#1e2a52}
+#bar b{font-size:14px}
+#root{padding:12px;display:flex;justify-content:center}
+#msg{padding:30px 18px;text-align:center;font-size:13px;line-height:1.7;color:#5b6786}
+#msg a{display:inline-block;margin:6px 4px;padding:9px 14px;border-radius:20px;background:#eef2ff;color:#2457ff;font-weight:700;text-decoration:none}
+.note{font-size:11px;color:#6b7691;text-align:center;padding:0 18px 22px;line-height:1.6}
+</style></head>
+<body>
+<div id="bar"><button id="back" type="button">← Back</button><b id="ttl">Swap</b></div>
+<div id="msg">Loading swap…</div>
+<div id="root"></div>
+<p class="note">Non-custodial: you approve every transaction in your own wallet. Your keys and funds never pass through this app. Routes and prices come from LI.FI; always check the amount and network before confirming.</p>
+<script type="module">
+const q = new URLSearchParams(location.search);
+const side = q.get("side") === "sell" ? "sell" : "buy", sym = (q.get("sym") || "").slice(0, 12);
+const chain = Number(q.get("chain")) || 0, token = (q.get("token") || "").slice(0, 80);
+const ALLOWED = [1, 56, 137, 42161, 8453, 10, 43114, 1151111081099710];
+document.getElementById("ttl").textContent = (side === "buy" ? "Buy " : "Sell ") + (sym ? sym.toUpperCase() : "");
+const back = () => { if (history.length > 1) history.back(); else location.href = "/"; };
+document.getElementById("back").onclick = back;
+try { const tg = window.Telegram && Telegram.WebApp; if (tg) { tg.ready(); tg.expand(); tg.BackButton.show(); tg.BackButton.onClick(back); } } catch {}
+const msg = document.getElementById("msg");
+const fail = text => { msg.innerHTML = text + '<br><a href="javascript:history.back()">← Back</a>'; };
+(async () => {
+  if (!ALLOWED.includes(chain) || !/^[A-Za-z0-9]{1,64}$/.test(token)) return fail("This coin cannot be swapped in the app (unsupported network or token).");
+  let cfg = {}; try { cfg = await (await fetch("/api/swap-config", { cache: "no-store" })).json(); } catch {}
+  if (!cfg.walletConnectProjectId) return fail("Wallet connect is not configured yet. The app admin must set <b>WALLETCONNECT_PROJECT_ID</b>.");
+  const native = chain === 1151111081099710 ? "11111111111111111111111111111111" : "0x0000000000000000000000000000000000000000";
+  try {
+    const [{ default: React }, { createRoot }, { LiFiWidget }] = await Promise.all([
+      import("https://esm.sh/react@18.3.1"),
+      import("https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1"),
+      import("https://esm.sh/@lifi/widget@3?deps=react@18.3.1,react-dom@18.3.1")
+    ]);
+    const buy = side === "buy";
+    const config = {
+      variant: "compact", appearance: "light", hiddenUI: ["poweredBy"],
+      fromChain: chain, toChain: chain,
+      // buying/selling the chain's own coin: only set that side, the user picks what to pay with / receive
+      ...(token === "native" ? (buy ? { toToken: native } : { fromToken: native }) : { fromToken: buy ? native : token, toToken: buy ? token : native }),
+      integrator: cfg.integrator || "blockchain-tracker",
+      walletConfig: { walletConnect: { projectId: cfg.walletConnectProjectId, metadata: { name: "Blockchain Tracker", description: "Swap tokens", url: location.origin, icons: [] } } }
+    };
+    msg.remove();
+    createRoot(document.getElementById("root")).render(React.createElement(LiFiWidget, { integrator: config.integrator, config }));
+  } catch (e) {
+    fail("Could not load the swap widget (network or CDN problem). Try again, or trade on a DEX / exchange from the previous screen.");
+  }
+})();
+</script>
+</body></html>

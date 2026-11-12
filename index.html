@@ -1162,10 +1162,18 @@ const DEXURL={
   bsc:(a,b)=>`https://pancakeswap.finance/swap?chain=bsc&inputCurrency=${b?a:"BNB"}&outputCurrency=${b?"BNB":a}`,
   solana:(a,b)=>`https://jup.ag/swap/${b?a+"-SOL":"SOL-"+a}`
 };
+// LI.FI chain ids (EVM + Solana). Native coins use the native-token placeholder inside swap.html; BTC is traded as WBTC (wrapped).
+const LCH={ethereum:1,bsc:56,polygon:137,arbitrum:42161,base:8453,optimism:10,avalanche:43114,solana:1151111081099710};
+const NATIVE_SWAP={ethereum:["ethereum","native"],binancecoin:["bsc","native"],"matic-network":["polygon","native"],"avalanche-2":["avalanche","native"],solana:["solana","native"],bitcoin:["ethereum","0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"]};
+function swapTarget(d,pl){
+  const n=NATIVE_SWAP[d.id];
+  if(n){const chain=LCH[n[0]];return n[1]==="native"?{chain,native:true,wrapped:false}:{chain,token:n[1],wrapped:d.id==="bitcoin"}}
+  const p=pl.find(([k])=>LCH[CGP[k]]);return p?{chain:LCH[CGP[p[0]]],token:String(p[1])}:null;
+}
 function tradeHtml(d,sym,px){
   const pl=Object.entries(d.platforms||{}).filter(([k,v])=>v&&CGP[k]&&DEXURL[CGP[k]]&&/^[A-Za-z0-9]{20,64}$/.test(String(v)));
   const side=cur.side==="sell"?"sell":"buy";
-  cur.coin={id:d.id,sym,px:Number(px)||0,dex:pl.length?{chain:CGP[pl[0][0]],addr:String(pl[0][1])}:null};
+  cur.coin={id:d.id,sym,px:Number(px)||0,dex:pl.length?{chain:CGP[pl[0][0]],addr:String(pl[0][1])}:null,swap:swapTarget(d,pl),ton:!!(d.id==="the-open-network"||(d.platforms&&d.platforms["the-open-network"]))};
   return '<div class="cm-sec" id="cmTradeSec">Trade '+esc(sym)+'</div><div class="cm-trade">'+
     '<div class="cm-side"><button type="button" class="cm-sd buy'+(side==="buy"?" on":"")+'" data-side="buy">🟢 Buy</button><button type="button" class="cm-sd sell'+(side==="sell"?" on":"")+'" data-side="sell">🔴 Sell</button></div>'+
     '<input class="control" id="cmAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Amount in USD, e.g. 100">'+
@@ -1181,6 +1189,8 @@ function tradeRefresh(){
     est.innerHTML=side==="buy"?`≈ <b>${price(qty*(1-FEE/100))} ${esc(c.sym)}</b> for $${price(amt)}<br>Price $${price(c.px)} · est. fee ~$${price(fee)} (${FEE}%)`:`Sell ≈ <b>${price(qty)} ${esc(c.sym)}</b><br>You get ≈ $${price(amt-fee)} · price $${price(c.px)} · est. fee ~$${price(fee)}`;
   }else est.textContent="Enter an amount to see the estimate.";
   const b=[],cls=side;
+  if(c.swap)b.push(`<button type="button" class="cm-b ${cls}" data-exec="swap">💼 ${side==="buy"?"Buy":"Sell"} ${esc(c.swap.wrapped?"WBTC":c.sym)} in app · connect wallet</button>`);
+  if(c.ton)b.push(`<button type="button" class="cm-b" data-exec="ton">💎 ${side==="buy"?"Buy":"Sell"} on STON.fi (TON) ↗</button>`);
   b.push(`<button type="button" class="cm-b ${cls}" data-exec="cex">${side==="buy"?"Buy":"Sell"} ${esc(c.sym)} on Binance ↗</button>`);
   if(c.dex)b.push(`<button type="button" class="cm-b" data-exec="dex">${side==="buy"?"Buy":"Sell"} via DEX swap ↗</button>`);
   ex.innerHTML=b.join("");
@@ -1188,6 +1198,11 @@ function tradeRefresh(){
 function openExt(u){try{const t=window.Telegram&&window.Telegram.WebApp;if(t&&t.openLink){t.openLink(u);return}}catch(e){}window.open(u,"_blank","noopener,noreferrer")}
 function tradeExec(kind){
   const c=cur.coin;if(!c)return;const sell=cur.side==="sell";
+  if(kind==="swap"&&c.swap){
+    if(c.swap.native){ // native coin: swap page uses its own native placeholder, so pass the stable "native" marker via token=native
+      location.href="/swap.html?"+new URLSearchParams({chain:c.swap.chain,token:"native",side:sell?"sell":"buy",sym:c.sym});return}
+    location.href="/swap.html?"+new URLSearchParams({chain:c.swap.chain,token:c.swap.token,side:sell?"sell":"buy",sym:c.swap.wrapped?"WBTC":c.sym});return}
+  if(kind==="ton"){openExt("https://app.ston.fi/swap");return}
   if(kind==="dex"&&c.dex){const f=DEXURL[c.dex.chain];if(f)openExt(f(c.dex.addr,sell));return}
   openExt("https://www.binance.com/en/trade/"+encodeURIComponent(c.sym)+"_USDT?type=spot");
 }
