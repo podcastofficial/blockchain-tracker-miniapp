@@ -15,6 +15,7 @@ import { watchlist } from "../lib/watchlist.js";
 import { adminApi } from "../lib/admin.js";
 import { defiOverview } from "../lib/defi.js";
 import { txHistory } from "../lib/txhistory.js";
+import { multiChainOverview } from "../lib/multichain.js";
 import { telegramWebhook } from "../lib/bot.js";
 import { cronChannels } from "../lib/channels.js";
 import { dexApi } from "../lib/dex.js";
@@ -675,6 +676,7 @@ export default async function handler(req, res) {
     if (path.startsWith("/api/dex/")) return await dexApi(req, res, path);
     if (path.startsWith("/api/launch/")) return await launchApi(req, res, path);
     if (path === "/api/tx/history") return await txHistory(req, res);
+    if (path === "/api/wallet/multichain") return await multiChainOverview(req, res);
     if (path === "/api/telegram/webhook") return await telegramWebhook(req, res);
 
     if (path === "/api/alerts") {
