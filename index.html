@@ -280,6 +280,12 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .mono{font-family:var(--mono)}
 .kv{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:11px}.kv span:first-child{color:var(--muted)}
 .lbl{color:var(--violet);font-weight:800}
+.pf-avatar{width:54px;height:54px;border-radius:16px;background:var(--grad);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:800;flex:none}
+.pf-check{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);font-size:11px}
+.pf-check input{width:18px;height:18px;accent-color:#7c3aed;flex:none}
+.pf-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:800;letter-spacing:.14em}
+.pf-msg{font-size:11px;margin-top:10px;min-height:14px}
+@media(max-width:760px){.pf-two{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
@@ -301,6 +307,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   </nav>
   <div class="nav-label">ACCOUNT</div>
   <nav class="nav">
+    <button data-page="profile"><span class="nav-icon">☻</span>My Profile</button>
     <button data-page="subscription"><span class="nav-icon">◇</span>Subscription & API</button>
     <button data-page="admin" id="adminNav" style="display:none"><span class="nav-icon">⚙</span>Admin Panel</button>
   </nav>
@@ -310,7 +317,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <header class="topbar">
   <div class="top-left"><div class="crumb" id="breadcrumb">Home Dashboard</div></div>
   <div class="top-search"><span class="search-icon">⌕</span><input id="globalSearch" placeholder="Search any coin, token, wallet..." autocomplete="off"></div>
-  <div class="top-actions"><button class="icon-btn" id="refreshBtn" title="Refresh view">↻</button><button class="icon-btn" id="notificationBtn" title="Notifications">♧</button><div class="profile" id="profileBadge" title="Telegram account">U</div></div>
+  <div class="top-actions"><button class="icon-btn" id="refreshBtn" title="Refresh view">↻</button><button class="icon-btn" id="notificationBtn" title="Notifications">♧</button><div class="profile" id="profileBadge" data-page="profile" style="cursor:pointer" title="My Profile">U</div></div>
 </header>
 <div class="ticker" id="ticker"><span class="tk-msg">Loading live prices…</span></div>
 <div class="content">
@@ -341,6 +348,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <button class="quick" data-page="portfolio"><div class="q-icon">◩</div><strong>Portfolio Analytics</strong><span>Sync balances and P&amp;L</span></button>
       <button class="quick" data-href="/swap.html"><div class="q-icon">⇄</div><strong>Swap</strong><span>Trade tokens across chains</span></button>
       <button class="quick" data-page="subscription"><div class="q-icon">◇</div><strong>Subscription &amp; API</strong><span>Plans, billing, USDT payment</span></button>
+      <button class="quick" data-page="profile"><div class="q-icon">☻</div><strong>My Profile</strong><span>Account, referral, history, export</span></button>
       <button class="quick" data-page="admin" id="adminQuick" style="display:none"><div class="q-icon">⚙</div><strong>Admin Panel</strong><span>Users, payments, health</span></button>
     </div></div>
   </div>
@@ -457,6 +465,77 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="notice">These tools are for planning only and are not financial advice. Crypto trading with leverage can lose more than you expect.</div>
 </section>
 
+<section class="page" id="page-profile">
+  <div class="page-head"><div><div class="eyebrow">ACCOUNT / PERSONAL</div><h1 class="page-title">My Profile</h1><p class="page-desc">Your account, contact details, notification settings, referrals, alert history and data export.</p></div><div class="head-actions"><button class="btn" id="pfRefresh">↻ Refresh</button></div></div>
+
+  <div id="pfGuest" style="display:none">
+    <div class="card" style="margin-bottom:15px"><div class="card-head"><div><div class="card-title">Sign in</div><div class="card-sub">Your profile is linked to your Telegram account</div></div><span class="tag yellow">SIGNED OUT</span></div>
+      <div class="notice" style="margin:0 0 14px">Inside Telegram you are signed in automatically. In a normal browser, open the bot chat, send <b>/login</b>, and enter the 8-character code below. The code works once and expires in 5 minutes.</div>
+      <div class="form-grid pf-two"><div class="field"><label for="pfCode">One-time login code</label><input id="pfCode" maxlength="9" autocomplete="one-time-code" placeholder="ABCD-2345" style="text-transform:uppercase"></div><div class="field" style="align-self:end"><button class="btn primary" id="pfCodeBtn" type="button">Sign in with code</button></div></div>
+      <div class="pf-msg" id="pfCodeMsg"></div>
+    </div>
+  </div>
+
+  <div id="pfAuthed" style="display:none">
+    <div class="grid section-grid" style="margin-top:0">
+      <div class="card"><div class="card-head"><div class="card-title">Account</div><span class="tag" id="pfPlanTag">FREE</span></div>
+        <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px"><div class="pf-avatar" id="pfAvatar">U</div><div style="min-width:0"><div style="font-size:16px;font-weight:800;word-break:break-word" id="pfName">—</div><div class="muted" style="font-size:11px" id="pfHandle">—</div></div></div>
+        <div class="kv"><span>Telegram ID</span><span id="pfTgId">—</span></div>
+        <div class="kv"><span>Plan</span><span id="pfPlanName">—</span></div>
+        <div class="kv"><span>Valid until</span><span id="pfPlanExp">—</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" data-page="subscription">Manage plan</button><button class="btn" id="pfLogout">Sign out</button></div>
+      </div>
+
+      <div class="card"><div class="card-head"><div><div class="card-title">Referral</div><div class="card-sub" id="pfRefSub">Invite friends and earn bonus days</div></div><span class="tag green">REWARDS</span></div>
+        <div class="muted" style="font-size:10px;margin-bottom:4px">Your referral code</div>
+        <div class="pf-code" id="pfRefCode">—</div>
+        <div class="field" style="margin-top:12px"><label for="pfRefLink">Invite link</label><input id="pfRefLink" readonly></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" id="pfRefCopy">Copy link</button><button class="btn" id="pfRefShare">Share on Telegram</button></div>
+        <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px;gap:8px">
+          <div class="kv" style="display:block;border:0;padding:0"><span>Invited</span><div class="stat-value" id="pfRefInv" style="font-size:20px">—</div></div>
+          <div class="kv" style="display:block;border:0;padding:0"><span>Rewarded</span><div class="stat-value" id="pfRefRew" style="font-size:20px">—</div></div>
+          <div class="kv" style="display:block;border:0;padding:0"><span>Bonus days</span><div class="stat-value" id="pfRefDays" style="font-size:20px">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid section-grid" style="margin-top:15px">
+      <div class="card"><div class="card-head"><div><div class="card-title">Personal details</div><div class="card-sub">Optional. Used only for your account and support.</div></div></div>
+        <div class="form-grid pf-two">
+          <div class="field"><label for="pfDisplay">Display name</label><input id="pfDisplay" maxlength="60" placeholder="Your name"></div>
+          <div class="field"><label for="pfEmail">Email</label><input id="pfEmail" type="email" maxlength="120" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="field"><label for="pfMobile">Mobile</label><input id="pfMobile" type="tel" inputmode="tel" placeholder="+911234567890" autocomplete="tel"></div>
+          <div class="field"><label for="pfWNet">Main wallet network</label><select id="pfWNet"><option value="">None</option></select></div>
+          <div class="field full"><label for="pfWAddr">Main wallet address</label><input id="pfWAddr" placeholder="Public address (leave empty to remove)" autocomplete="off"></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn primary" id="pfSaveDetails">Save details</button></div>
+        <div class="pf-msg" id="pfDetailsMsg"></div>
+      </div>
+
+      <div class="card"><div class="card-head"><div><div class="card-title">Notifications</div><div class="card-sub">Choose which Telegram messages you receive</div></div></div>
+        <label class="pf-check"><span><strong>Price alerts</strong><div class="muted" style="font-size:10px">When a price target is reached</div></span><input type="checkbox" id="pfNPrice"></label>
+        <label class="pf-check"><span><strong>On-chain alerts</strong><div class="muted" style="font-size:10px">Wallet, whale and contract events</div></span><input type="checkbox" id="pfNOnchain"></label>
+        <label class="pf-check"><span><strong>Subscription expiry</strong><div class="muted" style="font-size:10px">Reminders before your plan ends</div></span><input type="checkbox" id="pfNExpiry"></label>
+        <label class="pf-check" style="border-bottom:0"><span><strong>News &amp; announcements</strong><div class="muted" style="font-size:10px">Product updates from the team</div></span><input type="checkbox" id="pfNNews"></label>
+        <div style="margin-top:12px"><button class="btn primary" id="pfSavePrefs">Save notification settings</button></div>
+        <div class="pf-msg" id="pfPrefsMsg"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Alert history</div><div class="card-sub">Every triggered price alert and on-chain event</div></div><span class="tag" id="prHistTag">—</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select class="control" id="pfHKind"><option value="all">All types</option><option value="price">Price</option><option value="wallet">Wallet</option><option value="whale">Whale</option><option value="contract">Contract</option></select><select class="control" id="pfHDays"><option value="0">All time</option><option value="1">Last 24h</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></div>
+      <div id="pfHist" class="muted" style="font-size:12px">Loading…</div>
+      <div style="margin-top:12px"><button class="btn" id="pfHMore" style="display:none">Load more</button></div>
+    </div>
+
+    <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Export your data</div><div class="card-sub" id="pfExpSub">CSV files</div></div><span class="tag">CSV</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-pf-export="alerts">Alert history</button><button class="btn" data-pf-export="portfolio">Portfolio history</button><button class="btn" data-pf-export="watchlist">Watchlist</button><button class="btn" data-pf-export="payments">Payments</button></div>
+      <div class="pf-msg" id="pfExpMsg"></div>
+    </div>
+  </div>
+  <div class="notice">Your profile details are private and are never shown to other users. Export limit: 6 files per minute.</div>
+</section>
+
 <section class="page" id="page-subscription">
   <div class="page-head"><div><div class="eyebrow">ACCOUNT / BILLING</div><h1 class="page-title">Subscription & API</h1><p class="page-desc">Plans and account status are loaded from the live Blockchain Tracker backend. All paid plans are priced in USDT.</p></div><span class="tag yellow" id="authStatus">Checking account…</span></div>
   <div class="card" style="margin-bottom:15px">
@@ -557,7 +636,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 </div>
 </main>
 <nav class="mobile-nav" id="mobileNav">
-  <button class="active" data-page="dashboard"><span>▦</span>Home</button><button data-page="wallets"><span>◈</span>Wallets</button><button data-page="tokens"><span>◉</span>Scanner</button><button data-page="tools"><span>⚖</span>Tools</button><button data-page="alerts"><span>♧</span>Alerts</button><button data-page="subscription"><span>☻</span>Account</button>
+  <button class="active" data-page="dashboard"><span>▦</span>Home</button><button data-page="wallets"><span>◈</span>Wallets</button><button data-page="tokens"><span>◉</span>Scanner</button><button data-page="tools"><span>⚖</span>Tools</button><button data-page="alerts"><span>♧</span>Alerts</button><button data-page="profile"><span>☻</span>Profile</button>
 </nav>
 </div>
 
@@ -665,7 +744,14 @@ async function loadSubscription(){
 }
 async function connectBackend(){
   const plansLoaded=await loadPlans();
-  if(!tg||!tg.initData){setBackendStatus("Open in Telegram to sign in",false);renderAccount();return}
+  if(!tg||!tg.initData){
+    try{const me=await apiRequest("/auth/me");backendUser=me.user||null}catch(e){backendUser=null}
+    if(!backendUser){setBackendStatus("Open in Telegram to sign in",false);renderAccount();return}
+    setBackendStatus("Backend connected",true);
+    await loadSubscription();
+    window.dispatchEvent(new Event("bt-auth"));
+    return;
+  }
   try{
     setBackendStatus("Signing in…",false);
     const login=await apiRequest("/auth/telegram",{method:"POST",body:JSON.stringify({initData:tg.initData})});
@@ -698,7 +784,7 @@ $("alertList").className=alerts.length?"":"empty";
 $("alertList").innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${esc(a.type)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${esc(netName(a.network))} · ${a.threshold?`Threshold $${esc(a.threshold)}`:"No threshold"} · Draft only</div></div><button class="btn danger small" data-alert-remove="${esc(a.id)}">Delete</button></div>`).join(""):'<div class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div>';
 }
 window.addEventListener("bt-oc-rules",()=>{try{render()}catch(e){}});
-function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
+function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
 function openItem(type){$("itemForm").reset();$("itemType").value=type;$("modalTitle").textContent=type==="wallet"?"Add Wallet":"Add Smart Contract";$("saveItem").textContent=type==="wallet"?"Save Wallet":"Save Contract";$("formMessage").textContent="";$("itemModal").classList.add("open");$("itemName").focus()}
 function closeModal(id){$(id).classList.remove("open")}
 let selectedPaymentPlan=null;
@@ -2161,6 +2247,155 @@ document.addEventListener("click",e=>{
 });
 setInterval(()=>{if(!document.hidden)loadAll(false)},300000);
 loadAll(true);
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const BT=window.BT;if(!BT)return;
+const $=id=>document.getElementById(id);
+const E=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const api=(p,o)=>BT.apiRequest(p,o);
+const toast=m=>BT.toast(m);
+const ERR={AUTH_REQUIRED:"Please sign in first.",INVALID_NAME:"Name is too long or has invalid characters.",INVALID_EMAIL:"Enter a valid email address.",INVALID_MOBILE:"Enter 7–15 digits, optionally starting with +.",INVALID_WALLET:"Wallet address does not match the selected network.",RATE_LIMITED:"Too many requests. Wait a minute and try again.",PROFILE_FAILED:"Server error. Try again.",INVALID_CODE:"Enter the 8-character code from the bot.",INVALID_OR_EXPIRED_CODE:"Code is wrong, used or expired. Send /login to the bot again.",ACCOUNT_BLOCKED:"This account is blocked.",TELEGRAM_DELIVERY_FAILED:"Could not send to Telegram. Open the bot chat and press Start first.",EXPORT_FAILED:"Export failed. Try again.",INVALID_EXPORT:"Invalid export request."};
+const msg=e=>ERR[e&&e.message]||"Something went wrong. Try again.";
+const inTelegram=()=>!!(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData);
+const setMsg=(id,t,ok)=>{const el=$(id);if(!el)return;el.textContent=t||"";el.style.color=t?(ok?"var(--green)":"var(--red)"):""};
+const when=iso=>{try{return new Date(iso).toLocaleString([],{dateStyle:"medium",timeStyle:"short"})}catch(e){return"—"}};
+let loaded=false,busy=false,hOffset=0,pfRef=null;
+
+/* network list */
+$("pfWNet").innerHTML='<option value="">None</option>'+BT.NETWORKS.map(n=>'<option value="'+E(n.id)+'">'+E(n.name)+"</option>").join("");
+
+function showState(){
+  const on=!!BT.backendUser;
+  $("pfGuest").style.display=on?"none":"";
+  $("pfAuthed").style.display=on?"":"none";
+  $("pfExpSub").textContent=inTelegram()?"CSV files are sent to your Telegram chat with the bot.":"CSV files are downloaded to this device.";
+  return on;
+}
+
+async function loadAccount(){
+  const d=await api("/profile"),p=d.profile||{},a=d.account||{};
+  const name=p.displayName||a.firstName||a.username||"User";
+  $("pfName").textContent=name;
+  $("pfAvatar").textContent=String(name).trim().charAt(0).toUpperCase()||"U";
+  $("pfHandle").textContent=a.username?"@"+a.username:"No Telegram username";
+  $("pfTgId").textContent=a.telegramId||"—";
+  $("pfDisplay").value=p.displayName||"";$("pfEmail").value=p.email||"";$("pfMobile").value=p.mobile||"";
+  $("pfWNet").value=p.walletNetwork||"";$("pfWAddr").value=p.walletAddress||"";
+  $("pfNPrice").checked=!!p.notifyPrice;$("pfNOnchain").checked=!!p.notifyOnchain;$("pfNExpiry").checked=!!p.notifyExpiry;$("pfNNews").checked=!!p.notifyNews;
+  try{
+    const s=await api("/subscription/me"),sub=s.subscription,plan=(sub&&sub.plan)||{code:"free",name:"Free"};
+    $("pfPlanTag").textContent=String(plan.code||"free").toUpperCase();
+    $("pfPlanName").textContent=plan.name||"Free";
+    $("pfPlanExp").textContent=sub&&sub.expires_at?when(sub.expires_at):"No expiry";
+  }catch(e){}
+}
+
+async function loadReferral(){
+  try{
+    const r=await api("/referral");pfRef=r;
+    $("pfRefCode").textContent=r.code||"—";$("pfRefLink").value=r.link||"";
+    $("pfRefInv").textContent=r.invited;$("pfRefRew").textContent=r.rewarded;$("pfRefDays").textContent=r.days;
+    $("pfRefSub").textContent=r.rewardDays>0?"You get "+r.rewardDays+" bonus days when a friend you invite pays for a plan.":"Invite friends to Blockchain Tracker.";
+  }catch(e){$("pfRefCode").textContent="—";$("pfRefSub").textContent="Referral is unavailable right now."}
+}
+
+function histRow(i){
+  const st=i.delivery_status,tag=st==="sent"?"green":st==="failed"?"red":"yellow";
+  const icon={price:"📈",wallet:"👛",whale:"🐋",contract:"🛡"}[i.kind]||"♧";
+  return '<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong style="font-size:12px">'+icon+" "+E(String(i.kind||"").toUpperCase())+(i.network?" · "+E(i.network):"")+'</strong><span class="tag '+tag+'">'+E(String(st||"").toUpperCase())+'</span></div><div style="font-size:11px;margin-top:4px;word-break:break-word">'+E(i.summary||"").replace(/\n/g,"<br>")+'</div><div class="muted" style="font-size:10px;margin-top:3px">'+E(when(i.at))+"</div></div>";
+}
+async function loadHistory(reset){
+  if(reset){hOffset=0;$("pfHist").textContent="Loading…"}
+  const q=new URLSearchParams({kind:$("pfHKind").value,days:$("pfHDays").value,limit:15,offset:hOffset});
+  try{
+    const d=await api("/alerts/history?"+q);
+    const html=(d.items||[]).map(histRow).join("");
+    if(reset)$("pfHist").innerHTML=html||'<div class="empty"><strong>No alert events yet</strong>Triggered alerts will appear here.</div>';
+    else $("pfHist").insertAdjacentHTML("beforeend",html);
+    hOffset+=(d.items||[]).length;
+    $("pfHMore").style.display=d.more?"":"none";
+    if(d.stats)$("prHistTag").textContent=d.stats.total+" total · "+d.stats.sent+" sent · "+d.stats.failed+" failed";
+  }catch(e){if(reset)$("pfHist").textContent="Could not load alert history."}
+}
+
+async function loadAll(force){
+  if(busy)return;
+  if(!showState())return;
+  if(loaded&&!force)return;
+  busy=true;
+  try{await Promise.all([loadAccount(),loadReferral(),loadHistory(true)]);loaded=true}
+  catch(e){toast(msg(e))}
+  busy=false;
+}
+
+/* save forms */
+async function save(btnId,msgId,body){
+  const b=$(btnId);b.disabled=true;setMsg(msgId,"Saving…",true);
+  try{await api("/profile",{method:"PUT",body:JSON.stringify(body)});setMsg(msgId,"Saved.",true);toast("Profile saved");await loadAccount()}
+  catch(e){setMsg(msgId,msg(e),false)}
+  b.disabled=false;
+}
+$("pfSaveDetails").addEventListener("click",()=>save("pfSaveDetails","pfDetailsMsg",{displayName:$("pfDisplay").value,email:$("pfEmail").value,mobile:$("pfMobile").value,walletNetwork:$("pfWNet").value,walletAddress:$("pfWAddr").value.trim()}));
+$("pfSavePrefs").addEventListener("click",()=>save("pfSavePrefs","pfPrefsMsg",{notifyPrice:$("pfNPrice").checked,notifyOnchain:$("pfNOnchain").checked,notifyExpiry:$("pfNExpiry").checked,notifyNews:$("pfNNews").checked}));
+
+/* referral */
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true}catch(e){}
+  try{const i=$("pfRefLink");i.focus();i.select();return document.execCommand("copy")}catch(e){return false}
+}
+$("pfRefCopy").addEventListener("click",async()=>{const l=$("pfRefLink").value;if(!l)return;toast(await copyText(l)?"Link copied":"Press and hold the link to copy it")});
+$("pfRefShare").addEventListener("click",()=>{
+  const l=$("pfRefLink").value;if(!l)return;
+  const url="https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent("Track wallets, whales and prices across 10 chains with Blockchain Tracker.");
+  if(inTelegram()&&Telegram.WebApp.openTelegramLink)Telegram.WebApp.openTelegramLink(url);else window.open(url,"_blank","noopener");
+});
+
+/* history filters */
+$("pfHKind").addEventListener("change",()=>loadHistory(true));
+$("pfHDays").addEventListener("change",()=>loadHistory(true));
+$("pfHMore").addEventListener("click",()=>loadHistory(false));
+
+/* export */
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-pf-export]");if(!b)return;
+  b.disabled=true;setMsg("pfExpMsg","Preparing export…",true);
+  try{
+    const tg=inTelegram();
+    const d=await api("/export",{method:"POST",body:JSON.stringify({type:b.dataset.pfExport,deliver:tg?"telegram":"file"})});
+    if(d.csv){
+      const url=URL.createObjectURL(new Blob([d.csv],{type:"text/csv;charset=utf-8"}));
+      const a=document.createElement("a");a.href=url;a.download=d.filename||"export.csv";document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),4000);
+      setMsg("pfExpMsg","Downloaded "+(d.filename||"file")+".",true);
+    }else setMsg("pfExpMsg","Sent "+(d.filename||"file")+" to your Telegram chat.",true);
+  }catch(err){setMsg("pfExpMsg",msg(err),false)}
+  b.disabled=false;
+});
+
+/* browser login with a one-time code */
+$("pfCodeBtn").addEventListener("click",async()=>{
+  const code=$("pfCode").value.trim();
+  if(code.replace(/[^A-Za-z0-9]/g,"").length!==8){setMsg("pfCodeMsg",ERR.INVALID_CODE,false);return}
+  const b=$("pfCodeBtn");b.disabled=true;setMsg("pfCodeMsg","Signing in…",true);
+  try{await api("/auth/code",{method:"POST",body:JSON.stringify({code})});location.reload()}
+  catch(err){setMsg("pfCodeMsg",msg(err),false);b.disabled=false}
+});
+$("pfCode").addEventListener("keydown",e=>{if(e.key==="Enter")$("pfCodeBtn").click()});
+
+/* sign out */
+$("pfLogout").addEventListener("click",async()=>{
+  if(!confirm("Sign out on this device?"))return;
+  try{await api("/auth/logout",{method:"POST"})}catch(e){}
+  location.reload();
+});
+
+$("pfRefresh").addEventListener("click",()=>{loaded=false;loadAll(true)});
+document.addEventListener("click",e=>{if(e.target.closest('[data-page="profile"]'))setTimeout(()=>loadAll(false),120)});
+window.addEventListener("bt-auth",()=>{loaded=false;showState();if($("page-profile").classList.contains("active"))loadAll(true)});
+showState();
 })();
 </script>
 </body></html>
