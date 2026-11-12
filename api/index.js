@@ -6,7 +6,7 @@ import { verifyTelegramInitData } from "../lib/telegram.js";
 import { createSession, readSession } from "../lib/session.js";
 import { verifyOnChain } from "../lib/chain.js";
 import { portfolioBalances, portfolioHistory } from "../lib/portfolio.js";
-import { onchainAlerts, cronOnchain } from "../lib/onchain_alerts.js";
+import { onchainAlerts, cronOnchain, contractActivity } from "../lib/onchain_alerts.js";
 import { networkStatus } from "../lib/netstatus.js";
 import { marketOverview, whaleFeed, coinProxy } from "../lib/market.js";
 import { rateLimited, clientKey } from "../lib/ratelimit.js";
@@ -654,6 +654,7 @@ export default async function handler(req, res) {
     }
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
+    if (path === "/api/contract/activity") return await contractActivity(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
     if (path === "/api/cron/channels") return await cronChannels(req, res);
 
