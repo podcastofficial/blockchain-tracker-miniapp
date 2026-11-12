@@ -9,12 +9,17 @@
   "dependencies": {
     "pg": "^8.13.1",
     "@solana/web3.js": "^1.98.0",
-    "@meteora-ag/dynamic-bonding-curve-sdk": "latest",
+    "@meteora-ag/dynamic-bonding-curve-sdk": "^2.0.0",
     "bn.js": "^5.2.1"
   },
   "scripts": {
     "webhook": "node scripts/set-webhook.mjs",
     "webhook:info": "node scripts/set-webhook.mjs --info",
     "launch:config": "node scripts/create-dbc-config.mjs"
+  },
+  "overrides": {
+    "rpc-websockets": {
+      "uuid": "^9.0.1"
+    }
   }
 }
