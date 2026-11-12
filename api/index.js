@@ -17,6 +17,13 @@ import { defiOverview } from "../lib/defi.js";
 import { txHistory } from "../lib/txhistory.js";
 import { telegramWebhook } from "../lib/bot.js";
 import { cronChannels } from "../lib/channels.js";
+import { profile } from "../lib/profile.js";
+import { codeLogin, logout } from "../lib/loginCode.js";
+import { referral, attachReferral } from "../lib/referral.js";
+import { alertHistory } from "../lib/history.js";
+import { exportApi } from "../lib/export.js";
+import { confirmPayment } from "../lib/payments.js";
+import { runMaintenance } from "../lib/maintenance.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -55,7 +62,7 @@ async function telegramLogin(req, res) {
          is_premium=EXCLUDED.is_premium,
          updated_at=NOW(),
          last_login_at=NOW()
-       RETURNING id, telegram_user_id, username, first_name, is_blocked`,
+       RETURNING id, telegram_user_id, username, first_name, is_blocked, (xmax = 0) AS inserted`,
       [
         String(telegramUser.id),
         telegramUser.username || null,
@@ -66,10 +73,15 @@ async function telegramLogin(req, res) {
       ]
     );
 
-    const user = result.rows[0];
+    const { inserted, ...user } = result.rows[0];
 
     if (user.is_blocked) {
       return send(res, 403, { ok: false, error: "ACCOUNT_BLOCKED" });
+    }
+
+    // New user that arrived through a referral link: start_param is part of the signed initData.
+    if (inserted) {
+      try { await attachReferral(user.id, new URLSearchParams(req.body.initData).get("start_param")); } catch { /* referral is best-effort */ }
     }
 
     const token = createSession(user);
@@ -480,6 +492,11 @@ async function verifyPayment(req, res) {
     }
 
     if (v.state === "pending") {
+      // Remember the hash so the 5-minute worker can finish the verification without the user tapping Verify again.
+      await db().query(
+        `UPDATE subscription_payments SET tx_hash=$2, status='verifying', confirmations=$3, updated_at=NOW()
+         WHERE id=$1 AND status IN ('pending','verifying')`,
+        [payment.id, txHash, v.confirmations ?? 0]).catch(() => {});
       return send(res, 202, { ok: true, status: "verifying", reason: v.reason, confirmations: v.confirmations ?? 0 });
     }
     if (v.state === "rejected") {
@@ -489,41 +506,13 @@ async function verifyPayment(req, res) {
       return send(res, 422, { ok: false, error: "TX_BEFORE_INVOICE" });
     }
 
-    // Confirmed on-chain: activate atomically.
-    const client = await db().connect();
+    // Confirmed on-chain: activate atomically (same code the auto-recheck worker uses; also handles referral bonus).
     try {
-      await client.query("BEGIN");
-      const lock = await client.query("SELECT status FROM subscription_payments WHERE id=$1 FOR UPDATE", [payment.id]);
-      if (lock.rows[0].status === "confirmed") {
-        await client.query("ROLLBACK");
-        return send(res, 200, { ok: true, status: "confirmed" });
-      }
-      const plan = await client.query("SELECT duration_days FROM subscription_plans WHERE code=$1", [payment.plan_code]);
-      const days = plan.rows[0].duration_days || 30;
-      await client.query(
-        `UPDATE subscription_payments SET status='confirmed', tx_hash=$2, confirmations=$3,
-         confirmed_at=NOW(), updated_at=NOW() WHERE id=$1`,
-        [payment.id, txHash, v.confirmations]
-      );
-      await client.query(
-        `INSERT INTO user_subscriptions (user_id, plan_code, status, starts_at, expires_at)
-         VALUES ($1,$2,'active',NOW(),
-           GREATEST(NOW(), COALESCE((SELECT MAX(expires_at) FROM user_subscriptions
-             WHERE user_id=$1 AND status='active' AND expires_at > NOW()), NOW())) + ($3 || ' days')::interval)`,
-        [session.id, payment.plan_code, String(days)]
-      );
-      await client.query(
-        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata) VALUES ($1,'payment.confirmed','payment',$2,$3)",
-        [session.id, payment.id, JSON.stringify({ chain: payment.chain, txHash, amount: payment.expected_amount })]
-      );
-      await client.query("COMMIT");
+      await confirmPayment({ ...payment, user_id: session.id }, txHash, v.confirmations);
       return send(res, 200, { ok: true, status: "confirmed" });
     } catch (e) {
-      await client.query("ROLLBACK").catch(() => {});
       if (e.code === "23505") return send(res, 409, { ok: false, error: "TX_ALREADY_USED" });
       throw e;
-    } finally {
-      client.release();
     }
   } catch {
     return send(res, 500, {
@@ -586,19 +575,20 @@ function cronAuthorized(req) {
   return secret.length >= 16 && a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-async function cronAlerts(req, res) {
-  if (!cronAuthorized(req)) return send(res, 401, { ok: false, error: "UNAUTHORIZED" });
+// Price-alert worker. Returns [httpStatus, body]; cronAlerts() sends it together with the maintenance result.
+async function priceAlertsRun() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const rows = (await db().query(
-    `SELECT a.id, a.coin_id, a.symbol, a.direction, a.target_price::float8 AS target, u.telegram_user_id
-     FROM price_alerts a JOIN users u ON u.id=a.user_id
+    `SELECT a.id, a.coin_id, a.symbol, a.direction, a.target_price::float8 AS target, u.telegram_user_id,
+            COALESCE(pr.notify_price, TRUE) AS notify
+     FROM price_alerts a JOIN users u ON u.id=a.user_id LEFT JOIN user_profiles pr ON pr.user_id=a.user_id
      WHERE a.status='active' AND NOT u.is_blocked LIMIT 1000`)).rows;
-  if (!rows.length) return send(res, 200, { ok: true, checked: 0, triggered: 0 });
+  if (!rows.length) return [200, { ok: true, checked: 0, triggered: 0 }];
   const ids = [...new Set(rows.map(r => r.coin_id))];
   const prices = {};
   for (let i = 0; i < ids.length; i += 200) {
     const r = await fetch("https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=" + encodeURIComponent(ids.slice(i, i + 200).join(",")));
-    if (!r.ok) return send(res, 502, { ok: false, error: "PRICE_SOURCE_UNAVAILABLE", status: r.status });
+    if (!r.ok) return [502, { ok: false, error: "PRICE_SOURCE_UNAVAILABLE", status: r.status }];
     Object.assign(prices, await r.json());
   }
   let triggered = 0;
@@ -611,6 +601,10 @@ async function cronAlerts(req, res) {
        WHERE id=$1 AND status='active' RETURNING id`, [r.id, String(p)]);
     if (!claim.rowCount) continue;
     triggered++;
+    if (!r.notify) { // user switched price notifications off in My Profile: keep it in history as muted
+      await db().query(`UPDATE price_alerts SET delivery_error='MUTED' WHERE id=$1`, [r.id]);
+      continue;
+    }
     const fmt = n => n >= 1 ? n.toLocaleString("en-US", { maximumFractionDigits: 4 }) : String(Number(n.toPrecision(4)));
     const text = `🔔 ${r.symbol} is ${r.direction === "above" ? "above" : "below"} $${fmt(r.target)}\nPrice now: $${fmt(p)}`;
     try {
@@ -623,7 +617,13 @@ async function cronAlerts(req, res) {
       await db().query(`UPDATE price_alerts SET delivery_error='TELEGRAM_UNREACHABLE' WHERE id=$1`, [r.id]);
     }
   }
-  return send(res, 200, { ok: true, checked: rows.length, triggered });
+  return [200, { ok: true, checked: rows.length, triggered }];
+}
+
+async function cronAlerts(req, res) {
+  if (!cronAuthorized(req)) return send(res, 401, { ok: false, error: "UNAUTHORIZED" });
+  const [[status, body], maintenance] = await Promise.all([priceAlertsRun(), runMaintenance()]);
+  return send(res, status, { ...body, maintenance });
 }
 
 export default async function handler(req, res) {
@@ -654,6 +654,17 @@ export default async function handler(req, res) {
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
     if (path === "/api/cron/channels") return await cronChannels(req, res);
+
+    if (path === "/api/auth/code") return await codeLogin(req, res);
+    if (path === "/api/auth/logout") return await logout(req, res);
+    if (path === "/api/profile") return await profile(req, res);
+    if (path === "/api/referral") return await referral(req, res);
+    if (path === "/api/alerts/history") return await alertHistory(req, res);
+    if (path === "/api/export") return await exportApi(req, res);
+    if (path === "/api/cron/maintenance") {
+      if (!cronAuthorized(req)) return send(res, 401, { ok: false, error: "UNAUTHORIZED" });
+      return send(res, 200, { ok: true, maintenance: await runMaintenance() });
+    }
 
     if (path === "/api/watchlist") return await watchlist(req, res);
     if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
