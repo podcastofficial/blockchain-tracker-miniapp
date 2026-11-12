@@ -68,3 +68,10 @@ Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpa
 - `lib/community.js`: update_id de-duplication (`telegram_updates`, purged after 7 days by the 5-minute maintenance worker), bot add/remove/permission lifecycle for groups, supergroups and channels, admin cache sync, audit log.
 - `lib/bot.js` routes group/channel updates to the module; private-chat commands are unchanged.
 - Detection, `/track` commands and notifications follow in Phases 2–3.
+
+## Community Crypto Monitor — Phase 2 (detection + commands)
+- Run `db/community_phase2.sql` in Neon (after `db/community.sql`). No webhook change needed beyond Phase 1.
+- `lib/address.js`: strict validators (EIP-55 checksum, Tron base58check, Solana 32-byte), candidate extraction (max 5 per message), chain resolution that never assumes Ethereum for `0x` addresses. Tests: `node scripts/test-address.mjs`.
+- `lib/community_track.js`: automatic detection + `/track /trackinfo /tracklist /untrack /pause /resume /help` (also `/cmd@BOT_USERNAME`). Ambiguous EVM addresses get a network-choice button; duplicate suppression window and hourly reply limit are enforced per community. Smoke test: `node scripts/test-community-flow.mjs`.
+- Set `BOT_USERNAME` in Vercel (needed to ignore commands aimed at other bots and to build Open Tracker links).
+- Replies currently show network, format validity and explorer link; live data/risk indicators come in Phase 3.
