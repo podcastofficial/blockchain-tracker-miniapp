@@ -394,10 +394,11 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     </div></div>
   </div>
   <div class="section-grid grid">
-    <div class="card" style="margin-bottom:15px"><div class="card-head"><div><div class="card-title">Market Pulse</div><div class="card-sub">Trending coins, top movers and live gas fees</div></div><span class="tag" id="mpUpdated">LIVE</span></div>
-      <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn small primary" data-mp="trending">🔥 Trending</button><button class="btn small" data-mp="gainers">▲ Gainers</button><button class="btn small" data-mp="losers">▼ Losers</button></div>
-      <div id="mpList" class="muted" style="font-size:12px">Loading…</div>
-      <div class="card-title" style="margin:16px 0 8px;font-size:12px">⛽ Gas Tracker</div><div id="gasGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>
+    <div class="card" style="margin-bottom:15px"><div class="card-head"><div><div class="card-title">🆕 New Coins &amp; Quick Trade</div><div class="card-sub">Discover newly surfaced tokens and open an in-app swap</div></div><span class="tag green" id="newCoinsUpdated">LIVE</span></div>
+      <div class="dx-tabs" style="margin:0 0 12px"><button class="dx-tab on" data-home-coins="dex" type="button">DEX Screener</button><button class="dx-tab" data-home-coins="coingecko" type="button">CoinGecko</button></div>
+      <div id="homeNewCoins" class="dx-list"><div class="muted" style="font-size:12px">Loading new coins…</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn primary small" data-page="dex">Explore all tokens</button><button class="btn small" data-href="/swap.html">Open Swap</button></div>
+      <div class="notice" style="margin-top:12px">Token discovery data is informational. Buy/Sell opens the non-custodial swap flow where you connect your wallet and approve each transaction. Always verify the token contract and network before swapping.</div>
     </div>
     <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Live health check of each network (updates every 30 seconds)</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
     <div class="card"><div class="card-head"><div><div class="card-title">Recent Watchlist</div><div class="card-sub">Your locally saved wallets and contracts</div></div><button class="btn small" data-page="wallets">View all</button></div><div id="recentWatchlist"></div></div>
@@ -771,17 +772,17 @@ function renderPlanCards(plans){
     const duration=plan.duration_days?`${Number(plan.duration_days)} days`:"Lifetime";
     const features=Array.isArray(plan.features)?plan.features.map(x=>`<div>✓ ${esc(x)}</div>`).join(""):"";
     const isCurrent=code===currentCode;
-    const paid=price>0 && ["pro","business","enterprise"].includes(code);
-    const label=isCurrent?"Current plan":paid?"Buy package": "Free plan";
-    const disabled=isCurrent||code==="free";
-    const featured=code==="business"?' featured':'';
+    const paid=price>0 && ["pro","business"].includes(code);
+    const label=isCurrent?"Current plan":paid?"Choose network":code==="enterprise"?"Contact admin":"Free plan";
+    const disabled=isCurrent||code==="enterprise"||code==="free";
+    const featured=code==="pro"?' featured':'';
     return `<div class="card plan-card${featured}">
-      <span class="tag ${code==="business"?"yellow":""}">${code==="business"?"★ RECOMMENDED":esc(code.toUpperCase())}</span>
+      <span class="tag ${code==="pro"?"yellow":""}">${esc(code.toUpperCase())}</span>
       <div style="font-size:17px;font-weight:750;margin-top:8px">${name}</div>
       <div class="plan-price">${price===0?(code==="free"?"Free":"Custom"):`${window.BTLogos?BTLogos.coin("tether","USDT","ico-s"):""}${price.toLocaleString("en-US",{maximumFractionDigits:6})} USDT`}</div>
-      <div class="muted" style="font-size:10px">/${esc(duration)}${price>0?" · USDT":""}</div>
+      <div class="muted" style="font-size:10px">/${esc(duration)}</div>
       <div class="plan-features">${features||'<div>Plan details available soon</div>'}</div>
-      <button class="btn ${code==="business"?"primary":""}" ${disabled?"disabled":""} ${paid?`data-buy-plan="${esc(code)}"`:""}>${esc(label)}</button>
+      <button class="btn ${code==="pro"?"primary":""}" ${disabled?"disabled":""} ${paid?`data-buy-plan="${esc(code)}"`:""}>${esc(label)}</button>
     </div>`;
   }).join("");
 }
@@ -897,7 +898,7 @@ if(!name||!address){$("formMessage").textContent="Complete all required fields."
 if(!validAddress(address,network)){$("formMessage").textContent="Address format does not match the selected network.";return}
 const key=normAddress(address,network),dup=watchlist.some(i=>i.network===network&&normAddress(i.address,i.network)===key);
 if(dup){$("formMessage").textContent="This address already exists in your watchlist for this network.";return}
-const cl=window.BTcloud;if(cl&&cl.on){const used=watchlist.filter(i=>i.type===type).length,cap=type==="wallet"?cl.walletLimit:cl.contractLimit;if(cap&&used>=cap){$("formMessage").textContent=(type==="wallet"?"Wallet":"Contract")+" tracking limit reached ("+cap+"). Remove an item or upgrade.";return}}
+const cl=window.BTcloud;if(cl&&cl.on&&cl.limit&&watchlist.length>=cl.limit){$("formMessage").textContent="Watchlist limit reached for your plan ("+cl.limit+"). Remove an item or upgrade.";return}
 const item={id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2),type,name,network,address,category:$("category").value,createdAt:new Date().toISOString()};
 watchlist.unshift(item);if(!persist()){watchlist.shift();$("formMessage").textContent="Browser storage unavailable; item was not saved.";return}
 render();closeModal("itemModal");toast(type==="wallet"?"Wallet saved":"Contract saved");if(type==="wallet"||EVM_MON.includes(network))window.dispatchEvent(new CustomEvent("bt-auto-monitor",{detail:{kind:type,network,address}}));if(tg?.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");
@@ -1709,22 +1710,38 @@ const price=n=>n==null?"—":n>=1?"$"+n.toLocaleString("en-US",{maximumFractionD
 const short=a=>a.slice(0,6)+"…"+a.slice(-4);
 const age=s=>s<90?Math.max(s,1)+"s":s<5400?Math.round(s/60)+"m":Math.round(s/3600)+"h";
 async function getJ(u){const r=await fetch(u,{cache:"no-store"});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||"FAILED");return j}
-/* ---- Market Pulse ---- */
-let mp=null,tab="trending";
-function drawMp(){
-  const box=g("mpList");if(!box||!mp)return;
-  const rows=mp[tab]||[];
-  box.innerHTML=rows.length?rows.map((c,i)=>{const up=(c.change||0)>=0;return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><span class="muted" style="width:16px;font-size:10px">${i+1}</span>${c.thumb?`<img src="${E(c.thumb)}" alt="" width="22" height="22" loading="lazy" style="border-radius:50%">`:""}<div style="flex:1;min-width:0"><strong>${E(c.symbol)}</strong><div class="muted" style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${E(c.name)}</div></div><div style="text-align:right"><div>${price(c.price)}</div><div style="font-size:11px;font-weight:700;color:var(--${up?"green":"red"})">${c.change==null?"—":(up?"+":"")+c.change.toFixed(2)+"%"}</div></div></div>`}).join(""):"No data right now. Try again in a minute.";
-  document.querySelectorAll("[data-mp]").forEach(b=>b.classList.toggle("primary",b.dataset.mp===tab));
+/* ---- Dashboard: new coin discovery ---- */
+let homeCoinSource="dex",homeDexItems=[],homeCgItems=[];
+function homeCoinCard(it,i,source){
+  const name=it.base?.name||it.name||it.base?.symbol||it.symbol||"Unknown token";
+  const sym=it.base?.symbol||it.symbol||"—";
+  const chain=it.chain||"";
+  const priceText=it.priceUsd!=null?"$"+price(it.priceUsd):it.current_price!=null?"$"+price(it.current_price):"Price unavailable";
+  const change=it.change?.h24??it.price_change_percentage_24h;
+  const image=it.image||it.thumb||it.imageUrl||"";
+  const trade=source==="dex"&&it.base?.address&&it.chain;
+  return `<div class="dx-card" style="cursor:default"><div class="dx-top">${image?`<span class="dx-ico"><img src="${E(image)}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>`:`<span class="dx-ico">${E(String(sym).slice(0,3).toUpperCase())}</span>`}<div class="dx-t"><strong>${E(sym)}</strong><small>${E(name)}${chain?" · "+E(chainName(chain)):""}</small></div><div class="dx-p"><b>${E(priceText)}</b>${pct(change)}</div></div><div class="dx-grid"><div><small>Liquidity</small>${it.liquidity!=null?big(it.liquidity):"—"}</div><div><small>Volume 24h</small>${it.volume?.h24!=null?big(it.volume.h24):it.total_volume!=null?big(it.total_volume):"—"}</div><div><small>Market cap</small>${it.marketCap!=null?big(it.marketCap):it.market_cap!=null?big(it.market_cap):"—"}</div><div><small>Source</small>${source==="dex"?"DEX Screener":"CoinGecko"}</div></div><div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">${trade?`<button class="cm-b pri" type="button" data-home-trade="${i}">⇄ Trade in App</button><button class="cm-b" type="button" data-home-scan="${E(chain)}|${E(it.base.address)}">Scan Token</button>`:`<span class="muted" style="font-size:10px">Contract / swap route not provided by source</span>`}${it.url?`<a class="cm-b" href="${E(it.url)}" target="_blank" rel="noopener noreferrer">View Pair ↗</a>`:""}</div></div>`;
 }
-function drawGas(list){
-  const el=g("gasGrid");if(!el)return;
-  el.innerHTML=list.map(x=>`<div style="border:1px solid var(--border);border-radius:11px;padding:9px 11px"><div class="muted" style="font-size:10px">${E(NAME[x.network]||x.network)}</div><div style="font-weight:800;font-size:14px">${x.gwei==null?"—":x.gwei<1?x.gwei.toFixed(3):x.gwei.toFixed(1)} <span style="font-size:9px" class="muted">gwei</span></div><div class="muted" style="font-size:10px">${x.transferUsd==null?"":"≈ "+(x.transferUsd<0.01?"<$0.01":"$"+x.transferUsd.toFixed(2))+" / transfer"}</div></div>`).join("");
+function renderHomeCoins(){
+  const box=g("homeNewCoins");if(!box)return;
+  const rows=homeCoinSource==="dex"?homeDexItems:homeCgItems;
+  box.innerHTML=rows.length?rows.slice(0,6).map((it,i)=>homeCoinCard(it,i,homeCoinSource)).join(""):homeCoinSource==="coingecko"?'<div class="empty"><strong>CoinGecko new listings unavailable</strong>This endpoint may require an eligible CoinGecko API plan. DEX Screener new-token discovery remains available.</div>':'<div class="empty"><strong>No new token pairs available</strong>Try again shortly or open DEX Screener for more filters.</div>';
+  document.querySelectorAll("[data-home-coins]").forEach(b=>b.classList.toggle("on",b.dataset.homeCoins===homeCoinSource));
 }
-async function loadMp(){
-  try{mp=await getJ("/api/market/overview");drawMp();drawGas(mp.gas||[]);g("mpUpdated").textContent="Updated "+new Date(mp.updatedAt).toLocaleTimeString()}
-  catch(e){if(g("mpList"))g("mpList").textContent="Market data unavailable right now."}
+async function loadHomeCoins(){
+  const box=g("homeNewCoins");if(box&&!homeDexItems.length)box.textContent="Loading new token profiles…";
+  try{const d=await getJ("/api/dex/new?source=profiles");homeDexItems=d.items||[]}catch(e){homeDexItems=[]}
+  try{const d=await getJ("/api/market/new-coins");homeCgItems=d.coins||[]}catch(e){homeCgItems=[]}
+  const stamp=g("newCoinsUpdated");if(stamp)stamp.textContent="Updated "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  renderHomeCoins();
 }
+document.addEventListener("click",e=>{
+  const tab=e.target.closest("[data-home-coins]");if(tab){homeCoinSource=tab.dataset.homeCoins;renderHomeCoins();return}
+  const trade=e.target.closest("[data-home-trade]");if(trade){const it=homeDexItems[Number(trade.dataset.homeTrade)];if(!it)return;const ids={ethereum:1,bsc:56,polygon:137,arbitrum:42161,base:8453,optimism:10,avalanche:43114,solana:1151111081099710};const cid=ids[String(it.chain||"").toLowerCase()];if(!cid){toast("In-app swap is not available for this chain yet.");return}location.href="/swap.html?"+new URLSearchParams({chain:String(cid),token:it.base.address,side:"buy",sym:it.base.symbol||"TOKEN"});return}
+  const scan=e.target.closest("[data-home-scan]");if(scan){const [net,addr]=scan.dataset.homeScan.split("|");const nav=document.querySelector('[data-page="tokens"]');if(nav)nav.click();const sn=g("scanNetwork"),sa=g("scanAddress");if(sn){sn.value=net;sn.dispatchEvent(new Event("change"))}if(sa)sa.value=addr;setTimeout(()=>{const b=g("scanBtn");if(b&&!b.disabled)b.click()},350);return}
+  if(e.target.closest('[data-page="dashboard"]')&&!homeDexItems.length)setTimeout(loadHomeCoins,100);
+});
+loadHomeCoins();setInterval(()=>{if(!document.hidden)loadHomeCoins()},90000);
 /* ---- Whale feed ---- */
 let wbusy=false,wlast=0;
 async function loadWhales(){
@@ -1744,13 +1761,10 @@ async function loadWhales(){
   wbusy=false;b.disabled=false;
 }
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-mp]");if(t){tab=t.dataset.mp;drawMp();return}
   if(e.target.closest('[data-page="whales"]')&&Date.now()-wlast>60000)setTimeout(loadWhales,150);
-  if(e.target.closest('[data-page="dashboard"]')&&(!mp))setTimeout(loadMp,100);
 });
 g("wfRefresh").addEventListener("click",loadWhales);
 g("wfNet").addEventListener("change",loadWhales);g("wfMin").addEventListener("change",loadWhales);
-loadMp();setInterval(()=>{if(!document.hidden)loadMp()},60000);
 })();
 </script>
 <script>
@@ -1776,7 +1790,7 @@ const ago=iso=>{if(!iso)return null;const s=Math.max(0,(Date.now()-new Date(iso)
 /* =====================================================
    1) Cloud watchlist sync + invested amount
    ===================================================== */
-const cloud={on:false,limit:null,walletLimit:null,contractLimit:null};window.BTcloud=cloud;
+const cloud={on:false,limit:null};window.BTcloud=cloud;
 const IK="bt_invested_v1";
 let uid=null,invested=null,timer=null,pushing=false,started=false;
 {const v=parseFloat(ls.get(IK));invested=isFinite(v)&&v>=0?v:null}
@@ -1784,7 +1798,7 @@ const WK=()=>"bt_wl_synced_"+uid,DK=()=>"bt_wl_dirty_"+uid;
 const keyOf=i=>i.type+":"+i.network+":"+String(i.address).toLowerCase();
 function status(){
   const n=BT.watchlist.length;
-  const t=cloud.on?"☁ Cloud sync on · "+BT.watchlist.filter(i=>i.type==="wallet").length+"/"+cloud.walletLimit+" wallets · "+BT.watchlist.filter(i=>i.type==="contract").length+"/"+cloud.contractLimit+" contracts":"Local watchlist · sign in to sync";
+  const t=cloud.on?"☁ Cloud sync on · "+n+(cloud.limit?" / "+cloud.limit:"")+" items":"Local watchlist · sign in to sync";
   const a=g("syncState"),b=g("syncTag");
   if(a)a.textContent=t;
   if(b){b.textContent=cloud.on?"☁ Synced":"This browser only";b.className="tag"+(cloud.on?" green":"")}
@@ -1812,7 +1826,7 @@ async function pull(){
     const seen=new Set(remote.map(keyOf)),add=local.filter(i=>!seen.has(keyOf(i)));
     if(add.length){merged=remote.concat(add);extra=true}
   }
-  cloud.limit=d.limit||null;cloud.walletLimit=d.walletLimit||10;cloud.contractLimit=d.contractLimit||10;cloud.on=true;
+  cloud.limit=d.limit||null;cloud.on=true;
   if(JSON.stringify(merged.map(keyOf))!==JSON.stringify(local.map(keyOf)))BT.setWatchlist(merged);
   if(d.investedUsd!=null){invested=Number(d.investedUsd);ls.set(IK,String(invested))}
   else if(invested!=null)extra=true;
@@ -1822,15 +1836,13 @@ async function pull(){
 async function push(){
   if(!cloud.on||!uid||pushing)return;
   pushing=true;
-  const list=BT.watchlist.slice();
+  const all=BT.watchlist,list=cloud.limit?all.slice(0,cloud.limit):all.slice();
   try{
     await api("/watchlist",{method:"PUT",body:JSON.stringify({items:list,investedUsd:invested})});
     ls.del(DK());ls.set(WK(),"1");
     if(all.length>list.length)toast((all.length-list.length)+" item(s) exceed your plan limit and won't sync");
   }catch(e){
-    if(e.message==="WALLET_LIMIT_REACHED")toast("Wallet tracking limit reached for your plan");
-    else if(e.message==="CONTRACT_LIMIT_REACHED")toast("Contract tracking limit reached for your plan");
-    else if(e.message==="WATCHLIST_LIMIT_REACHED")toast("Watchlist limit reached for your plan");
+    if(e.message==="WATCHLIST_LIMIT_REACHED")toast("Watchlist limit reached for your plan");
     else if(e.status===429)toast("Syncing too fast. Will retry on your next change.");
     else if(e.status!==401)toast("Cloud sync failed. Changes are kept in this browser.");
   }
@@ -2641,6 +2653,7 @@ function openModal(it){
   $("dxmBody").innerHTML=
   '<div class="cm-head"><span class="dx-ico" style="width:42px;height:42px">'+E(it.base.symbol.slice(0,3).toUpperCase())+(it.image?'<img src="'+E(it.image)+'" alt="" referrerpolicy="no-referrer">':"")+'</span><div class="cm-t"><h3>'+E(it.base.name||it.base.symbol)+"</h3><small>"+E(it.base.symbol)+"/"+E(it.quote.symbol)+" · "+E(chainName(it.chain))+" · "+E(it.dex)+"</small></div></div>"+
   '<div id="dxmLive">'+liveHtml(it)+"</div>"+
+  (addr?'<div class="cm-sec">Integrated trading</div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="cm-b pri" type="button" data-dx-trade="buy">🟢 Buy in App</button><button class="cm-b" type="button" data-dx-trade="sell">🔴 Sell in App</button></div><div class="cm-src">Wallet connection and final transaction approval happen in your wallet. Unsupported chains cannot be swapped in-app yet.</div>':'')+
   '<div class="cm-sec">Chart</div><div style="display:flex;gap:8px;margin-bottom:8px"><button class="cm-b pri" id="dxmTr" type="button">Chart + trades</button><a class="cm-b" href="'+E(dsUrl(it))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Open on DexScreener ↗</a></div>'+
   '<div class="cm-frame"><iframe id="dxmFrame" src="'+E(frameUrl(it,false))+'" title="Live chart" loading="lazy" referrerpolicy="no-referrer"></iframe></div>'+
   '<p class="cm-src">Chart not loading? Use "Open on DexScreener". "Chart + trades" shows every buy and sell inside DexScreener\'s own chart.</p>'+
@@ -2669,6 +2682,14 @@ document.addEventListener("click",async e=>{
   const mt=e.target.closest("[data-dx-meta]");if(mt){st.meta=mt.dataset.dxMeta||null;drawMetas();load(false);return}
   const cd=e.target.closest("[data-dx-i]");if(cd&&$("dxList").contains(cd)){openModal(st.view[Number(cd.dataset.dxI)]);return}
   const pl=e.target.closest("[data-dx-pool]");if(pl){openModal(st.pools[Number(pl.dataset.dxPool)]);return}
+  const tr=e.target.closest("[data-dx-trade]");if(tr&&cur){
+    const ids={ethereum:1,bsc:56,polygon:137,arbitrum:42161,base:8453,optimism:10,avalanche:43114,solana:1151111081099710};
+    const cid=ids[String(cur.chain||"").toLowerCase()];
+    if(!cid){toast("In-app swap is not available for this chain yet.");return}
+    const token=cid===1151111081099710?cur.base.address:cur.base.address;
+    if(!token){toast("Token contract address is missing.");return}
+    location.href="/swap.html?"+new URLSearchParams({chain:String(cid),token,side:tr.dataset.dxTrade,sym:cur.base.symbol||"TOKEN"});return;
+  }
   const cp=e.target.closest("[data-dx-copy]");if(cp){try{await navigator.clipboard.writeText(cp.dataset.dxCopy);toast("Contract copied")}catch(err){toast("Press and hold the address to copy it")}return}
   const sc=e.target.closest("[data-dx-scan]");if(sc){
     const [net,addr]=sc.dataset.dxScan.split("|");closeModal();

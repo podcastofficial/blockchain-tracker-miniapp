@@ -2,17 +2,6 @@
 
 Single Vercel function: **`api/index.js`** dispatches every route; helpers live in `/lib`. Frontend is `index.html`.
 
-## Launch plans and limits (updated 2026-11-12)
-
-| Plan | Price / 30 days | Wallets | Contracts | Wallet transaction notifications/day | Contract transaction notifications/day | Price alerts/day |
-|---|---:|---:|---:|---:|---:|---:|
-| Free | Free lifetime | 10 | 10 | 500 | 500 | 50 |
-| Pro | 1 USDT | 25 | 25 | 1,500 | 1,500 | 150 |
-| Business | 2.5 USDT | 50 | 50 | 5,000 | 5,000 | 500 |
-| Enterprise | 5 USDT | 100 | 100 | 10,000 | 10,000 | 1,000 |
-
-Transaction notification quotas are enforced separately for wallet and contract events. Price-alert delivery has its own daily cap. Active alert rules are also capped by the plan's alert allowance. Run `db/launch_limits_migration.sql` on an existing Neon database before deploying this update; new databases can use the normal setup SQL files below.
-
 ## API routes
 **Auth/account:** `POST /api/auth/telegram`, `GET /api/auth/me`, `GET /api/subscription/plans|me`, `POST /api/subscription/create-payment|verify-payment` (real on-chain USDT verification: BEP20 via BSC RPC, TRC20 via TronGrid).
 **Alerts:** `/api/alerts` (price), `/api/alerts/onchain` (wallet · whale · **contract**), cron: `/api/cron/alerts`, `/api/cron/onchain`.
@@ -46,7 +35,7 @@ Frontend page **DEX Screener** (sidebar + dashboard quick action). Backend: `lib
 - Charts and the live trade list use DexScreener's own embed (`?embed=1`). The public API has no candle history and no trade-by-trade feed, only buy/sell counts per 5m/1h/6h/24h.
 
 ## Setup
-1. Run in Neon (in order): `db/schema.sql`, `db/price_alerts.sql`, `db/portfolio.sql`, `db/onchain_alerts.sql`, `db/phase5.sql`, **`db/channels.sql`**, then `db/launch_limits_migration.sql` for an existing database.
+1. Run in Neon (in order): `db/schema.sql`, `db/price_alerts.sql`, `db/portfolio.sql`, `db/onchain_alerts.sql`, `db/phase5.sql`, **`db/channels.sql`**.
 2. Set env vars — see `.env.example`.
 3. Deploy to Vercel.
 4. Schedulers: add repo secrets `APP_URL` + `CRON_SECRET` and the workflow `.github/workflows/cron.yml` runs both workers every 5 min (Vercel Hobby only allows daily crons).
@@ -65,3 +54,11 @@ Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpa
 2. Create your bonding-curve config once, on your own computer, **on devnet first**: `KEYPAIR_PATH=./owner.json THRESHOLD_SOL=2 SOLANA_RPC_URL=https://api.devnet.solana.com npm run launch:config`
 3. Vercel env: `DBC_CONFIG_KEY` (printed above), `SOLANA_RPC_URL` (a private RPC, e.g. Helius/QuickNode), `APP_URL`, optional `LAUNCH_NETWORK`, `LAUNCH_DAILY_LIMIT`.
 4. Wallet signing needs Phantom: inside Telegram's built-in browser use the "Open in Phantom" button on the page.
+
+## Dashboard: New Coins & Integrated Trading
+
+- The Home Dashboard replaces the old Market Pulse / Gas Tracker panel with a New Coins & Quick Trade panel.
+- DEX Screener new token profiles are loaded from `GET /api/dex/new?source=profiles`. Supported EVM networks and Solana tokens with a pair contract can open the existing non-custodial in-app swap flow (`/swap.html`).
+- CoinGecko recently added coins are loaded from `GET /api/market/new-coins` using CoinGecko's `/coins/list/new` endpoint. Availability depends on the CoinGecko API plan and rate limits; set `COINGECKO_API_KEY` in Vercel Environment Variables if your plan provides a key. If CoinGecko denies access, the dashboard shows a clear unavailable state and DEX Screener discovery remains usable.
+- CoinGecko's recently-added list does not include a guaranteed chain-specific swap contract, so it is shown as discovery information only. Always use a verified DEX Screener pair/contract to initiate an in-app swap.
+- Swap remains non-custodial: users connect their own wallet and approve transactions themselves. `WALLETCONNECT_PROJECT_ID` must be configured for wallet connection.
