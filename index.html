@@ -458,9 +458,10 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 </section>
 
 <section class="page" id="page-contracts">
-  <div class="page-head"><div><div class="eyebrow">DEVELOPER / EVENT MONITORING</div><h1 class="page-title">Smart Contracts</h1><p class="page-desc">Watch EVM contracts for ownership transfers, proxy upgrades, pause/unpause and role changes. Alerts arrive on Telegram.</p></div><div class="head-actions"><button class="btn primary" data-open="contract">＋ Add Contract</button></div></div>
-  <div class="card"><div class="toolbar"><input class="control" id="contractFilter" placeholder="Search contract name or address"><select class="control" id="contractNetworkFilter"><option value="">All networks</option></select></div><div class="table-wrap"><table><thead><tr><th>Contract</th><th>Network</th><th>Address</th><th>Type</th><th>Monitoring</th><th>Actions</th></tr></thead><tbody id="contractRows"></tbody></table></div><div class="empty" id="contractEmpty"><div class="empty-icon">⌘</div><strong>No contracts registered</strong>Add a contract address, then tap Monitor to get Telegram alerts for privileged actions.</div></div>
-  <div class="notice">Monitoring detects standard events only: Ownable ownership transfer, EIP-1967 proxy upgrade and admin change, Pausable, and AccessControl role grant or revoke. Contracts with custom admin logic may not trigger alerts. Available on EVM networks. Each rule counts toward your alert limit, and the first scan only sets a starting point.</div>
+  <div class="page-head"><div><div class="eyebrow">DEVELOPER / EVENT MONITORING</div><h1 class="page-title">Smart Contracts</h1><p class="page-desc">Add an EVM contract and every new transaction on it appears here live and is sent to your Telegram bot. Ownership, upgrade, pause and role changes are flagged separately.</p></div><div class="head-actions"><button class="btn primary" data-open="contract">＋ Add Contract</button></div></div>
+  <div class="card"><div class="toolbar"><input class="control" id="contractFilter" placeholder="Search contract name or address"><select class="control" id="contractNetworkFilter"><option value="">All networks</option></select></div><div class="table-wrap"><table><thead><tr><th>Contract</th><th>Network</th><th>Address</th><th>Type</th><th>Monitoring</th><th>Actions</th></tr></thead><tbody id="contractRows"></tbody></table></div><div class="empty" id="contractEmpty"><div class="empty-icon">⌘</div><strong>No contracts registered</strong>Add a contract address. Monitoring starts automatically; tap History to see its past transactions.</div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Live Contract Activity</div><div class="card-sub">New transactions on your contracts (refreshes every 30s)</div></div><button class="btn small" id="caRefresh" type="button">↻ Refresh</button></div><div id="caList" class="muted" style="font-size:11px">Add a contract to see its activity here.</div></div>
+  <div class="notice">Alerts cover every transaction that emits an event on the contract (transfers, swaps, deposits, calls). Plain calls that emit no event are not detected; use History for those. Privileged-action detection covers standard events only: Ownable ownership transfer, EIP-1967 proxy upgrade and admin change, Pausable, and AccessControl role grant or revoke. Contracts with custom admin logic may not trigger alerts. Available on EVM networks. Each rule counts toward your alert limit, and the first scan only sets a starting point.</div>
 </section>
 
 <section class="page" id="page-defi">
@@ -891,7 +892,7 @@ if(dup){$("formMessage").textContent="This address already exists in your watchl
 const cl=window.BTcloud;if(cl&&cl.on&&cl.limit&&watchlist.length>=cl.limit){$("formMessage").textContent="Watchlist limit reached for your plan ("+cl.limit+"). Remove an item or upgrade.";return}
 const item={id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2),type,name,network,address,category:$("category").value,createdAt:new Date().toISOString()};
 watchlist.unshift(item);if(!persist()){watchlist.shift();$("formMessage").textContent="Browser storage unavailable; item was not saved.";return}
-render();closeModal("itemModal");toast(type==="wallet"?"Wallet saved":"Contract saved");if(tg?.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");
+render();closeModal("itemModal");toast(type==="wallet"?"Wallet saved":"Contract saved");if(type==="contract"&&EVM_MON.includes(network))window.dispatchEvent(new CustomEvent("bt-auto-monitor",{detail:{network,address}}));if(tg?.HapticFeedback)tg.HapticFeedback.notificationOccurred("success");
 });
 ["walletFilter","walletNetworkFilter","walletTypeFilter","contractFilter","contractNetworkFilter"].forEach(id=>$(id).addEventListener("input",render));
 $("createAlert").onclick=()=>$("alertModal").classList.add("open");
@@ -1649,7 +1650,25 @@ document.addEventListener("click",async e=>{
   if(e.target.closest('[data-page="alerts"]')||e.target.closest('[data-page="contracts"]'))setTimeout(()=>load(false),200);
 });
 window.addEventListener("bt-auth",()=>load(false));
-if(BT.backendUser)load(false);
+window.addEventListener("bt-auto-monitor",async ev=>{
+  if(!BT.backendUser){BT.toast("Contract saved. Open inside Telegram to get alerts");return}
+  const{network,address}=ev.detail;
+  try{await BT.apiRequest("/alerts/onchain",{method:"POST",body:JSON.stringify({kind:"contract",network,address,minUsd:0.01})});BT.toast("Monitoring ON: new activity goes to your Telegram bot")}
+  catch(x){BT.toast(ERR[x.message]||"Contract saved, but monitoring could not start")}
+  load(true);loadAct();
+});
+async function loadAct(){
+  const box=g("caList");if(!box||!BT.backendUser)return;
+  try{
+    const d=await BT.apiRequest("/contract/activity");
+    box.innerHTML=d.items.length?d.items.map(e=>{const L=e.summary.split("\n"),url=(L.find(x=>/^https:\/\//.test(x))||"").trim();
+      return `<div style="padding:9px 0;border-bottom:1px solid var(--border);white-space:pre-line">${E(L.filter(x=>!/^https:\/\//.test(x)).join("\n"))}<div style="font-size:9px;margin-top:3px">${new Date(e.created_at).toLocaleString()}${url?` · <a href="${E(url)}" target="_blank" rel="noopener" style="color:var(--cyan)">View tx ↗</a>`:""}</div></div>`}).join(""):"No activity yet. The first scan sets a starting point, new transactions show up after that.";
+  }catch(x){}
+}
+g("caRefresh")&&g("caRefresh").addEventListener("click",loadAct);
+setInterval(()=>{if(document.getElementById("page-contracts")?.classList.contains("active"))loadAct()},30000);
+document.addEventListener("click",e=>{if(e.target.closest('[data-page="contracts"]'))setTimeout(loadAct,250)});
+if(BT.backendUser){load(false);loadAct()}
 fillNets();fillSaved();
 })();
 </script>
