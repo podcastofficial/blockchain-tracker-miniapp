@@ -16,6 +16,11 @@ html,body{margin:0;background:#fff;font-family:system-ui,-apple-system,Segoe UI,
 <body>
 <div id="bar"><button id="back" type="button">← Back</button><b id="ttl">Swap</b></div>
 <div id="msg">Loading swap…</div>
+<div id="alt" style="margin:0 14px 10px;padding:12px;border:1.5px solid #d5dcf0;border-radius:14px;background:#fafbff">
+  <div style="font-size:12px;font-weight:800;margin-bottom:4px">Wallet not connecting?</div>
+  <div style="font-size:11px;color:#6b7691;line-height:1.6;margin-bottom:9px">Telegram's built-in browser often cannot open wallet apps. Open this swap inside your wallet's own browser (the wallet connects instantly there).</div>
+  <div id="altBtns" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+</div>
 <div id="root"></div>
 <p class="note">Non-custodial: you approve every transaction in your own wallet. Your keys and funds never pass through this app. Routes and prices come from LI.FI; always check the amount and network before confirming.</p>
 <script type="module">
@@ -28,6 +33,23 @@ const back = () => { if (history.length > 1) history.back(); else location.href 
 document.getElementById("back").onclick = back;
 try { const tg = window.Telegram && Telegram.WebApp; if (tg) { tg.ready(); tg.expand(); tg.BackButton.show(); tg.BackButton.onClick(back); } } catch {}
 const msg = document.getElementById("msg");
+(function walletLinks(){
+  const full = location.href, nop = full.replace(/^https?:\/\//, ""), sol = chain === 1151111081099710;
+  const L = [];
+  if (!sol) L.push(["🦊 MetaMask", "https://metamask.app.link/dapp/" + nop]);
+  L.push(["🛡 Trust Wallet", "https://link.trustwallet.com/open_url?coin_id=" + (sol ? 501 : 60) + "&url=" + encodeURIComponent(full)]);
+  L.push(["🔵 Coinbase Wallet", "https://go.cb-w.com/dapp?cb_url=" + encodeURIComponent(full)]);
+  if (sol) L.push(["👻 Phantom", "https://phantom.app/ul/browse/" + encodeURIComponent(full) + "?ref=" + encodeURIComponent(location.origin)]);
+  L.push(["🌐 Phone browser", full]);
+  const box = document.getElementById("altBtns");
+  for (const [t, u] of L) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = t;
+    b.style.cssText = "border:1.5px solid #d5dcf0;background:#fff;border-radius:10px;padding:8px 11px;font-weight:700;font-size:12px;cursor:pointer;color:#1e2a52";
+    b.onclick = () => { try { const tg = window.Telegram && Telegram.WebApp; if (tg && tg.openLink) { tg.openLink(u); return; } } catch {} window.open(u, "_blank", "noopener"); };
+    box.appendChild(b);
+  }
+  if (!window.Telegram || !Telegram.WebApp || !Telegram.WebApp.initData) document.getElementById("alt").style.display = "none"; // already in a normal / wallet browser
+})();
 const fail = text => { msg.innerHTML = text + '<br><a href="javascript:history.back()">← Back</a>'; };
 (async () => {
   if (!ALLOWED.includes(chain) || !/^[A-Za-z0-9]{1,64}$/.test(token)) return fail("This coin cannot be swapped in the app (unsupported network or token).");
