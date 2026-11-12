@@ -4,78 +4,250 @@
 <title>Swap · Blockchain Tracker</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-html,body{margin:0;background:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1e2a52}
+:root{--ink:#1e2a52;--mut:#6b7691;--line:#d5dcf0;--bg:#f3f5fc;--grad:linear-gradient(135deg,#2457ff,#7c3aed);--up:#10b981;--dn:#ef4444}
+*{box-sizing:border-box}html,body{margin:0;background:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
 #bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #e5e9f5;position:sticky;top:0;background:#fff;z-index:5}
-#bar button{border:1.5px solid #d5dcf0;background:#fff;border-radius:10px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;color:#1e2a52}
-#bar b{font-size:14px}
-#root{padding:12px;display:flex;justify-content:center}
-#msg{padding:30px 18px;text-align:center;font-size:13px;line-height:1.7;color:#5b6786}
-#msg a{display:inline-block;margin:6px 4px;padding:9px 14px;border-radius:20px;background:#eef2ff;color:#2457ff;font-weight:700;text-decoration:none}
-.note{font-size:11px;color:#6b7691;text-align:center;padding:0 18px 22px;line-height:1.6}
+#bar b{font-size:15px;flex:1}
+.btn{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;color:var(--ink);font-family:inherit}
+.main{width:100%;border:0;border-radius:14px;padding:15px;font-size:15px;font-weight:800;color:#fff;background:var(--grad);cursor:pointer;font-family:inherit}
+.main:disabled{opacity:.5;cursor:default}.main.buy{background:var(--up)}.main.sell{background:var(--dn)}
+.wrap{padding:14px;max-width:520px;margin:0 auto}
+.box{background:var(--bg);border-radius:16px;padding:14px;margin-bottom:10px}
+.box small{display:block;color:var(--mut);font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase}
+.row{display:flex;gap:8px;align-items:center}
+.box input{flex:1;min-width:0;border:0;background:transparent;font-size:26px;font-weight:800;color:var(--ink);outline:none;font-family:inherit}
+select{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:9px 10px;font-weight:800;font-size:13px;color:var(--ink);font-family:inherit}
+.fix{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:9px 12px;font-weight:800;font-size:13px}
+.recv{font-size:26px;font-weight:800;min-height:34px;overflow-wrap:anywhere}
+.info{font-size:12px;line-height:1.9;color:#3a4566;margin:4px 2px 12px}
+.info b{color:var(--ink)}.warn{color:var(--dn);font-weight:700}
+.chips{display:flex;gap:6px;margin-top:8px}.chips button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:9px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;color:var(--ink);font-family:inherit}.chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+#status{font-size:12px;line-height:1.7;margin:12px 2px;color:#3a4566;overflow-wrap:anywhere}#status a{color:#2457ff;font-weight:700}
+.note{font-size:11px;color:var(--mut);text-align:center;line-height:1.6;padding:8px 10px 24px}
+#sheet{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:20}#sheet.open{display:flex}
+#sheet .in{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;margin:0 auto;padding:18px 16px 26px}
+#sheet h3{margin:0 0 4px;font-size:17px}#sheet p{margin:0 0 12px;font-size:12px;color:var(--mut);line-height:1.6}
+.w{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:13px;padding:13px;margin-bottom:8px;font-weight:800;font-size:14px;cursor:pointer;color:var(--ink);font-family:inherit}
+#fatal{padding:30px 18px;text-align:center;font-size:13px;line-height:1.8;color:#5b6786}
 </style></head>
 <body>
-<div id="bar"><button id="back" type="button">← Back</button><b id="ttl">Swap</b></div>
-<div id="msg">Loading swap…</div>
-<div id="alt" style="margin:0 14px 10px;padding:12px;border:1.5px solid #d5dcf0;border-radius:14px;background:#fafbff">
-  <div style="font-size:12px;font-weight:800;margin-bottom:4px">Wallet not connecting?</div>
-  <div style="font-size:11px;color:#6b7691;line-height:1.6;margin-bottom:9px">Telegram's built-in browser often cannot open wallet apps. Open this swap inside your wallet's own browser (the wallet connects instantly there).</div>
-  <div id="altBtns" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+<div id="bar"><button class="btn" id="back" type="button">← Back</button><b id="ttl">Swap</b><button class="btn" id="wbtn" type="button">Connect wallet</button></div>
+<div id="fatal" style="display:none"></div>
+<div class="wrap" id="app">
+  <div class="box"><small id="payLbl">You pay</small><div class="row"><input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0" autocomplete="off"><select id="paySel"></select><span class="fix" id="payFix" style="display:none"></span></div></div>
+  <div class="box"><small>You receive (estimate)</small><div class="row"><div class="recv" id="recv">—</div><select id="recvSel" style="margin-left:auto"></select><span class="fix" id="recvFix" style="margin-left:auto;display:none"></span></div></div>
+  <div class="chips" id="slip"><button data-s="0.005">0.5%</button><button data-s="0.01" class="on">1%</button><button data-s="0.03">3%</button></div>
+  <div class="info" id="info">Enter an amount to get a quote.</div>
+  <button class="main" id="go" type="button" disabled>Enter amount</button>
+  <div id="status"></div>
+  <p class="note">Non-custodial. You approve every transaction inside your own wallet; your keys and funds never pass through this app. Prices and routes come from LI.FI aggregator. Always check the amount and network in your wallet before you confirm.</p>
 </div>
-<div id="root"></div>
-<p class="note">Non-custodial: you approve every transaction in your own wallet. Your keys and funds never pass through this app. Routes and prices come from LI.FI; always check the amount and network before confirming.</p>
+<div id="sheet"><div class="in"><h3>Connect wallet</h3><p>Choose your wallet. It opens, you tap <b>Connect</b>, then come back to Telegram.</p>
+  <button class="w" data-w="metamask">🦊 MetaMask</button><button class="w" data-w="trust">🛡 Trust Wallet</button><button class="w" data-w="other">👛 Other wallet (WalletConnect)</button><button class="w" data-w="copy">📋 Copy link, paste in my wallet</button>
+  <button class="btn" id="sheetX" type="button" style="width:100%;margin-top:4px">Cancel</button></div></div>
+
 <script type="module">
+const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search);
-const side = q.get("side") === "sell" ? "sell" : "buy", sym = (q.get("sym") || "").slice(0, 12);
-const chain = Number(q.get("chain")) || 0, token = (q.get("token") || "").slice(0, 80);
-const ALLOWED = [1, 56, 137, 42161, 8453, 10, 43114, 1151111081099710];
-document.getElementById("ttl").textContent = (side === "buy" ? "Buy " : "Sell ") + (sym ? sym.toUpperCase() : "");
+const side = q.get("side") === "sell" ? "sell" : "buy", sym = (q.get("sym") || "").slice(0, 12).toUpperCase();
+const chain = Number(q.get("chain")) || 0, tokenParam = (q.get("token") || "").slice(0, 80);
+const SOL = 1151111081099710;
 const back = () => { if (history.length > 1) history.back(); else location.href = "/"; };
-document.getElementById("back").onclick = back;
-try { const tg = window.Telegram && Telegram.WebApp; if (tg) { tg.ready(); tg.expand(); tg.BackButton.show(); tg.BackButton.onClick(back); } } catch {}
-const msg = document.getElementById("msg");
-(function walletLinks(){
-  const full = location.href, nop = full.replace(/^https?:\/\//, ""), sol = chain === 1151111081099710;
-  const L = [];
-  if (!sol) L.push(["🦊 MetaMask", "https://metamask.app.link/dapp/" + nop]);
-  L.push(["🛡 Trust Wallet", "https://link.trustwallet.com/open_url?coin_id=" + (sol ? 501 : 60) + "&url=" + encodeURIComponent(full)]);
-  L.push(["🔵 Coinbase Wallet", "https://go.cb-w.com/dapp?cb_url=" + encodeURIComponent(full)]);
-  if (sol) L.push(["👻 Phantom", "https://phantom.app/ul/browse/" + encodeURIComponent(full) + "?ref=" + encodeURIComponent(location.origin)]);
-  L.push(["🌐 Phone browser", full]);
-  const box = document.getElementById("altBtns");
-  for (const [t, u] of L) {
-    const b = document.createElement("button"); b.type = "button"; b.textContent = t;
-    b.style.cssText = "border:1.5px solid #d5dcf0;background:#fff;border-radius:10px;padding:8px 11px;font-weight:700;font-size:12px;cursor:pointer;color:#1e2a52";
-    b.onclick = () => { try { const tg = window.Telegram && Telegram.WebApp; if (tg && tg.openLink) { tg.openLink(u); return; } } catch {} window.open(u, "_blank", "noopener"); };
-    box.appendChild(b);
-  }
-  if (!window.Telegram || !Telegram.WebApp || !Telegram.WebApp.initData) document.getElementById("alt").style.display = "none"; // already in a normal / wallet browser
-})();
-const fail = text => { msg.innerHTML = text + '<br><a href="javascript:history.back()">← Back</a>'; };
-(async () => {
-  if (!ALLOWED.includes(chain) || !/^[A-Za-z0-9]{1,64}$/.test(token)) return fail("This coin cannot be swapped in the app (unsupported network or token).");
-  let cfg = {}; try { cfg = await (await fetch("/api/swap-config", { cache: "no-store" })).json(); } catch {}
-  if (!cfg.walletConnectProjectId) return fail("Wallet connect is not configured yet. The app admin must set <b>WALLETCONNECT_PROJECT_ID</b>.");
-  const native = chain === 1151111081099710 ? "11111111111111111111111111111111" : "0x0000000000000000000000000000000000000000";
+$("back").onclick = back;
+const tg = window.Telegram && Telegram.WebApp;
+try { if (tg) { tg.ready(); tg.expand(); tg.BackButton.show(); tg.BackButton.onClick(back); } } catch {}
+const fatal = html => { $("app").style.display = "none"; $("fatal").style.display = "block"; $("fatal").innerHTML = html + '<br><br><button class="btn" onclick="history.back()">← Back</button>'; };
+
+/* ---- Solana: use the LI.FI widget page (this screen is EVM) ---- */
+if (chain === SOL) location.replace("/swap-widget.html" + location.search);
+
+/* ---- chain data ---- */
+const NATIVE = "0x0000000000000000000000000000000000000000";
+const C = {
+  1:     { name: "Ethereum", sym: "ETH",  rpc: "https://ethereum-rpc.publicnode.com", ex: "https://etherscan.io/tx/", st: [["USDC","0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",6],["USDT","0xdAC17F958D2ee523a2206206994597C13D831ec7",6]] },
+  56:    { name: "BNB Chain", sym: "BNB", rpc: "https://bsc-rpc.publicnode.com", ex: "https://bscscan.com/tx/", st: [["USDT","0x55d398326f99059fF775485246999027B3197955",18],["USDC","0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",18]] },
+  137:   { name: "Polygon", sym: "POL", rpc: "https://polygon-bor-rpc.publicnode.com", ex: "https://polygonscan.com/tx/", st: [["USDC","0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",6],["USDT","0xc2132D05D31c914a87C6611C10748AEb04B58e8F",6]] },
+  42161: { name: "Arbitrum", sym: "ETH", rpc: "https://arbitrum-one-rpc.publicnode.com", ex: "https://arbiscan.io/tx/", st: [["USDC","0xaf88d065e77c8cC2239327C5EDb3A432268e5831",6],["USDT","0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",6]] },
+  8453:  { name: "Base", sym: "ETH", rpc: "https://base-rpc.publicnode.com", ex: "https://basescan.org/tx/", st: [["USDC","0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",6]] },
+  10:    { name: "Optimism", sym: "ETH", rpc: "https://optimism-rpc.publicnode.com", ex: "https://optimistic.etherscan.io/tx/", st: [["USDC","0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",6],["USDT","0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",6]] },
+  43114: { name: "Avalanche", sym: "AVAX", rpc: "https://avalanche-c-chain-rpc.publicnode.com", ex: "https://snowtrace.io/tx/", st: [["USDC","0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",6],["USDT","0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",6]] }
+};
+const CH = C[chain];
+if (chain !== SOL && (!CH || !/^(native|0x[0-9a-fA-F]{40})$/.test(tokenParam))) fatal("This coin cannot be swapped in the app (unsupported network or token).");
+const coinAddr = tokenParam === "native" ? NATIVE : tokenParam;
+const isNative = a => a.toLowerCase() === NATIVE;
+$("ttl").textContent = (side === "buy" ? "Buy " : "Sell ") + (sym || "") + (CH ? " · " + CH.name : "");
+
+/* ---- helpers ---- */
+const toUnits = (s, d) => { s = String(s).trim(); if (!/^\d*\.?\d*$/.test(s) || s === "" || s === ".") return 0n; const [i, f = ""] = s.split("."); return BigInt(i || "0") * 10n ** BigInt(d) + BigInt((f + "0".repeat(d)).slice(0, d) || "0"); };
+const fromUnits = (v, d, dp = 6) => { v = BigInt(v); const neg = v < 0n; if (neg) v = -v; const base = 10n ** BigInt(d), i = v / base, f = (v % base).toString().padStart(d, "0").slice(0, dp).replace(/0+$/, ""); return (neg ? "-" : "") + i.toString() + (f ? "." + f : ""); };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const short = a => a.slice(0, 6) + "…" + a.slice(-4);
+const hex = v => "0x" + BigInt(v).toString(16);
+async function rpc(method, params) {
+  const r = await fetch(CH.rpc, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  const d = await r.json(); if (d.error) throw new Error(d.error.message || "RPC error"); return d.result;
+}
+const setStatus = h => { $("status").innerHTML = h || ""; };
+const openExt = u => { try { if (tg && tg.openLink) { tg.openLink(u); return; } } catch {} window.open(u, "_blank", "noopener"); };
+
+/* ---- tokens ---- */
+let coin = { addr: coinAddr, sym: sym || "TOKEN", dec: 18 };
+const counters = () => [[CH.sym, NATIVE, 18], ...CH.st].filter(t => t[1].toLowerCase() !== coinAddr.toLowerCase());
+let counter = null;
+const state = { side, slip: 0.01, quote: null, acct: null, wallet: null, busy: false, seq: 0 };
+function fillSelects() {
+  const opts = counters().map(t => `<option value="${t[1]}">${t[0]}</option>`).join("");
+  const buy = side === "buy", sel = buy ? $("paySel") : $("recvSel"), fix = buy ? $("recvFix") : $("payFix");
+  sel.innerHTML = opts; sel.style.display = ""; fix.textContent = coin.sym; fix.style.display = "";
+  (buy ? $("payFix") : $("recvFix")).style.display = "none"; (buy ? $("recvSel") : $("paySel")).style.display = "none";
+  $("payLbl").textContent = buy ? "You pay" : "You sell";
+  counter = () => { const v = sel.value; return counters().find(t => t[1] === v) || counters()[0]; };
+  sel.onchange = () => { state.quote = null; refreshQuote(); };
+}
+async function loadCoin() {
+  if (isNative(coinAddr)) { coin = { addr: NATIVE, sym: CH.sym, dec: 18 }; return; }
   try {
-    const [{ default: React }, { createRoot }, { LiFiWidget }] = await Promise.all([
-      import("https://esm.sh/react@18.3.1"),
-      import("https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1"),
-      import("https://esm.sh/@lifi/widget@3?deps=react@18.3.1,react-dom@18.3.1")
-    ]);
-    const buy = side === "buy";
-    const config = {
-      variant: "compact", appearance: "light", hiddenUI: ["poweredBy"],
-      fromChain: chain, toChain: chain,
-      // buying/selling the chain's own coin: only set that side, the user picks what to pay with / receive
-      ...(token === "native" ? (buy ? { toToken: native } : { fromToken: native }) : { fromToken: buy ? native : token, toToken: buy ? token : native }),
-      integrator: cfg.integrator || "blockchain-tracker",
-      walletConfig: { walletConnect: { projectId: cfg.walletConnectProjectId, metadata: { name: "Blockchain Tracker", description: "Swap tokens", url: location.origin, icons: [] } } }
-    };
-    msg.remove();
-    createRoot(document.getElementById("root")).render(React.createElement(LiFiWidget, { integrator: config.integrator, config }));
-  } catch (e) {
-    fail("Could not load the swap widget (network or CDN problem). Try again, or trade on a DEX / exchange from the previous screen.");
+    const r = await fetch(`https://li.quest/v1/token?chain=${chain}&token=${coinAddr}`); const d = await r.json();
+    if (d && d.decimals != null) coin = { addr: coinAddr, sym: d.symbol || sym || "TOKEN", dec: Number(d.decimals) };
+  } catch {}
+}
+
+/* ---- quote ---- */
+let timer = null;
+function refreshQuote() { clearTimeout(timer); timer = setTimeout(getQuote, 600); render(); }
+async function getQuote(forSend = false) {
+  const amtStr = $("amt").value, buy = side === "buy", c = counter(), my = ++state.seq;
+  const payTok = buy ? { addr: c[1], dec: c[2] } : coin, recvTok = buy ? coin : { addr: c[1], dec: c[2] };
+  const amount = toUnits(amtStr, payTok.dec);
+  if (amount <= 0n) { state.quote = null; $("recv").textContent = "—"; $("info").textContent = "Enter an amount to get a quote."; render(); return null; }
+  $("info").textContent = "Getting best route…"; render();
+  const from = state.acct || "0x552008c0f6870c2f77e5cC1d2eb9bdff03e30Ea0"; // placeholder address only for the price preview
+  const url = `https://li.quest/v1/quote?fromChain=${chain}&toChain=${chain}&fromToken=${payTok.addr}&toToken=${recvTok.addr}&fromAmount=${amount}&fromAddress=${from}&slippage=${state.slip}&integrator=${encodeURIComponent(cfg.integrator || "blockchain-tracker")}`;
+  try {
+    const r = await fetch(url), d = await r.json();
+    if (my !== state.seq) return null;
+    if (!r.ok || !d.estimate) throw new Error(d.message || "No route found for this amount");
+    const e = d.estimate, gas = (e.gasCosts || []).reduce((s, g) => s + Number(g.amountUSD || 0), 0);
+    const inUsd = Number(e.fromAmountUSD || 0), outUsd = Number(e.toAmountUSD || 0), impact = inUsd > 0 ? (inUsd - outUsd) / inUsd * 100 : 0;
+    state.quote = { d, amount, payTok, recvTok, gas, impact };
+    $("recv").textContent = fromUnits(e.toAmount, recvTok.dec, 6) + " " + (buy ? coin.sym : c[0]);
+    $("info").innerHTML = `Min received: <b>${fromUnits(e.toAmountMin, recvTok.dec, 6)}</b> · Slippage ${state.slip * 100}%<br>Route: <b>${esc(d.toolDetails?.name || d.tool || "best")}</b> · Network fee ≈ <b>$${gas.toFixed(2)}</b>` +
+      (inUsd ? `<br>Value: $${inUsd.toFixed(2)} → $${outUsd.toFixed(2)}` : "") + (impact > 3 ? `<br><span class="warn">⚠ High price impact (${impact.toFixed(1)}%). Check before swapping.</span>` : "");
+    render(); return state.quote;
+  } catch (err) {
+    if (my !== state.seq) return null;
+    state.quote = null; $("recv").textContent = "—"; $("info").innerHTML = `<span class="warn">${esc(err.message || "Quote failed")}</span>`; render(); return null;
   }
+}
+
+/* ---- wallet (WalletConnect, EVM) ---- */
+let cfg = {}, provider = null, wcLib = null, openUrl = null;
+async function initProvider() {
+  if (provider) return provider;
+  if (!cfg.walletConnectProjectId) throw new Error("Wallet connect is not configured (WALLETCONNECT_PROJECT_ID missing).");
+  if (!wcLib) wcLib = await import("https://esm.sh/@walletconnect/ethereum-provider@2.17.0");
+  const rpcMap = Object.fromEntries(Object.entries(C).map(([k, v]) => [k, v.rpc]));
+  provider = await wcLib.EthereumProvider.init({
+    projectId: cfg.walletConnectProjectId, chains: [1], optionalChains: Object.keys(C).map(Number), rpcMap, showQrModal: false,
+    methods: ["eth_sendTransaction"], optionalMethods: ["wallet_switchEthereumChain", "wallet_addEthereumChain", "personal_sign"],
+    metadata: { name: "Blockchain Tracker", description: "Swap tokens", url: location.origin, icons: [location.origin + "/favicon.ico"] }
+  });
+  provider.on("disconnect", () => { state.acct = null; render(); });
+  provider.on("accountsChanged", a => { state.acct = a && a[0] ? a[0] : null; render(); });
+  if (provider.session && provider.accounts && provider.accounts[0]) state.acct = provider.accounts[0]; // restored session
+  return provider;
+}
+const WALLETS = {
+  metamask: { conn: u => "https://metamask.app.link/wc?uri=" + encodeURIComponent(u), open: "https://metamask.app.link/" },
+  trust: { conn: u => "https://link.trustwallet.com/wc?uri=" + encodeURIComponent(u), open: "https://link.trustwallet.com/" },
+  other: { conn: u => u, open: null }
+};
+async function connect(wkey) {
+  const w = WALLETS[wkey] || WALLETS.other; $("sheet").classList.remove("open"); openUrl = w.open;
+  setStatus("Opening wallet… approve the connection, then return to Telegram.");
+  try {
+    const p = await initProvider();
+    if (state.acct) { setStatus(""); return; }
+    p.on("display_uri", uri => {
+      if (wkey === "copy") { (navigator.clipboard ? navigator.clipboard.writeText(uri) : Promise.reject()).then(() => setStatus("Link copied. In your wallet choose WalletConnect → paste the link, then return here."), () => setStatus('Copy this link and paste it in your wallet:<br><code style="word-break:break-all">' + esc(uri) + "</code>")); return; }
+      if (wkey === "other") location.href = uri; else openExt(w.conn(uri));
+    });
+    const accs = await p.connect();
+    state.acct = (accs && accs[0]) || (p.accounts && p.accounts[0]) || null;
+    setStatus(state.acct ? "✅ Wallet connected." : "");
+    if (state.acct && state.quote) getQuote();
+  } catch (e) { setStatus(`<span class="warn">Could not connect: ${esc(e.message || e)}</span>`); }
+  render();
+}
+async function disconnect() { try { if (provider) await provider.disconnect(); } catch {} state.acct = null; provider = null; render(); }
+async function ensureChain(p) {
+  const cid = await p.request({ method: "eth_chainId" });
+  if (Number(cid) === chain) return;
+  try { await p.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex(chain) }] }); }
+  catch (e) { throw new Error("Switch your wallet to " + CH.name + " and try again."); }
+}
+const wake = () => { if (openUrl) setTimeout(() => openExt(openUrl), 400); };
+async function waitTx(hash) {
+  for (let i = 0; i < 60; i++) { await new Promise(r => setTimeout(r, 3000)); try { const rc = await rpc("eth_getTransactionReceipt", [hash]); if (rc) return rc.status === "0x1"; } catch {} }
+  return null;
+}
+async function swap() {
+  if (state.busy) return; state.busy = true; render();
+  try {
+    const p = await initProvider(); if (!state.acct) throw new Error("Connect your wallet first.");
+    await ensureChain(p);
+    let qt = await getQuote(true); if (!qt) throw new Error("No quote available.");
+    const pay = qt.payTok;
+    if (!isNative(pay.addr)) { // ERC-20: approve exactly the amount if allowance is too low
+      const spender = qt.d.estimate.approvalAddress;
+      const data = "0xdd62ed3e" + state.acct.slice(2).toLowerCase().padStart(64, "0") + spender.slice(2).toLowerCase().padStart(64, "0");
+      const al = BigInt(await rpc("eth_call", [{ to: pay.addr, data }, "latest"]));
+      if (al < qt.amount) {
+        setStatus("1/2 · Approve " + esc(qt.d.action?.fromToken?.symbol || "token") + " in your wallet…"); wake();
+        const ap = "0x095ea7b3" + spender.slice(2).toLowerCase().padStart(64, "0") + qt.amount.toString(16).padStart(64, "0");
+        const h1 = await p.request({ method: "eth_sendTransaction", params: [{ from: state.acct, to: pay.addr, data: ap }] });
+        setStatus("Approval sent, waiting for confirmation…");
+        if ((await waitTx(h1)) === false) throw new Error("Approval failed on-chain.");
+        qt = await getQuote(true); if (!qt) throw new Error("Quote expired, try again.");
+      }
+    }
+    const t = qt.d.transactionRequest; if (!t) throw new Error("Route returned no transaction.");
+    setStatus((isNative(pay.addr) ? "" : "2/2 · ") + "Confirm the swap in your wallet…"); wake();
+    const tx = { from: state.acct, to: t.to, data: t.data, value: t.value && t.value !== "0x0" ? hex(t.value) : "0x0" };
+    if (t.gasLimit) tx.gas = hex(t.gasLimit);
+    const h = await p.request({ method: "eth_sendTransaction", params: [tx] });
+    const link = `<a href="${CH.ex + h}" target="_blank" rel="noopener">${short(h)} ↗</a>`;
+    setStatus("⏳ Swap submitted: " + link + "<br>Waiting for confirmation…");
+    const ok = await waitTx(h);
+    setStatus(ok === true ? "✅ Swap complete: " + link : ok === false ? '<span class="warn">❌ Swap failed on-chain: </span>' + link : "Still pending, check status: " + link);
+  } catch (e) {
+    const m = String(e.message || e); setStatus(`<span class="warn">${/reject|denied|cancel/i.test(m) ? "Cancelled in wallet." : esc(m)}</span>`);
+  }
+  state.busy = false; render();
+}
+
+/* ---- UI ---- */
+function render() {
+  $("wbtn").textContent = state.acct ? "🟢 " + short(state.acct) : "Connect wallet";
+  const go = $("go"), has = parseFloat($("amt").value) > 0; go.className = "main " + (state.quote && state.acct ? side : "");
+  if (state.busy) { go.disabled = true; go.textContent = "Waiting for wallet…"; return; }
+  if (!has) { go.disabled = true; go.textContent = "Enter amount"; return; }
+  if (!state.quote) { go.disabled = true; go.textContent = "Getting quote…"; return; }
+  go.disabled = false; go.textContent = state.acct ? (side === "buy" ? "Buy " : "Sell ") + coin.sym : "Connect wallet to swap";
+}
+$("amt").oninput = () => { state.quote = null; refreshQuote(); };
+$("slip").onclick = e => { const b = e.target.closest("button[data-s]"); if (!b) return; state.slip = Number(b.dataset.s); document.querySelectorAll("#slip button").forEach(x => x.classList.toggle("on", x === b)); state.quote = null; refreshQuote(); };
+$("go").onclick = () => { if (!state.acct) $("sheet").classList.add("open"); else swap(); };
+$("wbtn").onclick = () => { if (state.acct) { if (confirm("Disconnect wallet?")) disconnect(); } else $("sheet").classList.add("open"); };
+$("sheetX").onclick = () => $("sheet").classList.remove("open");
+$("sheet").onclick = e => { if (e.target === $("sheet")) $("sheet").classList.remove("open"); const b = e.target.closest("[data-w]"); if (b) connect(b.dataset.w); };
+
+(async () => {
+  if (!CH || chain === SOL) return;
+  try { cfg = await (await fetch("/api/swap-config", { cache: "no-store" })).json(); } catch {}
+  await loadCoin(); fillSelects(); render();
+  try { if (cfg.walletConnectProjectId) { await initProvider(); render(); } } catch {}
 })();
 </script>
 </body></html>
