@@ -1,10 +1,16 @@
 {
   "name": "blockchain-tracker-backend",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "pg": "^8.13.1"
+  },
+  "scripts": {
+    "webhook": "node scripts/set-webhook.mjs",
+    "webhook:info": "node scripts/set-webhook.mjs --info"
   }
 }
