@@ -2,7 +2,7 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS onchain_alerts (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id),
-  kind TEXT NOT NULL CHECK (kind IN ('wallet','whale')),
+  kind TEXT NOT NULL CHECK (kind IN ('wallet','contract','whale')),
   network TEXT NOT NULL,
   address TEXT,
   min_usd NUMERIC(24,2) NOT NULL DEFAULT 10 CHECK (min_usd > 0),
@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS onchain_alerts (
   last_error TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE onchain_alerts DROP CONSTRAINT IF EXISTS onchain_alerts_kind_check;
+ALTER TABLE onchain_alerts ADD CONSTRAINT onchain_alerts_kind_check CHECK (kind IN ('wallet','contract','whale'));
 CREATE INDEX IF NOT EXISTS idx_onchain_alerts_run ON onchain_alerts(status, last_run_at NULLS FIRST);
 CREATE INDEX IF NOT EXISTS idx_onchain_alerts_user ON onchain_alerts(user_id, created_at DESC);
 
@@ -28,5 +30,7 @@ CREATE TABLE IF NOT EXISTS alert_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (alert_id, tx_key)
 );
+ALTER TABLE alert_events DROP CONSTRAINT IF EXISTS alert_events_delivery_status_check;
+ALTER TABLE alert_events ADD CONSTRAINT alert_events_delivery_status_check CHECK (delivery_status IN ('pending','sent','failed','muted'));
 CREATE INDEX IF NOT EXISTS idx_alert_events_user ON alert_events(user_id, created_at DESC);
 COMMIT;

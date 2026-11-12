@@ -26,10 +26,10 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
 
 INSERT INTO subscription_plans (code, name, price_usdt, duration_days, features)
 VALUES
- ('free', 'Free', 0, NULL, '["Basic wallet watchlist","Limited alerts"]'::jsonb),
- ('pro', 'Pro', 1, 30, '["Expanded tracking","Advanced alerts"]'::jsonb),
- ('business', 'Business', 5, 30, '["Business monitoring","Higher limits"]'::jsonb),
- ('enterprise', 'Enterprise', 0, 30, '["Custom limits","Priority support"]'::jsonb)
+ ('free', 'Free', 0, NULL, '["10 wallet tracking","10 contract tracking","500 wallet transaction notifications/day","500 contract transaction notifications/day","50 alerts/day"]'::jsonb),
+ ('pro', 'Pro', 1, 30, '["25 wallet tracking","25 contract tracking","1,500 wallet transaction notifications/day","1,500 contract transaction notifications/day","150 alerts/day"]'::jsonb),
+ ('business', 'Business', 2.5, 30, '["50 wallet tracking","50 contract tracking","5,000 wallet transaction notifications/day","5,000 contract transaction notifications/day","500 alerts/day"]'::jsonb),
+ ('enterprise', 'Enterprise', 5, 30, '["100 wallet tracking","100 contract tracking","10,000 wallet transaction notifications/day","10,000 contract transaction notifications/day","1,000 alerts/day"]'::jsonb)
 ON CONFLICT (code) DO UPDATE SET
  name = EXCLUDED.name,
  price_usdt = EXCLUDED.price_usdt,
