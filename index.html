@@ -337,6 +337,10 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <button class="quick" data-page="tools"><div class="q-icon">⚖</div><strong>Trading Tools</strong><span>Live chart and calculators</span></button>
       <button class="quick" data-page="contracts"><div class="q-icon">🛡</div><strong>Contract Monitor</strong><span>Ownership, upgrades, pause</span></button>
       <button class="quick" data-page="defi"><div class="q-icon">◫</div><strong>DeFi Analytics</strong><span>TVL and top DEX volume</span></button>
+      <button class="quick" data-page="wallets"><div class="q-icon">◈</div><strong>Wallet Terminal</strong><span>Balances of tracked wallets</span></button>
+      <button class="quick" data-page="portfolio"><div class="q-icon">◩</div><strong>Portfolio Analytics</strong><span>Sync balances and P&amp;L</span></button>
+      <button class="quick" data-href="/swap.html"><div class="q-icon">⇄</div><strong>Swap</strong><span>Trade tokens across chains</span></button>
+      <button class="quick" data-page="subscription"><div class="q-icon">◇</div><strong>Subscription &amp; API</strong><span>Plans, billing, USDT payment</span></button>
       <button class="quick" data-page="admin" id="adminQuick" style="display:none"><div class="q-icon">⚙</div><strong>Admin Panel</strong><span>Users, payments, health</span></button>
     </div></div>
   </div>
@@ -348,6 +352,12 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     </div>
     <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Live health check of each network (updates every 30 seconds)</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
     <div class="card"><div class="card-head"><div><div class="card-title">Recent Watchlist</div><div class="card-sub">Your locally saved wallets and contracts</div></div><button class="btn small" data-page="wallets">View all</button></div><div id="recentWatchlist"></div></div>
+  </div>
+  <div class="section-grid grid" id="dashLive">
+    <div class="card"><div class="card-head"><div><div class="card-title">Latest Whale Transfers</div><div class="card-sub">Large USDT/USDC moves on Ethereum (last few minutes)</div></div><button class="btn small" data-page="whales">Open Whale Terminal</button></div>
+      <div id="dbWhaleList" class="muted" style="font-size:12px">Loading…</div></div>
+    <div class="card"><div class="card-head"><div><div class="card-title">DeFi Snapshot</div><div class="card-sub">TVL and DEX volume from DeFiLlama</div></div><button class="btn small" data-page="defi">Open DeFi</button></div>
+      <div id="dbDefi" class="muted" style="font-size:12px">Loading…</div></div>
   </div>
   <div class="notice">Prices in the top ticker come from CoinGecko and the sentiment index from alternative.me. Network status, gas, whale transfers and portfolio balances load live from the backend. Sign in through Telegram to sync balances and your watchlist across devices. Nothing here is financial advice.</div>
 </section>
@@ -2093,6 +2103,64 @@ document.addEventListener("click",e=>{
 window.addEventListener("bt-auth",()=>load(true));
 window.addEventListener("bt-portfolio",()=>setTimeout(()=>load(true),1500));
 draw();if(window.BT&&BT.backendUser)load(true);
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const E=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>{n=Number(n);if(!isFinite(n))return"—";if(n>=1e12)return"$"+(n/1e12).toFixed(2)+"T";if(n>=1e9)return"$"+(n/1e9).toFixed(2)+"B";if(n>=1e6)return"$"+(n/1e6).toFixed(2)+"M";if(n>=1e3)return"$"+(n/1e3).toFixed(1)+"K";return"$"+n.toFixed(2)};
+const short=a=>{a=String(a||"");return a.length>16?a.slice(0,8)+"…"+a.slice(-6):a};
+const api=p=>window.BT.apiRequest(p);
+let last=0,busy=false;
+
+/* Buttons that open a separate page (e.g. Swap) */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-href]");
+  if(b&&/^\/[a-z0-9._-]+(\?.*)?$/i.test(b.dataset.href))location.href=b.dataset.href;
+});
+
+async function loadWhales(){
+  const box=$("dbWhaleList");if(!box)return;
+  try{
+    const d=await api("/market/whales?network=ethereum&min=100000");
+    const ev=(d.events||[]).slice(0,5);
+    box.innerHTML=ev.length?ev.map(e=>{
+      const who=(a,l)=>l?"<b>"+E(l)+"</b>":E(short(a));
+      const mins=Math.max(1,Math.round((e.ageSec||0)/60));
+      return '<div style="padding:9px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:13px">🐋 '+money(e.usd)+" "+E(e.symbol)+'</strong><span class="muted" style="font-size:10px">~'+mins+' min ago</span></div><div class="muted" style="font-size:10px;margin-top:3px">'+who(e.from,e.fromLabel)+" → "+who(e.to,e.toLabel)+"</div></div>";
+    }).join(""):"No transfers above $100K in the latest blocks.";
+  }catch(err){box.textContent=err.message==="RPC_BUSY"?"Network RPC is busy. It will retry shortly.":"Whale feed unavailable right now."}
+}
+
+async function loadDefi(){
+  const box=$("dbDefi");if(!box)return;
+  try{
+    const d=await api("/defi/overview"),x=d.dex,top=d.chains&&d.chains[0];
+    const kv=(k,v)=>'<div class="kv"><span>'+k+"</span><span>"+v+"</span></div>";
+    box.innerHTML=
+      kv("Total TVL",d.tvlTotal!=null?money(d.tvlTotal):"—")+
+      kv("DEX 24H volume",x&&x.total24h!=null?money(x.total24h):"—")+
+      kv("DEX protocols",x&&x.protocolCount!=null?E(x.protocolCount):"—")+
+      kv("Top chain by TVL",top?E(top.name)+" · "+money(top.tvl):"—");
+  }catch(err){box.textContent="DeFi data unavailable right now."}
+}
+
+async function loadAll(force){
+  if(busy||!window.BT)return;
+  if(!force&&Date.now()-last<120000)return;
+  busy=true;
+  await Promise.all([loadWhales(),loadDefi()]);
+  last=Date.now();busy=false;
+}
+
+document.addEventListener("click",e=>{
+  if(e.target.closest('[data-page="dashboard"]'))setTimeout(()=>loadAll(false),150);
+  if(e.target.closest("#dashRefresh,#refreshBtn"))setTimeout(()=>loadAll(true),150);
+});
+setInterval(()=>{if(!document.hidden)loadAll(false)},300000);
+loadAll(true);
 })();
 </script>
 </body></html>
