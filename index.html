@@ -421,7 +421,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <section class="page" id="page-transactions">
   <div class="page-head"><div><div class="eyebrow">ON-CHAIN DATA</div><h1 class="page-title">Transaction Explorer</h1><p class="page-desc">Unified transaction search across your supported blockchain networks.</p></div></div>
   <div class="card"><div class="toolbar"><input class="control" id="txSearch" style="flex:1;min-width:180px" placeholder="Search transaction hash or wallet address"><select class="control" id="txNetwork"><option value="">All networks</option></select><select class="control" id="txType"><option value="">All types</option><option value="native">Native transfers</option><option value="token">Token transfers</option><option value="contract">Contract calls</option></select><button class="btn" id="txSearchBtn">Search</button></div><div id="txOut"><div class="empty"><div class="empty-icon">⇄</div><strong>Search a transaction or wallet</strong>Paste a transaction hash (EVM, TRON or Solana) or a wallet address. Choose a network to search a single chain.</div></div></div>
-  <div class="notice">Transaction hashes are looked up live from chain RPC. Wallet history shows the most recent transactions only. A 0x address searched without choosing a network is shown for Ethereum. Sign in through Telegram to search.</div>
+  <div class="notice">Transaction hashes are looked up live from chain RPC. Wallet history shows the most recent transactions only. A 0x address searched without choosing a network is searched on all EVM networks at once. Sign in through Telegram to search.</div>
 </section>
 
 <section class="page" id="page-tokens">
@@ -1850,7 +1850,7 @@ window.addEventListener("bt-portfolio",drawPnl);
 /* =====================================================
    2) Transaction explorer
    ===================================================== */
-const TXMSG={AUTH_REQUIRED:"Sign in through Telegram to search transactions.",INVALID_QUERY:"Enter a valid transaction hash, or a wallet address that matches the selected network.",UNSUPPORTED_NETWORK:"That network is not supported.",INDEXER_NOT_CONFIGURED:"Wallet history on EVM chains needs an Etherscan API key on the server (ETHERSCAN_API_KEY). Transaction-hash lookups still work.",INDEXER_KEY_INVALID:"The data provider API key on the server (Etherscan or NodeReal) is missing or invalid. The app admin needs to check it. Transaction-hash lookups still work.",INDEXER_PLAN_LIMIT:"Etherscan's free plan no longer covers this network (BNB Chain, Base, Optimism and Avalanche need a paid key). Try Ethereum, Polygon or Arbitrum.",INDEXER_RATE_LIMITED:"Etherscan rate limit reached. Wait a few seconds and try again.",INDEXER_TIMEOUT:"This address has too much activity to load (very busy addresses like the zero address time out). Try a normal wallet address.",UPSTREAM_UNAVAILABLE:"The data provider is busy or unreachable. Try again in a moment.",RATE_LIMITED:"Too many searches. Wait a minute and try again."};
+const TXMSG={AUTH_REQUIRED:"Sign in through Telegram to search transactions.",INVALID_QUERY:"Enter a valid transaction hash, or a wallet address that matches the selected network.",UNSUPPORTED_NETWORK:"That network is not supported.",INDEXER_NOT_CONFIGURED:"Wallet history on EVM chains needs an Etherscan API key on the server (ETHERSCAN_API_KEY). Transaction-hash lookups still work.",INDEXER_KEY_INVALID:"The data provider API key on the server (Etherscan or NodeReal) is missing or invalid. The app admin needs to check it. Transaction-hash lookups still work.",INDEXER_PLAN_LIMIT:"This network's history provider is not available on the free plan. For BNB Smart Chain the server needs a free NODEREAL_API_KEY; other EVM chains are served keyless through Blockscout/Routescan, so try again in a moment.",INDEXER_RATE_LIMITED:"Etherscan rate limit reached. Wait a few seconds and try again.",INDEXER_TIMEOUT:"This address has too much activity to load (very busy addresses like the zero address time out). Try a normal wallet address.",UPSTREAM_UNAVAILABLE:"The data provider is busy or unreachable. Try again in a moment.",RATE_LIMITED:"Too many searches. Wait a minute and try again."};
 const stCls=s=>s==="success"?"ok":s==="failed"?"bad":"pending";
 const KIND={native:"Native",token:"Token",contract:"Contract"};
 function txDetail(t){
@@ -1865,21 +1865,21 @@ function txDetail(t){
     c("Fee",E(t.fee||"—"))+`</div>`+
     (link?`<a class="res-link" href="${E(link)}" target="_blank" rel="noopener noreferrer">Open on block explorer ↗</a>`:"");
 }
-function txTable(items,q,net){
+function txTable(items,q,net,multi){
   const me=q.toLowerCase();
   const rows=items.map(i=>{
     const f=String(i.from||"").toLowerCase(),t=String(i.to||"").toLowerCase();
     const dir=f===me&&t===me?"":f===me?'<span class="dirtag out">OUT</span>':t===me?'<span class="dirtag in">IN</span>':"";
     const h=safeHttps(i.link);
     return `<tr><td>${E(i.time?new Date(i.time).toLocaleString():"—")}</td>`+
-      `<td class="address">${h?`<a href="${E(h)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">${E(short(i.hash))} ↗</a>`:E(short(i.hash))}</td>`+
+      (multi?`<td>${E(netName(i.network))}</td>`:"")+`<td class="address">${h?`<a href="${E(h)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">${E(short(i.hash))} ↗</a>`:E(short(i.hash))}</td>`+
       `<td class="address">${dir}${E(short(i.from)||"—")} → ${E(short(i.to)||"—")}</td>`+
       `<td class="mono">${i.value==null?"—":E(i.value)+" "+E(i.symbol)}</td>`+
       `<td>${E(KIND[i.kind]||i.kind||"")}</td>`+
       `<td><span class="status ${stCls(i.status)}">${E(i.status)}</span></td></tr>`;
   }).join("");
-  return `<div class="muted" style="font-size:10px;margin-bottom:8px">${items.length} most recent transaction${items.length===1?"":"s"} · ${E(netName(net))}</div>`+
-    `<div class="table-wrap"><table><thead><tr><th>Time</th><th>Hash</th><th>From → To</th><th>Amount</th><th>Type</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="muted" style="font-size:10px;margin-bottom:8px">${items.length} most recent transaction${items.length===1?"":"s"} · ${multi?"all EVM networks":E(netName(net))}</div>`+
+    `<div class="table-wrap"><table><thead><tr><th>Time</th>${multi?"<th>Network</th>":""}<th>Hash</th><th>From → To</th><th>Amount</th><th>Type</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 let txBusy=false;
 async function txSearch(){
@@ -1890,11 +1890,12 @@ async function txSearch(){
   txBusy=true;btn.disabled=true;out.innerHTML='<div class="empty">Searching…</div>';
   try{
     const d=await api("/tx/history?q="+encodeURIComponent(q)+(net?"&network="+encodeURIComponent(net):"")+(type?"&type="+encodeURIComponent(type):""));
-    if(!d.items||!d.items.length){out.innerHTML=empty("Nothing found",d.mode==="tx"?"No transaction with this hash was found on the searched networks. It may be too new, or on a network that is not supported.":"No transactions found for this address.")}
+    const bad=(d.failed||[]).map(f=>netName(f.network)).join(", ");
+    if(!d.items||!d.items.length){out.innerHTML=empty("Nothing found",d.mode==="tx"?"No transaction with this hash was found on the searched networks. It may be too new, or on a network that is not supported.":"No transactions found for this address"+(bad?" on the networks that responded. Could not load: "+bad+".":"."))}
     else if(d.mode==="tx")out.innerHTML=txDetail(d.items[0]);
     else{
-      const evmNoNet=/^0x[a-fA-F0-9]{40}$/.test(q)&&!net;
-      out.innerHTML=(evmNoNet?'<div class="notice" style="margin:0 0 12px">Showing Ethereum. Choose another network above to search a different chain.</div>':"")+txTable(d.items,q,d.items[0].network||net||"ethereum");
+      const multi=/^0x[a-fA-F0-9]{40}$/.test(q)&&!net;
+      out.innerHTML=(bad?`<div class="notice" style="margin:0 0 12px">Could not load: ${E(bad)}. Choose that network above to see the exact reason.</div>`:"")+txTable(d.items,q,d.items[0].network||net||"ethereum",multi);
     }
   }catch(e){
     out.innerHTML=empty("Search failed",TXMSG[e.message]||"Something went wrong. Please try again.");
