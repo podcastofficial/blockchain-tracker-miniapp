@@ -1804,7 +1804,7 @@ function chCfg(r){
   return "top "+c.top;
 }
 let chData=null,chBusy=false,chRuleCtx=null,chMsgId=null,chEditId=null;
-const chFind=id=>chData&&chData.channels.find(c=>c.id===id);
+const chFind=id=>chData&&chData.channels.find(c=>String(c.id)===String(id));
 function chShow(panel){["chEd","chRu","chMsgP"].forEach(x=>g(x).style.display=x===panel?"":"none");if(panel)g(panel).scrollIntoView({behavior:"smooth",block:"center"})}
 function renderChannels(){
   const d=chData;if(!d)return;
@@ -1934,7 +1934,7 @@ g("chCard").addEventListener("click",async e=>{
   }
   if(ra){
     const id=Number(ra.dataset.id);let rule=null,ch=null;
-    for(const c of chData.channels){const r=c.rules.find(x=>x.id===id);if(r){rule=r;ch=c}}
+    for(const c of chData.channels){const r=c.rules.find(x=>String(x.id)===String(id));if(r){rule=r;ch=c}}
     if(!rule)return;
     switch(ra.dataset.ruAct){
       case"toggle":await post("/admin/rule-toggle",{id,enabled:!rule.enabled},rule.enabled?"Alert OFF":"Alert ON");break;
