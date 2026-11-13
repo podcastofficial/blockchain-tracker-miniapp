@@ -21,6 +21,9 @@
   const toB64=a=>btoa(String.fromCharCode(...a));
   const fromB64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
   const safeJson=s=>{try{return JSON.parse(s)}catch{throw Error("Could not read Phantom response")}};
+  // Use native UTF-8 APIs; TweetNaCl core does not include nacl.util.
+  const utf8Encode=s=>new TextEncoder().encode(String(s));
+  const utf8Decode=b=>new TextDecoder("utf-8",{fatal:true}).decode(b);
   const save=(x)=>localStorage.setItem(STORE,JSON.stringify(x));
   const load=()=>{try{return JSON.parse(localStorage.getItem(STORE)||"null")}catch{return null}};
   let connected=null;
@@ -70,7 +73,7 @@
       const session=localStorage.getItem(SESSION);if(!session)throw Error("Connect your Phantom wallet first.");
       const shared=window.__mbtPhantomShared;
       if(!shared)throw Error("Reconnect your Phantom wallet to continue.");
-      const msg=nacl.util.decodeUTF8(JSON.stringify(Object.assign({},payload,{session})));
+      const msg=utf8Encode(JSON.stringify(Object.assign({},payload,{session})));
       const encrypted=nacl.box.after(msg,nonce,shared);
       const u=new URL("https://phantom.app/ul/v1/signAndSendTransaction");
       u.searchParams.set("dapp_encryption_public_key",b58encode(kp.publicKey));
@@ -87,7 +90,7 @@
     const shared=nacl.box.before(peer,fromB64(p.secret));
     const plain=nacl.box.open.after(data,nonce,shared);
     if(!plain)throw Error("Could not decrypt Phantom response");
-    return {result:safeJson(nacl.util.encodeUTF8(plain)),shared};
+    return {result:safeJson(utf8Decode(plain)),shared};
   }
   async function finishConnect(p,j){
     if(j.errorCode||j.errorMessage)throw Error(j.errorMessage||"Phantom connection cancelled");
