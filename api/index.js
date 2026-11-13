@@ -30,6 +30,7 @@ import { exportApi } from "../lib/export.js";
 import { confirmPayment } from "../lib/payments.js";
 import { runMaintenance } from "../lib/maintenance.js";
 import { communityApi } from "../lib/community_api.js";
+import { scanCommunityContracts } from "../lib/community_contracts.js";
 import { pointsApi } from "../lib/points_api.js";
 import { forceJoinApi, joinBlocked } from "../lib/forcejoin.js";
 import { scannerApi } from "../lib/scanner.js";
@@ -678,6 +679,10 @@ export default async function handler(req, res) {
     if (path === "/api/contract/activity") return await contractActivity(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
     if (path === "/api/cron/channels") return await cronChannels(req, res);
+    if (path === "/api/cron/community-contracts") {
+      if (!cronAuthorized(req)) return send(res,401,{ok:false,error:"UNAUTHORIZED"});
+      return send(res,200,{ok:true,...await scanCommunityContracts()});
+    }
 
     if (path === "/api/auth/code") return await codeLogin(req, res);
     if (path === "/api/auth/logout") return await logout(req, res);
