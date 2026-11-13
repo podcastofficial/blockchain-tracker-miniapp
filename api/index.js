@@ -28,6 +28,8 @@ import { exportApi } from "../lib/export.js";
 import { confirmPayment } from "../lib/payments.js";
 import { runMaintenance } from "../lib/maintenance.js";
 import { communityApi } from "../lib/community_api.js";
+import { pointsApi } from "../lib/points_api.js";
+import { attachReservation } from "../lib/points.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -319,9 +321,15 @@ async function createPayment(req, res) {
       // Pro: 1.000001 to 1.009999
       // Business: 5.000001 to 5.009999
 
-      const base = Math.round(
-        Number(plan.rows[0].price_usdt) * 1_000_000
-      );
+      // MBC Points: an optional server-side reservation lowers the base price (never trusts a client-sent discount).
+      const paymentId = crypto.randomUUID();
+      let basePrice = Number(plan.rows[0].price_usdt), pointsUsed = 0;
+      if (req.body?.redemptionId) {
+        const a = await attachReservation(client, { uid: session.id, redemptionId: String(req.body.redemptionId), planCode, paymentId });
+        if (!a.ok) return send(res, 409, { ok: false, error: a.error });
+        basePrice = a.finalPrice; pointsUsed = a.points;
+      }
+      const base = Math.round(basePrice * 1_000_000);
 
       let invoiceAmount = null;
 
@@ -354,8 +362,6 @@ async function createPayment(req, res) {
           error: "INVOICE_ALLOCATION_BUSY"
         });
       }
-
-      const paymentId = crypto.randomUUID();
 
       const inserted = await client.query(
         `INSERT INTO subscription_payments
@@ -390,7 +396,9 @@ async function createPayment(req, res) {
           planCode,
           chain,
           token: "USDT",
-          baseAmount: String(plan.rows[0].price_usdt),
+          baseAmount: String(basePrice),
+          originalAmount: String(plan.rows[0].price_usdt),
+          pointsUsed,
           amount: row.expected_amount,
           receivingAddress: row.receiving_address,
           status: "pending",
@@ -673,6 +681,7 @@ export default async function handler(req, res) {
     }
 
     if (path.startsWith("/api/community")) return await communityApi(req, res, path);
+    if (path.startsWith("/api/points")) return await pointsApi(req, res, path);
     if (path === "/api/watchlist") return await watchlist(req, res);
     if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
     if (path === "/api/defi/overview") return await defiOverview(req, res);
