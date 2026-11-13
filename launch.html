@@ -30,6 +30,10 @@
 .box input{width:100%;border:0;background:transparent;font-size:24px;font-weight:800;color:var(--ink);outline:none;font-family:inherit}
 iframe{width:100%;height:340px;border:0;border-radius:14px;margin-bottom:10px;background:var(--bg)}
 .links a{font-size:12px;font-weight:700;color:#2457ff;margin-right:12px}
+.chips.src{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}.chips.src button{flex:none;white-space:nowrap;padding:7px 11px}
+.chips button.on{background:var(--grad);color:#fff;border-color:transparent}
+.bdg{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:#e3e9ff;color:#2457ff;vertical-align:middle;margin-left:4px}
+.up{color:var(--up);font-weight:700}.dn{color:var(--dn);font-weight:700}
 .empty{padding:30px 10px;text-align:center;color:var(--mut);font-size:13px;line-height:1.7}
 </style><meta name="theme-color" content="#05060d"><link rel="icon" type="image/png" href="/assets/favicon-64.png"><link rel="apple-touch-icon" href="/assets/logo-192.png"><link rel="stylesheet" href="/assets/theme-sub.css"><script defer src="/assets/fx3d.js"></script></head>
 <body>
@@ -44,7 +48,7 @@ try{if(tg){tg.ready();tg.expand()}}catch{}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const short=a=>a?a.slice(0,4)+"…"+a.slice(-4):"";
 const api=async(p,o)=>{const r=await fetch(p,{credentials:"include",headers:{"Content-Type":"application/json"},...o});let j={};try{j=await r.json()}catch{}return{status:r.status,...j}};
-let wallet=null,cfg={},view="explore",sort="new",cur=null,side="buy",img=null;
+let wallet=null,cfg={},view=qs.get("tab")==="create"?"create":"explore",src="all",cur=null,side="buy",img=null;
 
 /* ---- login (Telegram) ---- */
 async function login(){
@@ -81,16 +85,43 @@ const setStatus=h=>{const e=$("status");if(e)e.innerHTML=h};
 function shell(inner){$("app").innerHTML='<div class="tabs"><button data-v="explore" class="'+(view==="explore"?"on":"")+'">Explore</button><button data-v="create" class="'+(view==="create"?"on":"")+'">Create coin</button></div>'+inner;
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{view=b.dataset.v;cur=null;render()})}
 
-async function renderExplore(){
-  shell('<div class="chips"><button data-s="new" class="'+(sort==="new"?"on":"")+'">🆕 New</button><button data-s="graduating">🎓 Closest to graduating</button></div><div id="list"><div class="empty">Loading…</div></div>');
-  document.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{sort=b.dataset.s;renderExplore()});
-  const r=await api("/api/launch/list?sort="+sort);
-  $("list").innerHTML=!r.ok?'<div class="empty">Could not load coins.</div>':!r.items.length?'<div class="empty">No coins yet.<br>Be the first: tap <b>Create coin</b>.</div>':
-    r.items.map(t=>'<div class="card" data-m="'+t.mint+'"><img src="'+t.image+'" alt=""><div style="flex:1;min-width:0"><div class="t">'+esc(t.name)+' <span style="color:var(--mut);font-weight:600">$'+esc(t.symbol)+'</span></div><div class="s">'+esc(t.description||"")+'</div><div class="bar"><i style="width:'+Math.round((t.progress||0)*100)+'%"></i></div><div style="font-size:11px;color:var(--mut);margin-top:4px">'+(t.progress==null?"—":Math.round(t.progress*100)+"% to graduation")+' · by '+short(t.creator)+'</div></div></div>').join("");
-  document.querySelectorAll(".card").forEach(c=>c.onclick=()=>openToken(c.dataset.m));
+const SRC=[["all","🌐 All"],["pumpfun","💊 Pump.fun"],["pancakeswap","🥞 PancakeSwap"],["solana","◎ Solana"],["dexscreener","📊 DexScreener"],["coingecko","🦎 CoinGecko"],["new","🆕 Created here"],["graduating","🎓 Graduating"]];
+const LBL={pumpfun:"Pump.fun",pancakeswap:"PancakeSwap",solana:"Solana",dexscreener:"DexScreener",coingecko:"CoinGecko"};
+const money=n=>n==null?"—":n>=1e9?"$"+(n/1e9).toFixed(2)+"B":n>=1e6?"$"+(n/1e6).toFixed(2)+"M":n>=1e3?"$"+(n/1e3).toFixed(1)+"K":"$"+n.toFixed(0);
+const age=t=>{if(!t)return"";const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?"just now":m<60?m+"m ago":m<1440?Math.floor(m/60)+"h ago":Math.floor(m/1440)+"d ago"};
+function extCard(t){
+  const ch=t.change24,chg=ch==null?"":' · <span class="'+(ch>=0?"up":"dn")+'">'+(ch>=0?"+":"")+ch.toFixed(1)+'%</span>';
+  const meta=[t.marketCap!=null?"MC "+money(t.marketCap):"",t.liquidity!=null?"Liq "+money(t.liquidity):"",t.volume24!=null?"Vol "+money(t.volume24):""].filter(Boolean).join(" · ");
+  return '<div class="card" data-u="'+esc(t.url||"")+'">'+(t.image?'<img src="'+esc(t.image)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="ph"></div>')+
+    '<div style="flex:1;min-width:0"><div class="t">'+esc(t.name||"?")+' <span style="color:var(--mut);font-weight:600">$'+esc(t.symbol)+'</span><span class="bdg">'+esc(LBL[t.src]||t.src)+'</span></div>'+
+    '<div class="s" style="-webkit-line-clamp:1">'+esc(meta||t.chain)+'</div>'+
+    '<div style="font-size:11px;color:var(--mut);margin-top:4px">'+esc(t.chain)+(t.created?" · "+age(t.created):"")+chg+'</div></div></div>';
 }
+function openExt(u){if(!/^https:\/\//i.test(u))return;try{tg&&tg.openLink?tg.openLink(u):window.open(u,"_blank","noopener")}catch{window.open(u,"_blank","noopener")}}
+async function loadList(){
+  const box=$("list");if(!box||view!=="explore")return;
+  const mine=src==="new"||src==="graduating";
+  const r=await api(mine?"/api/launch/"+"list?sort="+src:"/api/launch/feed?source="+src);
+  if(!$("list")||view!=="explore")return;
+  if(!r.ok){box.innerHTML='<div class="empty">Could not load coins right now.<br>Tap the source again to retry.</div>';return}
+  if(mine){
+    box.innerHTML=!r.items.length?'<div class="empty">No coins created here yet.<br>Be the first: tap <b>Create coin</b>.</div>':
+      r.items.map(t=>'<div class="card" data-m="'+t.mint+'"><img src="'+t.image+'" alt=""><div style="flex:1;min-width:0"><div class="t">'+esc(t.name)+' <span style="color:var(--mut);font-weight:600">$'+esc(t.symbol)+'</span></div><div class="s">'+esc(t.description||"")+'</div><div class="bar"><i style="width:'+Math.round((t.progress||0)*100)+'%"></i></div><div style="font-size:11px;color:var(--mut);margin-top:4px">'+(t.progress==null?"—":Math.round(t.progress*100)+"% to graduation")+' · by '+short(t.creator)+'</div></div></div>').join("");
+  }else{
+    const warn=r.failed&&r.failed.length?'<div class="note" style="padding:0 0 8px">Some sources are slow right now: '+r.failed.map(x=>LBL[x]||x).join(", ")+'</div>':"";
+    box.innerHTML=warn+(r.items.length?r.items.map(extCard).join(""):'<div class="empty">No new coins found for this source.</div>');
+  }
+  box.querySelectorAll(".card").forEach(c=>c.onclick=()=>c.dataset.m?openToken(c.dataset.m):openExt(c.dataset.u));
+}
+function renderExplore(){
+  shell('<div class="chips src">'+SRC.map(([k,l])=>'<button data-s="'+k+'" class="'+(src===k?"on":"")+'">'+l+'</button>').join("")+'</div><div id="list"><div class="empty">Loading…</div></div><p class="note">Coins from outside sources are shown for discovery only: tap a coin to open it on its own site. New coins are extremely risky, so always check liquidity and the contract before you buy.</p>');
+  document.querySelectorAll(".chips.src button").forEach(b=>b.onclick=()=>{src=b.dataset.s;renderExplore()});
+  loadList();
+}
+setInterval(()=>{if(view==="explore")loadList()},45000);
 
 function renderCreate(){
+  if(!cfg.enabled)return shell('<div class="empty">Coin creation is not configured yet.<br>Admin: set <b>DBC_CONFIG_KEY</b> and redeploy.</div>');
   shell('<div class="fld"><label>Logo (square image)</label><input id="f_img" type="file" accept="image/*"><img id="prev" style="display:none;width:80px;height:80px;border-radius:14px;margin-top:8px;object-fit:cover"></div>'+
   '<div class="fld"><label>Name</label><input id="f_name" maxlength="32" placeholder="My Coin"></div>'+
   '<div class="fld"><label>Ticker</label><input id="f_sym" maxlength="10" placeholder="MYCOIN" style="text-transform:uppercase"></div>'+
@@ -169,8 +200,7 @@ async function trade(){
 function render(){view==="create"?renderCreate():view==="token"&&cur?openToken(cur.mint):renderExplore()}
 $("back").onclick=()=>{if(view==="token"){view="explore";cur=null;render()}else if(history.length>1)history.back();else location.href="/"};
 (async()=>{cfg=await api("/api/launch/config");
-  if(!cfg.enabled){$("app").innerHTML='<div class="empty">Launchpad is not configured yet.<br>Admin: set <b>DBC_CONFIG_KEY</b> and redeploy.</div>';return}
-  if(qs.get("mint"))openToken(qs.get("mint"));else render();
+  if(qs.get("mint")&&cfg.enabled)openToken(qs.get("mint"));else render();
   const p=provider();if(p&&p.isConnected&&p.publicKey){wallet=p.publicKey.toString();$("wbtn").textContent=short(wallet)}})();
 </script>
 </body></html>

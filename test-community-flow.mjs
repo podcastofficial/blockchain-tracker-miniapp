@@ -1,0 +1,42 @@
+// Run: node scripts/test-community-flow.mjs — smoke test with a stubbed database and Telegram API (needs `npm install` for pg to resolve).
+process.env.DATABASE_URL = "postgres://localhost/x"; process.env.TELEGRAM_BOT_TOKEN = "T"; process.env.BOT_USERNAME = "mbc_bot";
+import pg from "pg";
+let community = { id: 1, chat_id: -100, chat_type: "supergroup", status: "active", auto_detect: true, command_detect: true, networks: [], dedupe_window_minutes: 60, max_notifications_per_hour: 30 };
+let replies = 0, recent = false; const sent = [];
+pg.Pool.prototype.query = async function (sql) {
+  if (/FROM communities c LEFT JOIN/.test(sql)) return { rows: [community], rowCount: 1 };
+  if (/INSERT INTO community_usage[\s\S]*replies/.test(sql) && /RETURNING replies/.test(sql)) return { rows: [{ replies: ++replies }], rowCount: 1 };
+  if (/INSERT INTO community_addresses/.test(sql)) return { rows: [{ id: 7, is_new: !recent, status: "active", prev_seen: recent ? new Date() : null }], rowCount: 1 };
+  return { rows: [], rowCount: 0 };
+};
+globalThis.fetch = async (url, o) => { const b = JSON.parse(o.body); sent.push({ m: url.split("/").pop(), ...b }); return { json: async () => ({ ok: true, result: { status: "member" } }) }; };
+const { processCommunityMessage } = await import("../lib/community_track.js");
+let fail = 0; const t = (n, ok) => { if (!ok) fail++; console.log(ok ? "PASS" : "FAIL", n); };
+const msg = (text, extra = {}) => ({ message_id: 1, chat: { id: -100, type: "supergroup" }, from: { id: 5 }, text, ...extra });
+const TRON = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", EVM = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+
+sent.length = 0; await processCommunityMessage(msg("check " + TRON));
+t("auto: Tron resolved & posted with explorer button", sent.length === 1 && /Tron/.test(sent[0].text) && /tronscan/.test(JSON.stringify(sent[0].reply_markup)));
+sent.length = 0; await processCommunityMessage(msg("Wallet: " + EVM));
+t("auto: EVM asks for network (no guess)", sent.length === 1 && /Which network/.test(sent[0].text) && /cm:7:ethereum/.test(JSON.stringify(sent[0].reply_markup)));
+sent.length = 0; await processCommunityMessage(msg(EVM, { from: { id: 9, is_bot: true } }));
+t("bot-authored message ignored", sent.length === 0);
+sent.length = 0; recent = true; await processCommunityMessage(msg(TRON));
+t("auto: duplicate inside window suppressed", sent.length === 0);
+sent.length = 0; await processCommunityMessage(msg("/track " + TRON));
+t("command: duplicate still answered", sent.length === 1);
+sent.length = 0; await processCommunityMessage(msg("/track@other_bot " + TRON));
+t("command for another bot ignored", sent.length === 0);
+sent.length = 0; await processCommunityMessage(msg("/track@mbc_bot " + TRON));
+t("/track@bot accepted", sent.length === 1);
+sent.length = 0; community = { ...community, status: "paused" }; await processCommunityMessage(msg(TRON));
+t("paused: silent", sent.length === 0);
+community = { ...community, status: "active", auto_detect: false }; sent.length = 0; await processCommunityMessage(msg(TRON));
+t("auto detection off: silent", sent.length === 0);
+sent.length = 0; await processCommunityMessage(msg("/track 0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAEd"));
+t("bad checksum explained", sent.length === 1 && /checksum/.test(sent[0].text));
+community = { ...community, auto_detect: true, max_notifications_per_hour: 0 }; sent.length = 0; recent = false; await processCommunityMessage(msg(TRON));
+t("hourly reply limit enforced", sent.length === 0);
+sent.length = 0; community = { ...community, max_notifications_per_hour: 30, networks: ["solana"] }; await processCommunityMessage(msg("/track " + EVM));
+t("network not enabled explained", sent.length === 1 && /no matching network/.test(sent[0].text));
+console.log(fail ? `\n${fail} FAILED` : "\nall passed"); process.exit(fail ? 1 : 0);
