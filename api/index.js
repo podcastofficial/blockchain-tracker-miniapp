@@ -29,6 +29,7 @@ import { confirmPayment } from "../lib/payments.js";
 import { runMaintenance } from "../lib/maintenance.js";
 import { communityApi } from "../lib/community_api.js";
 import { pointsApi } from "../lib/points_api.js";
+import { forceJoinApi, joinBlocked } from "../lib/forcejoin.js";
 import { attachReservation } from "../lib/points.js";
 
 const RECEIVERS = {
@@ -647,6 +648,9 @@ export default async function handler(req, res) {
   const path = pathOf(req);
 
   try {
+    if (path === "/api/forcejoin/status") return await forceJoinApi(req, res);
+    if (await joinBlocked(req, res, path)) return;   // compulsory channel + group join (JOIN_REQUIRED)
+
     if (path === "/api/auth/telegram") {
       return await telegramLogin(req, res);
     }
