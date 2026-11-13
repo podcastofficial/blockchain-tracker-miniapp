@@ -107,3 +107,13 @@ Connect and every signature happen only inside the Phantom APP: Mini App -> Phan
 - GeckoTerminal's free API is rate limited (~30 calls/min per IP); everything is cached and falls back to the last good copy.
 
 **Fix for `CONFIG_NOT_FOUND_ON_THIS_NETWORK`**: `DBC_CONFIG_KEY` does not exist on the network `SOLANA_RPC_URL` points to (typically the key was made on devnet by `npm run launch:config` but the RPC is mainnet, or the other way round). `GET /api/launch/config` now returns `configOk` and `cluster` so you can see it. Either create the config on mainnet (`SOLANA_RPC_URL=<mainnet rpc> THRESHOLD_SOL=85 npm run launch:config`, costs a little real SOL) and put the new key in `DBC_CONFIG_KEY`, or set `SOLANA_RPC_URL` to devnet and use Phantom in devnet/testnet mode.
+
+## Community Smart Contract BUY/SELL Monitor
+
+Run `db/community_contracts.sql` in Neon after the existing Community Monitor migrations. The new **Contract BUY/SELL** tab is scoped to the selected Telegram group/channel. Community admins can save/remove token contracts in the Mini App, or use these bot commands in the chat:
+
+- `/watchcontract bsc 0xTOKEN_ADDRESS`
+- `/contractlist`
+- `/unwatchcontract WATCH_ID`
+
+The scheduled GitHub Actions worker calls `/api/cron/community-contracts` every five minutes using the existing `APP_URL` and `CRON_SECRET` repository secrets. The initial implementation decodes EVM DEX swap logs on Ethereum, BNB Chain, Polygon, Arbitrum, Base, Optimism and Avalanche, and discovers the most liquid DEX Screener pair. The first scan establishes a starting block to avoid replaying old trades. It currently does not parse Solana/Tron/TON swaps, and does not calculate USD trade value. A token must have a discoverable DEX liquidity pair and the bot must have posting permission in the community.

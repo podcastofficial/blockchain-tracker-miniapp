@@ -538,7 +538,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <div class="card"><div class="card-head"><div><div class="card-title">Your communities</div><div class="card-sub">Chats where you are an admin and the bot is connected. Missing one? Send <b>/settings</b> in that group as an admin.</div></div><button class="btn small" id="cmtyRefresh" type="button">↻ Refresh</button></div><div id="cmtyList"></div></div>
     <div id="cmtyDetail" style="display:none;margin-top:15px">
       <div class="card"><div class="card-head"><div><div class="card-title" id="cmtyTitle">—</div><div class="card-sub" id="cmtySub"></div></div><span id="cmtyStatusTag"></span></div><div id="cmtyWarn"></div>
-        <div class="toolbar" style="margin:12px 0 0"><button class="btn small primary" data-cmty-tab="overview" type="button">Overview</button><button class="btn small" data-cmty-tab="settings" type="button">Settings</button><button class="btn small" data-cmty-tab="addresses" type="button">Addresses</button><button class="btn small" data-cmty-tab="activity" type="button">Activity</button></div></div>
+        <div class="toolbar" style="margin:12px 0 0"><button class="btn small primary" data-cmty-tab="overview" type="button">Overview</button><button class="btn small" data-cmty-tab="settings" type="button">Settings</button><button class="btn small" data-cmty-tab="addresses" type="button">Addresses</button><button class="btn small" data-cmty-tab="contracts" type="button">Contract BUY/SELL</button><button class="btn small" data-cmty-tab="activity" type="button">Activity</button></div></div>
       <div id="cmtyPane" style="margin-top:15px"></div>
     </div>
   </div>
@@ -2749,7 +2749,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const num=n=>Number(n||0).toLocaleString("en-US");
 const when=t=>t?new Date(t).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
 const short=a=>a&&a.length>20?a.slice(0,8)+"…"+a.slice(-6):(a||"");
-const ERR={AUTH_REQUIRED:"Sign in through Telegram first.",COMMUNITY_NOT_FOUND:"You are no longer an admin of this chat, or it was removed.",INVALID_SETTINGS:"One of the values is not allowed.",RATE_LIMITED:"Too many requests. Wait a moment.",COMMUNITY_DISCONNECTED:"This community is disconnected.",COMMUNITY_NOT_SET_UP:"Community Monitor is not set up on the server yet. The database migrations (db/community.sql, community_phase2.sql, community_phase3.sql) still need to be run.",API_ROUTE_NOT_FOUND:"The server does not include Community Monitor yet. Deploy the latest version.",ADDRESS_NOT_FOUND:"That address was already removed."};
+const ERR={AUTH_REQUIRED:"Sign in through Telegram first.",COMMUNITY_NOT_FOUND:"You are no longer an admin of this chat, or it was removed.",INVALID_SETTINGS:"One of the values is not allowed.",RATE_LIMITED:"Too many requests. Wait a moment.",COMMUNITY_DISCONNECTED:"This community is disconnected.",COMMUNITY_NOT_SET_UP:"Community Monitor is not set up on the server yet. The Community Monitor database migrations, including db/community_contracts.sql, still need to be run.",API_ROUTE_NOT_FOUND:"The server does not include Community Monitor yet. Deploy the latest version.",ADDRESS_NOT_FOUND:"That address was already removed.",INVALID_CONTRACT_OR_NETWORK:"Choose a supported EVM network and enter a valid 0x contract address.",CONTRACT_WATCH_NOT_FOUND:"Contract watch was not found.",COMMUNITY_NOT_ACTIVE:"Resume this community before adding contract alerts."};
 const ACT={"community.connected":"Bot connected","community.disconnected":"Bot disconnected","community.paused":"Monitoring paused","community.resumed":"Monitoring resumed","community.permissions_changed":"Bot permissions changed","community.address_removed":"Address removed","community.post_failed":"Posting failed","settings.updated":"Settings updated"};
 const FIELD={auto_detect:"Automatic detection",command_detect:"Command detection",detect_wallets:"Wallet detection",detect_contracts:"Contract detection",detect_tokens:"Token detection",networks:"Networks",dedupe_window_minutes:"Duplicate window",max_notifications_per_hour:"Hourly reply limit"};
 const st={bot:null,networks:{},list:[],cur:null,tab:"overview",settings:null,addr:{rows:[],next:null,status:"active",network:"",q:""}};
@@ -2828,6 +2828,22 @@ function renderAddresses(){
   return `<div class="card"><div class="toolbar"><select class="control" id="cmtyAStatus"><option value="active">Active</option><option value="pending_chain">Choose network</option><option value="removed">Removed</option><option value="">All</option></select><select class="control" id="cmtyANet"><option value="">All networks</option>${Object.entries(st.networks).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join("")}</select><input class="control" id="cmtyAQ" placeholder="Search address" style="flex:1;min-width:140px"><button class="btn small" id="cmtyASearch" type="button">Search</button></div>
   <div class="table-wrap"><table><thead><tr><th>Address</th><th>Network</th><th>Type</th><th>Status</th><th>Seen</th><th>Last seen</th><th></th></tr></thead><tbody id="cmtyARows"></tbody></table></div><div class="empty" id="cmtyAEmpty" style="display:none"><div class="empty-icon">◈</div><strong>No addresses here</strong>Post an address in the chat or use /track.</div><div class="toolbar" style="margin:12px 0 0"><button class="btn small" id="cmtyAMore" type="button" style="display:none">Load more</button></div></div>`;
 }
+async function loadContractWatches(){
+  const id=st.cur.id,pane=$("cmtyPane");
+  const d=await api("/"+id+"/contract-watches");
+  const opts=(d.networks||[]).map(n=>`<option value="${esc(n)}">${esc(st.networks[n]||n)}</option>`).join("");
+  const rows=(d.watches||[]).map(w=>`<tr><td>${esc(w.token_name||w.token_symbol||"Token")}${w.token_symbol?` (${esc(w.token_symbol)})`:""}<div class="muted address">${esc(short(w.token_address))}</div></td><td>${esc(st.networks[w.network]||w.network)}</td><td>${w.pair_address?'<span class="tag green">PAIR FOUND</span>':w.status==="error"?'<span class="tag red">ERROR</span>':'<span class="tag yellow">DISCOVERING</span>'}${w.last_error?`<div class="muted" style="font-size:10px">${esc(w.last_error)}</div>`:""}</td><td><button class="btn small" data-cmty-contract-rm="${w.id}" type="button">Remove</button></td></tr>`).join("");
+  pane.innerHTML=`<div class="card"><div class="card-head"><div><div class="card-title">Smart Contract BUY/SELL Alerts</div><div class="card-sub">Save a token contract. The worker discovers its most liquid DEX pair and posts each detected swap to this channel only.</div></div></div><div class="form-grid" style="grid-template-columns:1fr 2fr;gap:10px"><div class="field"><label>Blockchain</label><select class="control" id="cmtyContractNet">${opts}</select></div><div class="field"><label>Token contract address</label><input class="control" id="cmtyContractAddr" placeholder="0x..." autocomplete="off"></div></div><div class="toolbar" style="margin-top:10px"><button class="btn primary" id="cmtyContractAdd" type="button">＋ Save contract</button><span class="muted" id="cmtyContractMsg" style="font-size:11px">EVM networks only for live DEX swap parsing in this release.</span></div></div><div class="card" style="margin-top:12px"><div class="card-head"><div><div class="card-title">Saved contracts</div><div class="card-sub">Watchlist belongs only to this community</div></div></div><div class="table-wrap"><table><thead><tr><th>Contract</th><th>Network</th><th>Monitor status</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${rows?"":'<div class="empty">No contracts saved for this channel yet.</div>'}</div><div class="notice">BUY/SELL alerts start after pair discovery and only cover newly confirmed swap logs. First scan establishes the starting block; old trades are not replayed. USD valuation and exact token/quote amounts depend on pool token decimals and are not included in this initial release.</div>`;
+}
+async function addContractWatch(){
+  const address=$("cmtyContractAddr").value.trim(),network=$("cmtyContractNet").value,out=$("cmtyContractMsg"),btn=$("cmtyContractAdd");
+  if(!/^0x[a-fA-F0-9]{40}$/.test(address)){out.textContent="Enter a valid EVM token contract address.";return}
+  btn.disabled=true;out.textContent="Saving…";
+  try{await api("/"+st.cur.id+"/contract-watches",{method:"POST",body:JSON.stringify({network,address})});toast("Contract saved for this channel");await loadContractWatches()}
+  catch(e){out.textContent=msg(e)+" ("+(e.message||"error")+")"}
+  finally{btn.disabled=false}
+}
+async function removeContractWatch(id){if(!confirm("Stop BUY/SELL alerts for this contract in this channel?"))return;try{await api("/"+st.cur.id+"/contract-remove",{method:"POST",body:JSON.stringify({watchId:Number(id)})});toast("Contract monitoring removed");await loadContractWatches()}catch(e){toast(msg(e))}}
 function renderActivity(rows){
   if(!rows.length)return '<div class="card"><div class="empty"><strong>No activity yet</strong></div></div>';
   return `<div class="card"><div class="card-head"><div class="card-title">Admin activity</div><div class="card-sub">Latest 50 events</div></div>${rows.map(r=>{
@@ -2845,6 +2861,7 @@ async function showTab(tab){
     if(tab==="overview"){const d=await api("/"+id+"/stats");if(st.cur&&st.cur.id===id&&st.tab===tab)pane.innerHTML=renderStats(d)}
     else if(tab==="settings"){const d=await api("/"+id+"/settings");st.settings=d.settings;if(st.cur&&st.cur.id===id&&st.tab===tab)pane.innerHTML=renderSettings(d.settings)}
     else if(tab==="addresses"){st.addr.rows=[];st.addr.next=null;pane.innerHTML=renderAddresses();$("cmtyAStatus").value=st.addr.status;$("cmtyANet").value=st.addr.network;$("cmtyAQ").value=st.addr.q;await loadAddresses(false)}
+    else if(tab==="contracts"){await loadContractWatches()}
     else if(tab==="activity"){const d=await api("/"+id+"/audit");if(st.cur&&st.cur.id===id&&st.tab===tab)pane.innerHTML=renderActivity(d.audit)}
   }catch(e){pane.innerHTML=`<div class="notice" style="margin-top:0">${esc(msg(e))}</div>`;if(e&&e.message==="COMMUNITY_NOT_FOUND")loadList(true)}
 }
@@ -2891,13 +2908,15 @@ async function removeAddress(aid){
 }
 
 document.addEventListener("click",e=>{
-  const t=e.target.closest&&e.target.closest("[data-cmty-add],[data-cmty-open],[data-cmty-tab],[data-cmty-ctl],[data-cmty-rm],#cmtyRefresh,#cmtySave,#cmtyASearch,#cmtyAMore,[data-page=\"community\"]");
+  const t=e.target.closest&&e.target.closest("[data-cmty-add],[data-cmty-open],[data-cmty-tab],[data-cmty-ctl],[data-cmty-rm],[data-cmty-contract-rm],#cmtyContractAdd,#cmtyRefresh,#cmtySave,#cmtyASearch,#cmtyAMore,[data-page=\"community\"]");
   if(!t)return;
   if(t.dataset.cmtyAdd)return openTg(t.dataset.cmtyAdd);
   if(t.dataset.cmtyOpen)return openCommunity(t.dataset.cmtyOpen);
   if(t.dataset.cmtyTab)return showTab(t.dataset.cmtyTab);
   if(t.dataset.cmtyCtl)return control(t.dataset.cmtyCtl);
   if(t.dataset.cmtyRm)return removeAddress(t.dataset.cmtyRm);
+  if(t.dataset.cmtyContractRm)return removeContractWatch(t.dataset.cmtyContractRm);
+  if(t.id==="cmtyContractAdd")return addContractWatch();
   if(t.id==="cmtyRefresh")return loadList(true).then(()=>st.cur&&showTab(st.tab));
   if(t.id==="cmtySave")return saveSettings();
   if(t.id==="cmtyASearch"){st.addr.status=$("cmtyAStatus").value;st.addr.network=$("cmtyANet").value;st.addr.q=$("cmtyAQ").value.trim();return loadAddresses(false)}
