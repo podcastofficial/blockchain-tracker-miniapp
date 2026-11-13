@@ -72,6 +72,21 @@ Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpa
 ## Community Crypto Monitor — Phase 2 (detection + commands)
 - Run `db/community_phase2.sql` in Neon (after `db/community.sql`). No webhook change needed beyond Phase 1.
 - `lib/address.js`: strict validators (EIP-55 checksum, Tron base58check, Solana 32-byte), candidate extraction (max 5 per message), chain resolution that never assumes Ethereum for `0x` addresses. Tests: `node scripts/test-address.mjs`.
-- `lib/community_track.js`: automatic detection + `/track /trackinfo /tracklist /untrack /pause /resume /help` (also `/cmd@BOT_USERNAME`). Ambiguous EVM addresses get a network-choice button; duplicate suppression window and hourly reply limit are enforced per community. Smoke test: `node scripts/test-community-flow.mjs`.
+- `lib/community_track.js`: automatic detection + `/track /trackinfo /tracklist /untrack /pause /resume /help` (also `/cmd@BOT_USERNAME`). Ambiguous EVM addresses get a network-choice button; duplicate suppression window and hourly reply limit are enforced per community. 
 - Set `BOT_USERNAME` in Vercel (needed to ignore commands aimed at other bots and to build Open Tracker links).
-- Replies currently show network, format validity and explorer link; live data/risk indicators come in Phase 3.
+
+## Community Crypto Monitor — Phase 3 (notifications)
+- Run `db/community_phase3.sql` in Neon (after `db/community_phase2.sql`).
+- `lib/community_enrich.js`: read-only lookups. EVM (public RPC: wallet vs contract, ERC-20 name/symbol/decimals, native balance), Solana (account type, mint, balance), Tron (TronGrid), token market data from DEX Screener, transaction status on EVM / Solana / Tron. Anything that cannot be fetched is shown as unavailable.
+- `lib/community_notify.js`: templates (wallet, contract, token, transaction), plus a durable queue: dedupe key per community, hourly reply limit, send-now then retry by the 5-minute maintenance worker (backoff 30 s → 10 min, 5 attempts, then `dead`), `SKIP LOCKED` claiming, stuck-row recovery, 429 `retry_after`, permanent errors disable posting for that community.
+- Transaction hashes: EVM (`0x` + 64 hex) and Solana signatures are detected automatically; a bare 64-hex Tron hash only via `/track` or `/tx`.
+- Optional env for reliability: `RPC_ETHEREUM`, `RPC_BSC`, `RPC_POLYGON`, `RPC_ARBITRUM`, `RPC_BASE`, `RPC_SOLANA` (private RPCs), `TRONGRID_API_KEY`.
+- Tests: `node scripts/test-address.mjs` and `node scripts/test-community.mjs` (stubbed DB/Telegram/providers; run `npm install` first).
+
+## Community Crypto Monitor — Phase 4 (Mini App screens + admin API)
+- No new database migration. Deploy and set `BOT_USERNAME` (and optionally `MINIAPP_SHORT_NAME`) so the Add-to-group/channel buttons and the `/settings` deep link work.
+- `lib/community_api.js` → `/api/community` (list), `/:id/settings` (GET/POST), `/:id/stats`, `/:id/addresses`, `/:id/audit`, `/:id/control` (pause / resume / disconnect), `/:id/address-remove`.
+  - Admin status is verified live against Telegram on every call; changes are refused if Telegram cannot be reached. A non-admin and an unknown community both get 404. Settings changes are validated server-side and written to the audit log with before/after values.
+- Mini App: **Community Monitor** page (sidebar + dashboard card): your communities, Overview (stats, 24 h chart), Settings, Addresses (filter, search, remove), Activity (audit).
+- Bot: `/settings` (admins) replies with an “Open settings” button (`?startapp=cm_<id>`) and registers the sender as an admin so the community shows up for them.
+- Tests: `node scripts/test-community-api.mjs` (authorization, validation, scoping) and `node scripts/test-community-ui.mjs` (page script against a stub DOM). Both need `npm install` first for `pg`; the UI test does not.

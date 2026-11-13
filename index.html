@@ -339,6 +339,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <button data-href="/launch.html"><span class="nav-icon">🚀</span>Launchpad</button>
     <button data-page="whales"><span class="nav-icon">◉</span>Whale Terminal</button>
     <button data-page="contracts"><span class="nav-icon">⌘</span>Smart Contracts</button>
+    <button data-page="community"><span class="nav-icon">☷</span>Community Monitor</button>
     <button data-page="defi"><span class="nav-icon">◫</span>DeFi Analytics</button>
     <button data-page="portfolio"><span class="nav-icon">◩</span>Portfolio Analytics</button>
     <button data-page="alerts"><span class="nav-icon">♧</span>Alert Center</button>
@@ -382,6 +383,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <button class="quick" data-page="transactions"><div class="q-icon">⇄</div><strong>Transactions</strong><span>Explore chain activity</span></button>
       <button class="quick" data-page="tools"><div class="q-icon">⚖</div><strong>Trading Tools</strong><span>Live chart and calculators</span></button>
       <button class="quick" data-page="contracts"><div class="q-icon">🛡</div><strong>Contract Monitor</strong><span>Ownership, upgrades, pause</span></button>
+      <button class="quick" data-page="community"><div class="q-icon">☷</div><strong>Community Monitor</strong><span>Groups &amp; channels, address alerts</span></button>
       <button class="quick" data-page="defi"><div class="q-icon">◫</div><strong>DeFi Analytics</strong><span>TVL and top DEX volume</span></button>
       <button class="quick" data-page="dex"><div class="q-icon">◎</div><strong>DEX Screener</strong><span>Trending, new pairs, buy/sell, charts</span></button>
       <button class="quick" data-page="wallets"><div class="q-icon">◈</div><strong>Wallet Terminal</strong><span>Balances of tracked wallets</span></button>
@@ -525,6 +527,19 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <div class="form-grid"><div class="field"><label for="lq_side">Direction</label><select id="lq_side"><option value="1">Long</option><option value="-1">Short</option></select></div><div class="field"><label for="lq_lev">Leverage (x)</label><input id="lq_lev" type="number" step="any" inputmode="decimal" placeholder="10"></div><div class="field"><label for="lq_entry">Entry price</label><input id="lq_entry" type="number" step="any" inputmode="decimal" placeholder="100"></div></div><div class="calc-out" id="lq_out"></div><div class="calc-hint">Estimate only. Exchanges use their own formulas, fees and funding, so check the liquidation price on your exchange before trading.</div></div>
   </div>
   <div class="notice">These tools are for planning only and are not financial advice. Crypto trading with leverage can lose more than you expect.</div>
+</section>
+
+<section class="page" id="page-community">
+  <div class="page-head"><div><div class="eyebrow">COMMUNITY</div><h1 class="page-title">Community Monitor</h1><p class="page-desc">Add the bot to a Telegram group or channel. It detects wallet, contract and token addresses and transaction hashes, and posts the result back to that same chat. Only chat admins can change settings.</p></div><div class="head-actions" id="cmtyAddBtns"></div></div>
+  <div class="notice" id="cmtyGate" style="margin-top:0">Loading…</div>
+  <div id="cmtyBody" style="display:none">
+    <div class="card"><div class="card-head"><div><div class="card-title">Your communities</div><div class="card-sub">Chats where you are an admin and the bot is connected. Missing one? Send <b>/settings</b> in that group as an admin.</div></div><button class="btn small" id="cmtyRefresh" type="button">↻ Refresh</button></div><div id="cmtyList"></div></div>
+    <div id="cmtyDetail" style="display:none;margin-top:15px">
+      <div class="card"><div class="card-head"><div><div class="card-title" id="cmtyTitle">—</div><div class="card-sub" id="cmtySub"></div></div><span id="cmtyStatusTag"></span></div><div id="cmtyWarn"></div>
+        <div class="toolbar" style="margin:12px 0 0"><button class="btn small primary" data-cmty-tab="overview" type="button">Overview</button><button class="btn small" data-cmty-tab="settings" type="button">Settings</button><button class="btn small" data-cmty-tab="addresses" type="button">Addresses</button><button class="btn small" data-cmty-tab="activity" type="button">Activity</button></div></div>
+      <div id="cmtyPane" style="margin-top:15px"></div>
+    </div>
+  </div>
 </section>
 
 <section class="page" id="page-profile">
@@ -854,7 +869,7 @@ $("alertList").className=alerts.length?"":"empty";
 $("alertList").innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${esc(a.type)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${esc(netName(a.network))} · ${a.threshold?`Threshold $${esc(a.threshold)}`:"No threshold"} · Draft only</div></div><button class="btn danger small" data-alert-remove="${esc(a.id)}">Delete</button></div>`).join(""):'<div class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div>';
 }
 window.addEventListener("bt-oc-rules",()=>{try{render()}catch(e){}});
-function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",dex:"DEX Screener",contracts:"Smart Contracts",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
+function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",dex:"DEX Screener",contracts:"Smart Contracts",community:"Community Monitor",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
 function openItem(type){$("itemForm").reset();$("itemType").value=type;$("modalTitle").textContent=type==="wallet"?"Add Wallet":"Add Smart Contract";$("saveItem").textContent=type==="wallet"?"Save Wallet":"Save Contract";$("formMessage").textContent="";$("itemModal").classList.add("open");$("itemName").focus()}
 function closeModal(id){$(id).classList.remove("open")}
 let selectedPaymentPlan=null;
@@ -2709,6 +2724,179 @@ $("dxQBtn").addEventListener("click",doSearch);
 $("dxQ").addEventListener("keydown",e=>{if(e.key==="Enter")doSearch()});
 setInterval(()=>{const pg=$("page-dex");if(!document.hidden&&pg&&pg.classList.contains("active")&&!$("dxModal").classList.contains("open")&&st.tab!=="search")load(true)},60000);
 showControls();
+})();
+</script>
+<script>
+/* Community Monitor page (Phase 4). Talks to /api/community/*; the server re-verifies Telegram admin status on every call. */
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=n=>Number(n||0).toLocaleString("en-US");
+const when=t=>t?new Date(t).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
+const short=a=>a&&a.length>20?a.slice(0,8)+"…"+a.slice(-6):(a||"");
+const ERR={AUTH_REQUIRED:"Sign in through Telegram first.",COMMUNITY_NOT_FOUND:"You are no longer an admin of this chat, or it was removed.",INVALID_SETTINGS:"One of the values is not allowed.",RATE_LIMITED:"Too many requests. Wait a moment.",COMMUNITY_DISCONNECTED:"This community is disconnected.",ADDRESS_NOT_FOUND:"That address was already removed."};
+const ACT={"community.connected":"Bot connected","community.disconnected":"Bot disconnected","community.paused":"Monitoring paused","community.resumed":"Monitoring resumed","community.permissions_changed":"Bot permissions changed","community.address_removed":"Address removed","community.post_failed":"Posting failed","settings.updated":"Settings updated"};
+const FIELD={auto_detect:"Automatic detection",command_detect:"Command detection",detect_wallets:"Wallet detection",detect_contracts:"Contract detection",detect_tokens:"Token detection",networks:"Networks",dedupe_window_minutes:"Duplicate window",max_notifications_per_hour:"Hourly reply limit"};
+const st={bot:null,networks:{},list:[],cur:null,tab:"overview",settings:null,addr:{rows:[],next:null,status:"active",network:"",q:""}};
+const api=(p,o)=>BT.apiRequest("/community"+p,o);
+const msg=e=>ERR[e&&e.message]||"Something went wrong. Try again.";
+const toast=t=>{try{BT.toast(t)}catch(e){}};
+function openTg(u){try{const t=window.Telegram&&window.Telegram.WebApp;if(t&&t.openTelegramLink){t.openTelegramLink(u);return}}catch(e){}window.open(u,"_blank","noopener,noreferrer")}
+
+function addButtons(){
+  const b=st.bot;
+  $("cmtyAddBtns").innerHTML=b?`<button class="btn small primary" data-cmty-add="https://t.me/${esc(b)}?startgroup" type="button">+ Add to group</button><button class="btn small" data-cmty-add="https://t.me/${esc(b)}?startchannel&amp;admin=post_messages" type="button">+ Add to channel</button>`:"";
+}
+function warnings(c){
+  const w=[];
+  if(c.status==="paused")w.push("Monitoring is paused. Nothing is detected or posted until you resume.");
+  if(!c.canPost)w.push(c.type==="channel"?"The bot needs the “Post messages” admin permission in this channel.":"The bot cannot post in this chat. Check its permissions.");
+  if(c.type!=="channel"&&!c.canRead)w.push("Make the bot a group admin (or turn off its privacy mode) so it can see messages for automatic detection. /track commands work either way.");
+  return w.map(x=>`<div class="notice">${esc(x)}</div>`).join("");
+}
+const statusTag=s=>s==="active"?'<span class="tag green">ACTIVE</span>':s==="paused"?'<span class="tag yellow">PAUSED</span>':'<span class="tag red">DISCONNECTED</span>';
+const typeName=t=>t==="channel"?"Channel":t==="supergroup"?"Supergroup":"Group";
+
+function renderList(){
+  const el=$("cmtyList");
+  if(!st.list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">☷</div><strong>No communities yet</strong>Add the bot to a group or channel, then open <b>/settings</b> in the group (admins only) or refresh this page.${st.bot?"":"<br><br>The bot username is not configured on the server yet."}</div>`;return}
+  el.innerHTML=st.list.map(c=>`<button class="card" data-cmty-open="${c.id}" type="button" style="display:block;width:100%;text-align:left;margin:0 0 10px;cursor:pointer${st.cur&&st.cur.id===c.id?";outline:2px solid var(--violet,#7c3aed)":""}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><strong>${esc(c.title||"Untitled chat")}</strong>${statusTag(c.status)}</div><div class="muted" style="font-size:10px;margin-top:6px">${typeName(c.type)}${c.username?" · @"+esc(c.username):""} · ${num(c.addresses)} addresses · ${num(c.sent24h)} notifications (24h)</div></button>`).join("");
+}
+async function loadList(keep){
+  if(!BT.backendUser){$("cmtyGate").style.display="";$("cmtyGate").textContent="Open this Mini App inside Telegram and sign in to manage communities.";$("cmtyBody").style.display="none";return}
+  try{
+    const d=await api("");
+    st.bot=d.bot;st.networks=d.networks||{};st.list=d.communities||[];
+    $("cmtyGate").style.display="none";$("cmtyBody").style.display="";addButtons();renderList();
+    if(st.cur&&!st.list.find(c=>c.id===st.cur.id)){st.cur=null;$("cmtyDetail").style.display="none"}
+    if(!keep&&!st.cur&&st.list.length===1)openCommunity(st.list[0].id);
+  }catch(e){$("cmtyGate").style.display="";$("cmtyGate").textContent=msg(e);$("cmtyBody").style.display="none"}
+}
+
+function renderStats(d){
+  const s=d.stats,a=s.addresses,n=s.notifications,hours=[];
+  const by={};s.hourly.forEach(h=>{by[new Date(h.hour).getTime()]=h});
+  const base=new Date();base.setMinutes(0,0,0);
+  for(let i=23;i>=0;i--){const t=base.getTime()-i*3600000;hours.push({t,h:by[t]||{scanned:0,replies:0}})}
+  const max=Math.max(1,...hours.map(x=>x.h.scanned));
+  const bars=hours.map(x=>`<div title="${esc(new Date(x.t).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))}: ${x.h.scanned} messages scanned, ${x.h.replies} replies" style="flex:1;display:flex;align-items:flex-end;height:100%"><div style="width:100%;height:${Math.max(3,Math.round(x.h.scanned/max*100))}%;border-radius:3px 3px 0 0;background:var(--violet,#7c3aed);opacity:${x.h.scanned?".85":".18"}"></div></div>`).join("");
+  const kinds=Object.entries(n.byKind).map(([k,v])=>`<div class="kv"><span>${esc(k==="tx"?"Transactions":k.charAt(0).toUpperCase()+k.slice(1)+"s")}</span><span>${num(v)}</span></div>`).join("")||'<div class="muted" style="font-size:11px">Nothing sent in the last 7 days.</div>';
+  const top=s.top.map(t=>`<div class="kv"><span class="address">${esc(short(t.address))} <span class="muted">${esc(st.networks[t.network]||t.network||"")}</span></span><span>${num(t.hit_count)}×</span></div>`).join("")||'<div class="muted" style="font-size:11px">No addresses yet.</div>';
+  const attn=(s.queue.retrying||0)+(s.queue.dead||0);
+  return `<div class="grid stats-grid">
+    <div class="stat-card"><div class="stat-top">Active addresses <span class="stat-symbol">◈</span></div><div class="stat-value">${num(a.active)}</div><div class="stat-foot">${num(a.pending_chain)} waiting for a network choice</div></div>
+    <div class="stat-card"><div class="stat-top">Notifications (24h) <span class="stat-symbol">♧</span></div><div class="stat-value">${num(n.sent24h)}</div><div class="stat-foot">${num(n.sent7d)} in 7 days</div></div>
+    <div class="stat-card"><div class="stat-top">Messages scanned (24h) <span class="stat-symbol">⌕</span></div><div class="stat-value">${num(s.scanned24h)}</div><div class="stat-foot">Text is not stored, only addresses</div></div>
+    <div class="stat-card"><div class="stat-top">Needs attention <span class="stat-symbol">!</span></div><div class="stat-value">${num(attn)}</div><div class="stat-foot">${num(s.queue.retrying)} retrying · ${num(s.queue.dead)} failed · ${num(n.suppressed7d)} skipped (7d)</div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Last 24 hours</div><div class="card-sub">Messages scanned per hour</div></div></div><div style="display:flex;gap:2px;height:80px;align-items:stretch">${bars}</div></div>
+  <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Most seen addresses</div></div>${top}</div><div class="card"><div class="card-head"><div class="card-title">Notifications by type (7d)</div></div>${kinds}</div></div>`;
+}
+
+function chk(id,label,desc,on){return `<label class="pf-check"><span><strong>${esc(label)}</strong><div class="muted" style="font-size:10px">${esc(desc)}</div></span><input type="checkbox" id="${id}"${on?" checked":""}></label>`}
+function renderSettings(s){
+  const nets=Object.entries(st.networks).map(([k,v])=>`<label style="display:inline-flex;gap:6px;align-items:center;margin:0 14px 8px 0;font-size:11px"><input type="checkbox" data-cmty-net="${esc(k)}"${s.networks.includes(k)?" checked":""} style="accent-color:#7c3aed"> ${esc(v)}</label>`).join("");
+  const c=st.cur;
+  return `<div class="card"><div class="card-head"><div><div class="card-title">Detection</div><div class="card-sub">What the bot reacts to in this chat</div></div></div>
+    ${chk("cmtyAuto","Automatic detection","Scan messages and channel posts for addresses",s.auto_detect)}${chk("cmtyCmd","Command detection","Respond to /track and /tx",s.command_detect)}
+    ${chk("cmtyW","Wallets","Post details when a wallet address is found",s.detect_wallets)}${chk("cmtyC","Contracts","Post details when a contract is found",s.detect_contracts)}${chk("cmtyT","Tokens","Post details when a token is found",s.detect_tokens)}
+    <div class="card-title" style="margin-top:16px">Networks</div><div class="card-sub" style="margin-bottom:10px">Leave all unticked to allow every supported network. With one EVM network selected the bot never has to ask which chain a 0x address is on.</div>${nets}
+    <div class="toolbar" style="margin-top:12px"><label class="muted" style="font-size:11px">Duplicate window (minutes)<br><input class="control" id="cmtyDedupe" type="number" min="1" max="10080" value="${esc(s.dedupe_window_minutes)}" style="width:130px"></label><label class="muted" style="font-size:11px">Max replies per hour<br><input class="control" id="cmtyLimit" type="number" min="1" max="600" value="${esc(s.max_notifications_per_hour)}" style="width:130px"></label></div>
+    <div class="toolbar" style="margin-top:6px"><button class="btn primary" id="cmtySave" type="button">Save settings</button><span class="muted" id="cmtySaveMsg" style="font-size:11px"></span></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Monitoring control</div><div class="card-sub">Pause stops all detection and posts. Disconnect makes the bot leave the chat.</div></div></div>
+    <div class="toolbar">${c.status==="paused"?'<button class="btn" data-cmty-ctl="resume" type="button">▶ Resume</button>':'<button class="btn" data-cmty-ctl="pause" type="button">⏸ Pause</button>'}<button class="btn" data-cmty-ctl="disconnect" type="button" style="color:var(--red,#dc2626)">Disconnect bot</button></div></div>`;
+}
+function addrRows(rows){
+  return rows.map(r=>`<tr><td class="address" title="${esc(r.address)}">${esc(short(r.address))}</td><td>${esc(st.networks[r.network]||(r.network?r.network:"not chosen"))}</td><td>${esc(r.kind)}</td><td>${r.status==="active"?'<span class="tag green">active</span>':r.status==="pending_chain"?'<span class="tag yellow">choose network</span>':'<span class="tag">removed</span>'}</td><td>${num(r.hit_count)}×</td><td>${esc(when(r.last_seen_at))}</td><td>${r.status!=="removed"?`<button class="btn small" data-cmty-rm="${r.id}" type="button">Remove</button>`:""}</td></tr>`).join("");
+}
+function renderAddresses(){
+  const a=st.addr;
+  return `<div class="card"><div class="toolbar"><select class="control" id="cmtyAStatus"><option value="active">Active</option><option value="pending_chain">Choose network</option><option value="removed">Removed</option><option value="">All</option></select><select class="control" id="cmtyANet"><option value="">All networks</option>${Object.entries(st.networks).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join("")}</select><input class="control" id="cmtyAQ" placeholder="Search address" style="flex:1;min-width:140px"><button class="btn small" id="cmtyASearch" type="button">Search</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Address</th><th>Network</th><th>Type</th><th>Status</th><th>Seen</th><th>Last seen</th><th></th></tr></thead><tbody id="cmtyARows"></tbody></table></div><div class="empty" id="cmtyAEmpty" style="display:none"><div class="empty-icon">◈</div><strong>No addresses here</strong>Post an address in the chat or use /track.</div><div class="toolbar" style="margin:12px 0 0"><button class="btn small" id="cmtyAMore" type="button" style="display:none">Load more</button></div></div>`;
+}
+function renderActivity(rows){
+  if(!rows.length)return '<div class="card"><div class="empty"><strong>No activity yet</strong></div></div>';
+  return `<div class="card"><div class="card-head"><div class="card-title">Admin activity</div><div class="card-sub">Latest 50 events</div></div>${rows.map(r=>{
+    let extra="";
+    if(r.action==="settings.updated"&&r.metadata&&r.metadata.changes)extra=Object.keys(r.metadata.changes).map(k=>FIELD[k]||k).join(", ");
+    else if(r.metadata&&r.metadata.address)extra=short(r.metadata.address);
+    return `<div class="kv"><span>${esc(ACT[r.action]||r.action)}${extra?` <span class="muted">· ${esc(extra)}</span>`:""}</span><span>${esc(when(r.created_at))}${r.actor?` · ${esc(r.actor)}`:""}</span></div>`}).join("")}</div>`;
+}
+
+async function showTab(tab){
+  st.tab=tab;document.querySelectorAll("[data-cmty-tab]").forEach(b=>b.classList.toggle("primary",b.dataset.cmtyTab===tab));
+  const pane=$("cmtyPane"),id=st.cur&&st.cur.id;if(!id)return;
+  pane.innerHTML='<div class="card"><div class="muted" style="font-size:11px">Loading…</div></div>';
+  try{
+    if(tab==="overview"){const d=await api("/"+id+"/stats");if(st.cur&&st.cur.id===id&&st.tab===tab)pane.innerHTML=renderStats(d)}
+    else if(tab==="settings"){const d=await api("/"+id+"/settings");st.settings=d.settings;if(st.cur&&st.cur.id===id&&st.tab===tab)pane.innerHTML=renderSettings(d.settings)}
+    else if(tab==="addresses"){st.addr.rows=[];st.addr.next=null;pane.innerHTML=renderAddresses();$("cmtyAStatus").value=st.addr.status;$("cmtyANet").value=st.addr.network;$("cmtyAQ").value=st.addr.q;await loadAddresses(false)}
+    else if(tab==="activity"){const d=await api("/"+id+"/audit");if(st.cur&&st.cur.id===id&&st.tab===tab)pane.innerHTML=renderActivity(d.audit)}
+  }catch(e){pane.innerHTML=`<div class="notice" style="margin-top:0">${esc(msg(e))}</div>`;if(e&&e.message==="COMMUNITY_NOT_FOUND")loadList(true)}
+}
+async function loadAddresses(more){
+  const a=st.addr,id=st.cur.id,qs=new URLSearchParams({status:a.status,network:a.network,q:a.q,offset:more?a.next||0:0});
+  try{
+    const d=await api("/"+id+"/addresses?"+qs);
+    a.rows=more?a.rows.concat(d.addresses):d.addresses;a.next=d.nextOffset;
+    const body=$("cmtyARows");if(!body)return;
+    body.innerHTML=addrRows(a.rows);$("cmtyAEmpty").style.display=a.rows.length?"none":"";$("cmtyAMore").style.display=a.next!=null?"":"none";
+  }catch(e){toast(msg(e))}
+}
+async function openCommunity(id){
+  const c=st.list.find(x=>x.id===Number(id));if(!c)return;
+  st.cur=c;renderList();$("cmtyDetail").style.display="";
+  $("cmtyTitle").textContent=c.title||"Untitled chat";$("cmtySub").textContent=typeName(c.type)+(c.username?" · @"+c.username:"");
+  $("cmtyStatusTag").innerHTML=statusTag(c.status);$("cmtyWarn").innerHTML=warnings(c);
+  await showTab("overview");
+  $("cmtyDetail").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveSettings(){
+  const btn=$("cmtySave"),out=$("cmtySaveMsg");
+  const body={auto_detect:$("cmtyAuto").checked,command_detect:$("cmtyCmd").checked,detect_wallets:$("cmtyW").checked,detect_contracts:$("cmtyC").checked,detect_tokens:$("cmtyT").checked,
+    networks:[...document.querySelectorAll("[data-cmty-net]")].filter(x=>x.checked).map(x=>x.dataset.cmtyNet),dedupe_window_minutes:Number($("cmtyDedupe").value),max_notifications_per_hour:Number($("cmtyLimit").value)};
+  if(!Number.isInteger(body.dedupe_window_minutes)||body.dedupe_window_minutes<1||body.dedupe_window_minutes>10080){out.textContent="Duplicate window must be 1–10080 minutes.";return}
+  if(!Number.isInteger(body.max_notifications_per_hour)||body.max_notifications_per_hour<1||body.max_notifications_per_hour>600){out.textContent="Hourly limit must be 1–600.";return}
+  btn.disabled=true;out.textContent="Saving…";
+  try{const d=await api("/"+st.cur.id+"/settings",{method:"POST",body:JSON.stringify(body)});st.settings=d.settings;out.textContent=d.changed.length?"Saved ✓":"No changes";toast(d.changed.length?"Settings saved":"No changes")}
+  catch(e){out.textContent=msg(e);if(e&&e.message==="COMMUNITY_NOT_FOUND")loadList(true)}
+  btn.disabled=false;
+}
+async function control(action){
+  const text={pause:"Pause monitoring in this chat?",resume:"Resume monitoring?",disconnect:"Disconnect the bot? It will leave this chat. You can add it again later."}[action];
+  if(!confirm(text))return;
+  try{const d=await api("/"+st.cur.id+"/control",{method:"POST",body:JSON.stringify({action})});toast(action==="disconnect"?"Bot disconnected":action==="pause"?"Monitoring paused":"Monitoring resumed");
+    await loadList(true);
+    if(d.status==="disconnected"){st.cur=null;$("cmtyDetail").style.display="none"}else{st.cur=st.list.find(c=>c.id===st.cur.id)||null;if(st.cur){$("cmtyStatusTag").innerHTML=statusTag(st.cur.status);$("cmtyWarn").innerHTML=warnings(st.cur);showTab("settings")}}}
+  catch(e){toast(msg(e))}
+}
+async function removeAddress(aid){
+  if(!confirm("Remove this address from the community list?"))return;
+  try{await api("/"+st.cur.id+"/address-remove",{method:"POST",body:JSON.stringify({addressId:Number(aid)})});toast("Address removed");loadAddresses(false)}
+  catch(e){toast(msg(e))}
+}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest&&e.target.closest("[data-cmty-add],[data-cmty-open],[data-cmty-tab],[data-cmty-ctl],[data-cmty-rm],#cmtyRefresh,#cmtySave,#cmtyASearch,#cmtyAMore,[data-page=\"community\"]");
+  if(!t)return;
+  if(t.dataset.cmtyAdd)return openTg(t.dataset.cmtyAdd);
+  if(t.dataset.cmtyOpen)return openCommunity(t.dataset.cmtyOpen);
+  if(t.dataset.cmtyTab)return showTab(t.dataset.cmtyTab);
+  if(t.dataset.cmtyCtl)return control(t.dataset.cmtyCtl);
+  if(t.dataset.cmtyRm)return removeAddress(t.dataset.cmtyRm);
+  if(t.id==="cmtyRefresh")return loadList(true).then(()=>st.cur&&showTab(st.tab));
+  if(t.id==="cmtySave")return saveSettings();
+  if(t.id==="cmtyASearch"){st.addr.status=$("cmtyAStatus").value;st.addr.network=$("cmtyANet").value;st.addr.q=$("cmtyAQ").value.trim();return loadAddresses(false)}
+  if(t.id==="cmtyAMore")return loadAddresses(true);
+  if(t.dataset.page==="community")setTimeout(()=>loadList(false),0);
+});
+window.addEventListener("bt-refresh",()=>{const p=$("page-community");if(p&&p.classList.contains("active"))loadList(true)});
+
+// Deep link from the bot's /settings button: ?startapp=cm_<communityId>
+function deepLinkId(){try{const t=window.Telegram&&window.Telegram.WebApp;const sp=(t&&t.initDataUnsafe&&t.initDataUnsafe.start_param)||new URLSearchParams(location.search).get("tgWebAppStartParam")||new URLSearchParams(location.hash.replace(/^#/,"")).get("tgWebAppStartParam")||"";const m=/^cm_(\d{1,15})$/.exec(sp);return m?Number(m[1]):null}catch(e){return null}}
+const want=deepLinkId();
+if(want){let done=false;const go=async()=>{if(done||!BT.backendUser)return;done=true;const nav=document.querySelector('[data-page="community"]');if(nav)nav.click();await loadList(true);if(st.list.find(c=>c.id===want))openCommunity(want)};window.addEventListener("bt-auth",go);setTimeout(go,800)}
+window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadList,openCommunity,showTab};
 })();
 </script>
 </body></html>
