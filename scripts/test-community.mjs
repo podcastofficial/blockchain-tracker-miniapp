@@ -6,7 +6,7 @@ import pg from "pg";
 // ---------- stub database ----------
 const base = { id: 1, chat_id: -100, chat_type: "supergroup", status: "active", can_post: true, auto_detect: true, command_detect: true, networks: [], dedupe_window_minutes: 60,
   max_notifications_per_hour: 30, detect_wallets: true, detect_contracts: true, detect_tokens: true };
-let community, notifs, keys, replies, recentSeen, nextId;
+let community, notifs, keys, replies, recentSeen, nextId, adminUpserts = 0;
 const reset = (over = {}) => { community = { ...base, ...over }; notifs = []; keys = new Set(); replies = 0; recentSeen = false; nextId = 1; sent.length = 0; tgMode = "ok"; rpcFail = false; };
 pg.Pool.prototype.query = async function (sql, p = []) {
   if (/WHERE c\.chat_id=\$1/.test(sql)) return { rows: [community], rowCount: 1 };
@@ -26,6 +26,7 @@ pg.Pool.prototype.query = async function (sql, p = []) {
   if (/SET status='suppressed', last_error='rate_limited'/.test(sql)) { notifs.find(x => x.id === p[0]).status = "suppressed"; return { rows: [], rowCount: 1 }; }
   if (/SET status='retry'/.test(sql)) { const n = notifs.find(x => x.id === p[0]); n.status = "retry"; n.next_attempt_at = Date.now() + Number(p[1]) * 1000; n.last_error = p[2]; return { rows: [], rowCount: 1 }; }
   if (/UPDATE community_notifications SET status=\$2/.test(sql)) { const n = notifs.find(x => x.id === p[0]); n.status = p[1]; n.last_error = p[2]; if (p[3]) n.kind = p[3]; return { rows: [], rowCount: 1 }; }
+  if (/INSERT INTO community_admins/.test(sql)) { adminUpserts++; return { rows: [], rowCount: 1 }; }
   if (/SET can_post=FALSE/.test(sql)) { community.can_post = false; return { rows: [], rowCount: 1 }; }
   if (/SELECT \* FROM community_addresses WHERE id=/.test(sql)) return { rows: [{ id: 7, family: "evm", address: EVM, address_norm: EVM.toLowerCase(), network: null, submitted_by_telegram_id: 5, status: "pending_chain" }], rowCount: 1 };
   return { rows: [], rowCount: 0 };
@@ -40,6 +41,7 @@ globalThis.fetch = async (url, o = {}) => {
   url = String(url);
   if (url.includes("api.telegram.org")) {
     const b = JSON.parse(o.body), method = url.split("/").pop(); sent.push({ method, ...b });
+    if (method === "getChatMember") return json({ ok: true, result: { status: b.user_id === 5 ? "administrator" : "member" } });
     if (method !== "sendMessage") return json({ ok: true, result: true });
     if (tgMode === "500") return json({ ok: false, error_code: 500, description: "Internal Server Error" });
     if (tgMode === "kicked") return json({ ok: false, error_code: 403, description: "Forbidden: bot was kicked from the supergroup chat" });
@@ -156,4 +158,9 @@ await processNotification(99);
 t("queued notification dropped if community was paused meanwhile", notifs.find(n => n.id === 99).status === "suppressed" && msgs().length === 0);
 reset(); await processCommunityMessage(msg(EVM, { from: { id: 9, is_bot: true } }));
 t("bot-authored message ignored (no loops)", notifs.length === 0 && msgs().length === 0);
+reset();
+await processCommunityMessage(msg("/settings"));
+t("/settings by an admin: replies with an Open settings link and remembers the admin", msgs().length === 1 && /Open settings/.test(JSON.stringify(msgs()[0].reply_markup)) && /startapp=cm_1/.test(JSON.stringify(msgs()[0].reply_markup)) && adminUpserts === 1);
+reset(); await processCommunityMessage(msg("/settings", { from: { id: 77 } }));
+t("/settings by a non-admin is refused", msgs().length === 1 && /Only chat admins/.test(msgs()[0].text) && !/Open settings/.test(JSON.stringify(msgs()[0])));
 console.log(fail ? `\n${fail} FAILED` : "\nall passed"); process.exit(fail ? 1 : 0);
