@@ -27,6 +27,7 @@ import { alertHistory } from "../lib/history.js";
 import { exportApi } from "../lib/export.js";
 import { confirmPayment } from "../lib/payments.js";
 import { runMaintenance } from "../lib/maintenance.js";
+import { communityApi } from "../lib/community_api.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -671,6 +672,7 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true, maintenance: await runMaintenance() });
     }
 
+    if (path.startsWith("/api/community")) return await communityApi(req, res, path);
     if (path === "/api/watchlist") return await watchlist(req, res);
     if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
     if (path === "/api/defi/overview") return await defiOverview(req, res);
