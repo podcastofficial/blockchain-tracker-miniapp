@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Back to Blockchain Tracker</title><meta name="theme-color" content="#05060d">
+<style>
+html,body{margin:0;height:100%;background:#05060d;color:#f1f3ff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+.c{max-width:360px}.i{font-size:44px;margin-bottom:8px}h1{font-size:18px;margin:0 0 8px}p{font-size:13px;line-height:1.7;color:#9aa0c8;margin:0 0 16px}
+a.b{display:inline-block;padding:13px 22px;border-radius:14px;font-weight:800;font-size:14px;text-decoration:none;color:#05060d;background:linear-gradient(135deg,#2de2e6,#6d7bff 55%,#b45cff)}
+</style></head><body><div class="c"><div class="i" id="i">⏳</div><h1 id="t">Finishing…</h1><p id="p">Please wait a moment.</p><div id="a"></div></div>
+<script>
+(async()=>{
+  const $=id=>document.getElementById(id);
+  // Phantom appends its answer to our redirect link; be tolerant if it used a second "?" instead of "&".
+  const q=new URLSearchParams(location.search.replace(/\?/g,"&").replace(/^&/,""));
+  const sid=q.get("sid")||"",kind=q.get("k")||"connect",fromTg=q.get("src")==="tg";
+  let back=q.get("back")||"/launch.html";if(!/^\/[A-Za-z0-9_\-./?=&%]*$/.test(back)||back.startsWith("//"))back="/launch.html";
+  const err=q.get("errorCode")||q.get("errorMessage");
+  const show=(i,t,p,btn)=>{$("i").textContent=i;$("t").textContent=t;$("p").textContent=p;$("a").innerHTML=btn||""};
+  if(!/^[a-f0-9]{32}$/.test(sid))return show("⚠️","Link not valid","Open the app again and retry from there.");
+  try{
+    const r=await fetch("/api/phantom/relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      sid,kind,errorCode:q.get("errorCode"),errorMessage:q.get("errorMessage"),
+      phantom_encryption_public_key:q.get("phantom_encryption_public_key"),nonce:q.get("nonce"),data:q.get("data")})});
+    const j=await r.json().catch(()=>({}));if(!j.ok)throw new Error("relay");
+  }catch{return show("⚠️","Could not hand the result back","Check your internet and try again from the app.")}
+  let tg=null;if(fromTg){try{tg=(await (await fetch("/api/phantom/config")).json()).tgLink}catch{}}
+  const done=err?"Cancelled":(kind==="sign"?"Transaction sent":"Wallet connected");
+  if(tg){
+    show(err?"↩️":"✅",done,"Going back to Telegram…",'<a class="b" href="'+tg+'">Open Telegram</a>');
+    setTimeout(()=>{location.href=tg},500);
+  }else if(fromTg){
+    show(err?"↩️":"✅",done,"Now switch back to Telegram — the app will pick it up automatically.");
+  }else{
+    show(err?"↩️":"✅",done,"Returning to the app…",'<a class="b" href="'+back+'">Continue</a>');
+    setTimeout(()=>{location.replace(back)},500);
+  }
+})();
+</script></body></html>

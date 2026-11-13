@@ -90,3 +90,20 @@ Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpa
 - Mini App: **Community Monitor** page (sidebar + dashboard card): your communities, Overview (stats, 24 h chart), Settings, Addresses (filter, search, remove), Activity (audit).
 - Bot: `/settings` (admins) replies with an “Open settings” button (`?startapp=cm_<id>`) and registers the sender as an admin so the community shows up for them.
 - Tests: `node scripts/test-community-api.mjs` (authorization, validation, scoping) and `node scripts/test-community-ui.mjs` (page script against a stub DOM). Both need `npm install` first for `pg`; the UI test does not.
+
+## Launchpad v2: Phantom deeplink wallet + full coin pages
+**Wallet (no more "open the whole app inside Phantom")**: `assets/phantom-link.js` + `phantom-return.html` + `lib/phantom.js`.
+Connect and every signature happen only inside the Phantom APP: Mini App -> Phantom (approve) -> `phantom-return.html` -> back to Telegram. Phantom's answer is NaCl-encrypted; `/api/phantom/relay` only carries ciphertext (15 min, read once). Inside Phantom's own browser the old injected-wallet path still works.
+- Env (optional, already used elsewhere): `BOT_USERNAME`, `MINIAPP_SHORT_NAME` (or one `TG_MINIAPP_LINK=https://t.me/<bot>/<app>`) = where the user lands after Phantom.
+- Table `phantom_relay` is created automatically (`db/phantom_relay.sql` for reference).
+- Phantom deeplinks are long URLs: Android is fine; iOS may fail on very large transactions.
+
+**Coin page** (tap any coin in Explore): `lib/tokenview.js` -> `/api/token/*`
+- Chart (candles, GeckoTerminal) + DexScreener fallback, Trades, Top holders, Order book (depth), Info, Buy / Sell.
+- Solana coins: swaps via Jupiter (quote -> unsigned tx -> Phantom signs). Set **`JUPITER_API_KEY`** (free at portal.jup.ag). Without a key the keyless `lite-api.jup.ag` host is used, which Jupiter is phasing out. Override with `JUPITER_API_BASE`.
+- BSC / ETH / Base / etc: Buy / Sell opens the existing `swap.html` (LI.FI + WalletConnect, needs `WALLETCONNECT_PROJECT_ID`).
+- Top holders: Solana from RPC (use a private `SOLANA_RPC_URL`). EVM: holder count + distribution from GeckoTerminal; the full list needs `MORALIS_API_KEY`.
+- "Order book": DEX pools have no order book. The tab shows price impact per trade size (real Jupiter quotes on Solana, a liquidity estimate elsewhere).
+- GeckoTerminal's free API is rate limited (~30 calls/min per IP); everything is cached and falls back to the last good copy.
+
+**Fix for `CONFIG_NOT_FOUND_ON_THIS_NETWORK`**: `DBC_CONFIG_KEY` does not exist on the network `SOLANA_RPC_URL` points to (typically the key was made on devnet by `npm run launch:config` but the RPC is mainnet, or the other way round). `GET /api/launch/config` now returns `configOk` and `cluster` so you can see it. Either create the config on mainnet (`SOLANA_RPC_URL=<mainnet rpc> THRESHOLD_SOL=85 npm run launch:config`, costs a little real SOL) and put the new key in `DBC_CONFIG_KEY`, or set `SOLANA_RPC_URL` to devnet and use Phantom in devnet/testnet mode.

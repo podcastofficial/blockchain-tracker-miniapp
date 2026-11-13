@@ -4,6 +4,9 @@
 <title>Launchpad · Blockchain Tracker</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/tweetnacl@1.0.3/nacl-fast.min.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/assets/phantom-link.js"></script>
 <style>
 :root{--ink:#1e2a52;--mut:#6b7691;--line:#d5dcf0;--bg:#f3f5fc;--grad:linear-gradient(135deg,#2457ff,#7c3aed);--up:#10b981;--dn:#ef4444}
 *{box-sizing:border-box}html,body{margin:0;background:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
@@ -35,20 +38,62 @@ iframe{width:100%;height:340px;border:0;border-radius:14px;margin-bottom:10px;ba
 .bdg{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:#e3e9ff;color:#2457ff;vertical-align:middle;margin-left:4px}
 .up{color:var(--up);font-weight:700}.dn{color:var(--dn);font-weight:700}
 .empty{padding:30px 10px;text-align:center;color:var(--mut);font-size:13px;line-height:1.7}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
+.tile{background:var(--bg);border-radius:12px;padding:9px 11px}.tile small{display:block;font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}.tile b{font-size:14px}
+.price{display:flex;align-items:baseline;gap:10px;margin:10px 2px 0}.price b{font-size:24px}
+.dtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:12px 0 8px}.dtabs button{flex:none;padding:8px 13px;border:1.5px solid var(--line);background:transparent;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;color:var(--ink);font-family:inherit}
+.dtabs button.on{background:var(--grad);color:#fff;border-color:transparent}
+#chart{height:300px;width:100%;margin-bottom:6px}
+.tbl{font-size:12px}.tbl .th,.tbl .tr{display:grid;gap:6px;padding:8px 4px;border-bottom:1px solid var(--line);align-items:center}
+.tbl .th{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--mut)}
+.tbl.tr5 .th,.tbl.tr5 .tr{grid-template-columns:.9fr .7fr .9fr 1.3fr 1fr}.tbl.hd .th,.tbl.hd .tr{grid-template-columns:.4fr 1.6fr 1.4fr}.tbl.dp .th,.tbl.dp .tr{grid-template-columns:1fr 1fr 1fr}
+.tbl .tr[data-u]:not([data-u=""]){cursor:pointer}
+.hb{height:5px;background:var(--line);border-radius:5px;overflow:hidden;margin-top:4px}.hb i{display:block;height:100%;background:var(--grad)}
+.sub{font-size:11px;color:var(--mut);line-height:1.6;margin:8px 2px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:11px;overflow-wrap:anywhere}
+.warn{background:#ff5d7a1f;border:1px solid #ff5d7a66;color:var(--ink);border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.6;margin-bottom:10px}
+#toast{position:fixed;left:12px;right:12px;bottom:18px;z-index:50;background:#151a3a;color:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:13px;display:none;overflow-wrap:anywhere}
 </style><meta name="theme-color" content="#05060d"><link rel="icon" type="image/png" href="/assets/favicon-64.png"><link rel="apple-touch-icon" href="/assets/logo-192.png"><link rel="stylesheet" href="/assets/theme-sub.css"><script defer src="/assets/fx3d.js"></script></head>
 <body>
 <div id="bar"><button class="btn" id="back" type="button">← Back</button><img class="bar-logo" src="/assets/logo-96.png" alt="Multi Blockchain Tracker" width="30" height="30"><b>🚀 Launchpad</b><button class="btn" id="wbtn" type="button">Connect wallet</button></div>
 <div class="wrap" id="app"></div>
+<div id="toast"></div>
 
 <script>
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 const tg=window.Telegram&&Telegram.WebApp;
 try{if(tg){tg.ready();tg.expand()}}catch{}
+const PL=window.PhantomLink;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const short=a=>a?a.slice(0,4)+"…"+a.slice(-4):"";
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const api=async(p,o)=>{const r=await fetch(p,{credentials:"include",headers:{"Content-Type":"application/json"},...o});let j={};try{j=await r.json()}catch{}return{status:r.status,...j}};
-let wallet=null,cfg={},view=qs.get("tab")==="create"?"create":"explore",src="all",cur=null,side="buy",img=null;
+let wallet=PL.wallet(),cfg={},view=qs.get("tab")==="create"?"create":"explore",src="all",coin=null,ov=null,side="buy",img=null,tab="chart",tf="15m",lastItems=[],chartSt=null,bal={sol:0,token:0};
+
+/* ---- small UI helpers ---- */
+let toastT;const toast=m=>{const e=$("toast");e.textContent=m;e.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>e.style.display="none",5000)};
+const setStatus=h=>{const e=$("status");if(e)e.innerHTML=h;else{const d=document.createElement("div");d.innerHTML=h;toast(d.textContent)}};
+const red=m=>'<span style="color:var(--dn)">'+esc(m)+'</span>';
+const ERR={LOGIN_REQUIRED:"Please log in again (open the app from Telegram).",JOIN_REQUIRED:"Join our channel and group first (see the main app).",
+  CONFIG_NOT_FOUND_ON_THIS_NETWORK:"Coin creation is temporarily unavailable (launchpad setup is not finished).",LAUNCHPAD_NOT_CONFIGURED:"Coin creation is not configured yet.",
+  NO_ROUTE:"No swap route found. Liquidity is too low or the coin is not tradable yet.",INVALID_AMOUNT:"Enter a valid amount.",DAILY_LAUNCH_LIMIT:"Daily launch limit reached. Try again tomorrow.",
+  IMAGE_TOO_LARGE:"Logo is too large.",RATE_LIMITED:"Too many requests. Wait a minute and retry.",TOKEN_NOT_FOUND:"Coin not found."};
+const friendly=e=>ERR[e]||String(e||"Something went wrong").slice(0,120);
+
+/* ---- formatting ---- */
+const money=n=>n==null?"—":n>=1e9?"$"+(n/1e9).toFixed(2)+"B":n>=1e6?"$"+(n/1e6).toFixed(2)+"M":n>=1e3?"$"+(n/1e3).toFixed(1)+"K":"$"+n.toFixed(n<10?2:0);
+const price=p=>p==null?"—":"$"+Number(p).toLocaleString("en-US",{maximumSignificantDigits:4,maximumFractionDigits:12});
+const chg=c=>c==null?"":'<span class="'+(c>=0?"up":"dn")+'">'+(c>=0?"+":"")+c.toFixed(2)+"%</span>";
+const age=t=>{if(!t)return"";const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?"just now":m<60?m+"m ago":m<1440?Math.floor(m/60)+"h ago":Math.floor(m/1440)+"d ago"};
+const amt=n=>n==null?"—":Number(n).toLocaleString("en-US",{maximumSignificantDigits:4});
+const NETS=new Set(["solana","bsc","ethereum","eth","base","arbitrum","polygon","polygon_pos","avalanche","avax","optimism"]);
+const DSCHAIN={eth:"ethereum",polygon_pos:"polygon",avax:"avalanche"};
+const EXP={solana:"https://solscan.io",bsc:"https://bscscan.com",eth:"https://etherscan.io",base:"https://basescan.org",arbitrum:"https://arbiscan.io",polygon_pos:"https://polygonscan.com",optimism:"https://optimistic.etherscan.io",avax:"https://snowtrace.io"};
+const expUrl=(chain,kind,v)=>{const b=EXP[chain];if(!b||!v)return"";return b+(kind==="tx"?"/tx/":kind==="token"?"/token/":chain==="solana"?"/account/":"/address/")+v};
+function openExt(u){if(!/^https:\/\//i.test(u))return;try{tg&&tg.openLink?tg.openLink(u):window.open(u,"_blank","noopener")}catch{window.open(u,"_blank","noopener")}}
+const bindLinks=root=>(root||document).querySelectorAll("[data-u]").forEach(e=>{if(e.dataset.u)e.onclick=ev=>{ev.stopPropagation();openExt(e.dataset.u)}});
 
 /* ---- login (Telegram) ---- */
 async function login(){
@@ -61,43 +106,44 @@ function askCode(){return new Promise(ok=>{
   $("lcb").onclick=async()=>{$("lcm").textContent="";const r=await api("/api/auth/code",{method:"POST",body:JSON.stringify({code:$("lc").value})});
     if(r.ok){setStatus("Logged in ✔");ok(true)}else $("lcm").textContent="Wrong or expired code"}})}
 
-/* ---- wallet (Phantom) ---- */
-const provider=()=>window.phantom?.solana?.isPhantom?window.phantom.solana:(window.solana?.isPhantom?window.solana:null);
+/* ---- wallet: Phantom APP via deeplink (connect only in Phantom, then back here) ---- */
+const setWalletBtn=()=>{$("wbtn").textContent=wallet?short(wallet):"Connect wallet"};
 async function connect(){
-  const p=provider();
-  if(!p){
-    const u="https://phantom.app/ul/browse/"+encodeURIComponent(location.href)+"?ref="+encodeURIComponent(location.origin);
-    $("status")&&($("status").innerHTML='Phantom not found here. <a href="'+u+'" target="_blank">Open this page inside Phantom</a> (wallet connect does not work in Telegram\'s built-in browser).');
-    if(tg)tg.openLink(u);else window.open(u,"_blank");return;
-  }
-  const r=await p.connect();wallet=r.publicKey.toString();$("wbtn").textContent=short(wallet);
-  if(view==="token")loadBal();
+  if(wallet)return wallet;
+  setStatus(PL.mode()==="deeplink"?"Opening Phantom… approve the connection there, then come back to this app.":"Connecting…");
+  wallet=await PL.connect();setWalletBtn();setStatus("Wallet connected ✔");if(view==="token")loadBal();return wallet;
 }
-$("wbtn").onclick=connect;
-async function signSend(b64){
-  const p=provider();if(!p||!wallet)throw new Error("Connect wallet first");
-  const tx=solanaWeb3.Transaction.from(Uint8Array.from(atob(b64),c=>c.charCodeAt(0)));
-  const r=await p.signAndSendTransaction(tx);return r.signature;
-}
-const setStatus=h=>{const e=$("status");if(e)e.innerHTML=h};
+$("wbtn").onclick=async()=>{
+  if(wallet){if(confirm("Disconnect "+short(wallet)+"?")){PL.disconnect();wallet=null;setWalletBtn();toast("Wallet disconnected")}return}
+  try{await connect()}catch(e){toast(e.message||String(e))}
+};
+setWalletBtn();
+
+// If Telegram reloaded this page while the user was in Phantom, finish what was started.
+PL.resume(async r=>{
+  try{
+    if(r.error)return toast(r.error);
+    if(r.kind==="connect"){wallet=r.wallet;setWalletBtn();return toast("Wallet connected ✔")}
+    const c=r.ctx||{};
+    if(c.type==="create")await afterCreate(c.id,r.signature,c.mint,c.buy||0);
+    else if(c.type==="swap"&&c.coin){await openDetail(c.coin);txDone(r.signature)}
+  }catch(e){toast(friendly(e.message))}
+});
 
 /* ---- views ---- */
 function shell(inner){$("app").innerHTML='<div class="tabs"><button data-v="explore" class="'+(view==="explore"?"on":"")+'">Explore</button><button data-v="create" class="'+(view==="create"?"on":"")+'">Create coin</button></div>'+inner;
-  document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{view=b.dataset.v;cur=null;render()})}
+  document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{view=b.dataset.v;coin=null;render()})}
 
 const SRC=[["all","🌐 All"],["pumpfun","💊 Pump.fun"],["pancakeswap","🥞 PancakeSwap"],["solana","◎ Solana"],["dexscreener","📊 DexScreener"],["coingecko","🦎 CoinGecko"],["new","🆕 Created here"],["graduating","🎓 Graduating"]];
 const LBL={pumpfun:"Pump.fun",pancakeswap:"PancakeSwap",solana:"Solana",dexscreener:"DexScreener",coingecko:"CoinGecko"};
-const money=n=>n==null?"—":n>=1e9?"$"+(n/1e9).toFixed(2)+"B":n>=1e6?"$"+(n/1e6).toFixed(2)+"M":n>=1e3?"$"+(n/1e3).toFixed(1)+"K":"$"+n.toFixed(0);
-const age=t=>{if(!t)return"";const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?"just now":m<60?m+"m ago":m<1440?Math.floor(m/60)+"h ago":Math.floor(m/1440)+"d ago"};
-function extCard(t){
-  const ch=t.change24,chg=ch==null?"":' · <span class="'+(ch>=0?"up":"dn")+'">'+(ch>=0?"+":"")+ch.toFixed(1)+'%</span>';
+function extCard(t,i){
+  const ch=t.change24,c=ch==null?"":' · <span class="'+(ch>=0?"up":"dn")+'">'+(ch>=0?"+":"")+ch.toFixed(1)+'%</span>';
   const meta=[t.marketCap!=null?"MC "+money(t.marketCap):"",t.liquidity!=null?"Liq "+money(t.liquidity):"",t.volume24!=null?"Vol "+money(t.volume24):""].filter(Boolean).join(" · ");
-  return '<div class="card" data-u="'+esc(t.url||"")+'">'+(t.image?'<img src="'+esc(t.image)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="ph"></div>')+
+  return '<div class="card" data-i="'+i+'">'+(t.image?'<img src="'+esc(t.image)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="ph"></div>')+
     '<div style="flex:1;min-width:0"><div class="t">'+esc(t.name||"?")+' <span style="color:var(--mut);font-weight:600">$'+esc(t.symbol)+'</span><span class="bdg">'+esc(LBL[t.src]||t.src)+'</span></div>'+
     '<div class="s" style="-webkit-line-clamp:1">'+esc(meta||t.chain)+'</div>'+
-    '<div style="font-size:11px;color:var(--mut);margin-top:4px">'+esc(t.chain)+(t.created?" · "+age(t.created):"")+chg+'</div></div></div>';
+    '<div style="font-size:11px;color:var(--mut);margin-top:4px">'+esc(t.chain)+(t.created?" · "+age(t.created):"")+c+'</div></div></div>';
 }
-function openExt(u){if(!/^https:\/\//i.test(u))return;try{tg&&tg.openLink?tg.openLink(u):window.open(u,"_blank","noopener")}catch{window.open(u,"_blank","noopener")}}
 async function loadList(){
   const box=$("list");if(!box||view!=="explore")return;
   const mine=src==="new"||src==="graduating";
@@ -105,24 +151,29 @@ async function loadList(){
   if(!$("list")||view!=="explore")return;
   if(!r.ok){box.innerHTML='<div class="empty">Could not load coins right now.<br>Tap the source again to retry.</div>';return}
   if(mine){
+    lastItems=[];
     box.innerHTML=!r.items.length?'<div class="empty">No coins created here yet.<br>Be the first: tap <b>Create coin</b>.</div>':
-      r.items.map(t=>'<div class="card" data-m="'+t.mint+'"><img src="'+t.image+'" alt=""><div style="flex:1;min-width:0"><div class="t">'+esc(t.name)+' <span style="color:var(--mut);font-weight:600">$'+esc(t.symbol)+'</span></div><div class="s">'+esc(t.description||"")+'</div><div class="bar"><i style="width:'+Math.round((t.progress||0)*100)+'%"></i></div><div style="font-size:11px;color:var(--mut);margin-top:4px">'+(t.progress==null?"—":Math.round(t.progress*100)+"% to graduation")+' · by '+short(t.creator)+'</div></div></div>').join("");
+      r.items.map(t=>'<div class="card" data-m="'+esc(t.mint)+'"><img src="'+esc(t.image)+'" alt=""><div style="flex:1;min-width:0"><div class="t">'+esc(t.name)+' <span style="color:var(--mut);font-weight:600">$'+esc(t.symbol)+'</span></div><div class="s">'+esc(t.description||"")+'</div><div class="bar"><i style="width:'+Math.round((t.progress||0)*100)+'%"></i></div><div style="font-size:11px;color:var(--mut);margin-top:4px">'+(t.progress==null?"—":Math.round(t.progress*100)+"% to graduation")+' · by '+short(t.creator)+'</div></div></div>').join("");
   }else{
+    lastItems=r.items||[];
     const warn=r.failed&&r.failed.length?'<div class="note" style="padding:0 0 8px">Some sources are slow right now: '+r.failed.map(x=>LBL[x]||x).join(", ")+'</div>':"";
-    box.innerHTML=warn+(r.items.length?r.items.map(extCard).join(""):'<div class="empty">No new coins found for this source.</div>');
+    box.innerHTML=warn+(lastItems.length?lastItems.map(extCard).join(""):'<div class="empty">No new coins found for this source.</div>');
   }
-  box.querySelectorAll(".card").forEach(c=>c.onclick=()=>c.dataset.m?openToken(c.dataset.m):openExt(c.dataset.u));
+  box.querySelectorAll(".card").forEach(c=>c.onclick=()=>c.dataset.m?openToken(c.dataset.m):openCoin(lastItems[Number(c.dataset.i)]));
 }
 function renderExplore(){
-  shell('<div class="chips src">'+SRC.map(([k,l])=>'<button data-s="'+k+'" class="'+(src===k?"on":"")+'">'+l+'</button>').join("")+'</div><div id="list"><div class="empty">Loading…</div></div><p class="note">Coins from outside sources are shown for discovery only: tap a coin to open it on its own site. New coins are extremely risky, so always check liquidity and the contract before you buy.</p>');
+  shell('<div class="chips src">'+SRC.map(([k,l])=>'<button data-s="'+k+'" class="'+(src===k?"on":"")+'">'+l+'</button>').join("")+'</div><div id="list"><div class="empty">Loading…</div></div><p class="note">Tap any coin to see its chart, trades, top holders and trade it right here. New coins are extremely risky, so always check liquidity and the holders before you buy.</p>');
   document.querySelectorAll(".chips.src button").forEach(b=>b.onclick=()=>{src=b.dataset.s;renderExplore()});
   loadList();
 }
-setInterval(()=>{if(view==="explore")loadList()},45000);
+setInterval(()=>{if(view==="explore"&&!document.hidden)loadList()},45000);
 
+/* ---- create coin ---- */
 function renderCreate(){
   if(!cfg.enabled)return shell('<div class="empty">Coin creation is not configured yet.<br>Admin: set <b>DBC_CONFIG_KEY</b> and redeploy.</div>');
-  shell('<div class="fld"><label>Logo (square image)</label><input id="f_img" type="file" accept="image/*"><img id="prev" style="display:none;width:80px;height:80px;border-radius:14px;margin-top:8px;object-fit:cover"></div>'+
+  const bad=cfg.configOk===false;
+  shell((bad?'<div class="warn">Coin creation is temporarily unavailable: the launchpad setup is not finished'+(cfg.cluster?' on this network ('+esc(cfg.cluster)+')':'')+'. Please try again later.</div>':'')+
+  '<div class="fld"><label>Logo (square image)</label><input id="f_img" type="file" accept="image/*"><img id="prev" style="display:none;width:80px;height:80px;border-radius:14px;margin-top:8px;object-fit:cover"></div>'+
   '<div class="fld"><label>Name</label><input id="f_name" maxlength="32" placeholder="My Coin"></div>'+
   '<div class="fld"><label>Ticker</label><input id="f_sym" maxlength="10" placeholder="MYCOIN" style="text-transform:uppercase"></div>'+
   '<div class="fld"><label>Description</label><textarea id="f_desc" rows="3" maxlength="500" placeholder="What is this coin about?"></textarea></div>'+
@@ -130,8 +181,8 @@ function renderCreate(){
   '<div class="fld"><label>Telegram (optional)</label><input id="f_tgl" placeholder="https://t.me/..."></div>'+
   '<div class="fld"><label>Website (optional)</label><input id="f_web" placeholder="https://..."></div>'+
   '<div class="fld"><label>First buy in SOL (optional, done right after launch)</label><input id="f_buy" type="number" min="0" step="any" placeholder="0"></div>'+
-  '<button class="main" id="go">Create coin</button><div id="status"></div>'+
-  '<p class="note">Creating a coin costs a small amount of SOL in network fees. You sign inside your own wallet; this app never holds your keys. Launching tokens may be regulated where you live — you are responsible for what you launch.</p>');
+  '<button class="main" id="go"'+(bad?" disabled":"")+'>Create coin</button><div id="status"></div>'+
+  '<p class="note">Creating a coin costs a small amount of SOL in network fees. Your wallet only opens in the Phantom app to approve; this app never holds your keys. Launching tokens may be regulated where you live — you are responsible for what you launch.</p>');
   $("f_img").onchange=async e=>{const f=e.target.files[0];if(!f)return;img=await resize(f);$("prev").src=img;$("prev").style.display="block"};
   $("go").onclick=create;
 }
@@ -143,64 +194,212 @@ async function create(){
   if(!img)return setStatus("Please add a logo.");if(g("f_name").length<2||g("f_sym").length<2)return setStatus("Enter a name and ticker.");
   $("go").disabled=true;
   try{
-    if(!wallet)await connect();if(!wallet)throw new Error("Connect wallet first");
+    if(!wallet)await connect();
     if(!(await login()))throw new Error("Login required.");
     setStatus("Preparing transaction…");
     const p=await api("/api/launch/prepare",{method:"POST",body:JSON.stringify({wallet,image:img,name:g("f_name"),symbol:g("f_sym"),description:g("f_desc"),twitter:g("f_tw"),telegram:g("f_tgl"),website:g("f_web"),buySol:g("f_buy")||0})});
-    if(!p.ok)throw new Error(p.error||"PREPARE_FAILED");
-    setStatus("Approve the transaction in your wallet…");
-    const sig=await signSend(p.tx);
-    setStatus("Sent. Waiting for confirmation…");
-    for(let i=0;i<40;i++){const c=await api("/api/launch/confirm",{method:"POST",body:JSON.stringify({id:p.id,signature:sig})});
-      if(c.ok&&c.status==="live"){const first=Number(g("f_buy")||0);await openToken(p.mint);if(first>0){$("amt").value=String(first);quote();setStatus("Your coin is live 🎉 Tap <b>Buy</b> to make your first purchase.")}return}if(!c.ok)throw new Error(c.error);await new Promise(r=>setTimeout(r,2500))}
-    throw new Error("Confirmation timed out. Check your wallet; the coin appears once the transaction lands.");
-  }catch(e){setStatus('<span style="color:var(--dn)">'+esc(e.message||e)+'</span>');$("go").disabled=false}
+    if(!p.ok)throw new Error(friendly(p.error||"PREPARE_FAILED"));
+    const first=Number(g("f_buy")||0);
+    setStatus(PL.mode()==="deeplink"?"Opening Phantom… approve there, then come back to this app.":"Approve the transaction in your wallet…");
+    const sig=await PL.signAndSend(p.tx,{type:"create",id:p.id,mint:p.mint,buy:first});
+    await afterCreate(p.id,sig,p.mint,first);
+  }catch(e){setStatus(red(friendly(e.message||e)));if($("go"))$("go").disabled=false}
+}
+async function afterCreate(id,sig,mint,first){
+  setStatus("Sent. Waiting for confirmation…");
+  for(let i=0;i<40;i++){
+    const c=await api("/api/launch/confirm",{method:"POST",body:JSON.stringify({id,signature:sig})});
+    if(c.ok&&c.status==="live"){await openToken(mint);if(first>0&&$("amt")){$("amt").value=String(first);quote();setStatus("Your coin is live 🎉 Tap <b>Buy</b> to make your first purchase.")}else toast("Your coin is live 🎉");return}
+    if(!c.ok)throw new Error(c.error||"CONFIRM_FAILED");
+    await sleep(2500);
+  }
+  throw new Error("Confirmation timed out. Check your wallet; the coin appears once the transaction lands.");
 }
 
-async function openToken(mint){
-  view="token";const r=await api("/api/launch/token?mint="+encodeURIComponent(mint));
+/* ---- coin detail (works for coins created here AND coins from Pump.fun / PancakeSwap / Solana / DexScreener) ---- */
+async function openToken(mint){            // coin created on this launchpad (bonding curve, traded through our own endpoints)
+  const r=await api("/api/launch/token?mint="+encodeURIComponent(mint));
   if(!r.ok){view="explore";return render()}
-  cur=r.token;const t=cur;
+  const t=r.token;
+  return openDetail({mode:"dbc",chain:"solana",address:t.mint,pair:t.pool,name:t.name,symbol:t.symbol,image:t.image,desc:t.description,progress:t.progress,
+    twitter:t.twitter,telegram:t.telegram,website:t.website});
+}
+function openCoin(it){
+  if(!it)return;
+  if(!NETS.has(String(it.chain).toLowerCase())||!it.address){toast("No on-chain market data for this coin. Opening its page…");return openExt(it.url||"")}
+  return openDetail({mode:"auto",chain:it.chain,address:it.address,pair:it.pair,name:it.name,symbol:it.symbol,image:it.image,url:it.url,src:it.src});
+}
+const slim=c=>({mode:c.mode,chain:c.chain,address:c.address,pair:c.pair,name:c.name,symbol:c.symbol,image:c.image});
+
+async function openDetail(c){
+  view="token";coin=c;ov=null;tab="chart";chartSt=null;
+  $("app").innerHTML='<button class="btn" id="tb" style="margin-bottom:10px">← All coins</button><div class="card" style="cursor:default">'+(c.image?'<img src="'+esc(c.image)+'" alt="">':'<div class="ph"></div>')+
+    '<div><div class="t">'+esc(c.name||"")+' <span style="color:var(--mut);font-weight:600">$'+esc(c.symbol||"")+'</span></div><div class="s">Loading market data…</div></div></div>';
+  $("tb").onclick=()=>{view="explore";coin=null;render()};
+  const r=await api("/api/token/overview?"+new URLSearchParams({chain:c.chain,address:c.address||"",pair:c.pair||""}));
+  if(view!=="token"||coin!==c)return;                                  // user already went elsewhere
+  if(r.ok){ov=r;c.pool=r.pool;c.address=c.address||r.address;c.net=r.chain;
+    if(c.mode==="auto")c.mode=r.trade.kind==="jupiter"?"jup":r.trade.kind==="lifi"?"lifi":"none";}
+  else{
+    if(c.mode!=="dbc"){c.mode="none";}
+    c.pool=c.pair;c.net=c.chain==="ethereum"?"eth":c.chain;
+  }
+  draw(r.ok?null:r.error);
+}
+
+function draw(err){
+  const c=coin,o=ov,sym=(o&&o.base.symbol)||c.symbol||"",nm=(o&&o.base.name)||c.name||"",im=(o&&o.base.image)||c.image;
+  const links=[];const inf=(o&&o.info)||{};
+  const tw=c.twitter||inf.twitter,tl=c.telegram||inf.telegram,web=c.website||(inf.websites&&inf.websites[0]);
+  if(tw)links.push('<a data-u="'+esc(tw)+'">X</a>');if(tl)links.push('<a data-u="'+esc(tl)+'">Telegram</a>');if(web)links.push('<a data-u="'+esc(web)+'">Website</a>');
+  const ex=expUrl(c.net,"token",c.address);if(ex)links.push('<a data-u="'+esc(ex)+'">Explorer</a>');
+  const tx=o?o.txns.h24:null;
   $("app").innerHTML='<button class="btn" id="tb" style="margin-bottom:10px">← All coins</button>'+
-  '<div class="card" style="cursor:default"><img src="'+t.image+'"><div><div class="t">'+esc(t.name)+' <span style="color:var(--mut);font-weight:600">$'+esc(t.symbol)+'</span></div><div class="s">'+esc(t.description||"")+'</div></div></div>'+
-  '<div class="bar" style="margin:0 0 4px"><i style="width:'+Math.round((t.progress||0)*100)+'%"></i></div><div style="font-size:12px;color:var(--mut);margin-bottom:10px">'+(t.progress==null?"—":Math.round(t.progress*100)+"% to graduation")+'</div>'+
-  '<iframe src="https://dexscreener.com/solana/'+encodeURIComponent(t.pool)+'?embed=1&theme=light&trades=0&info=0" loading="lazy"></iframe>'+
-  '<div class="links">'+(t.twitter?'<a href="'+esc(t.twitter)+'" target="_blank" rel="noopener">X</a>':'')+(t.telegram?'<a href="'+esc(t.telegram)+'" target="_blank" rel="noopener">Telegram</a>':'')+(t.website?'<a href="'+esc(t.website)+'" target="_blank" rel="noopener">Website</a>':'')+'<a href="https://solscan.io/token/'+t.mint+'" target="_blank" rel="noopener">Solscan</a></div>'+
-  '<div style="height:12px"></div><div class="seg"><button class="buy on" data-sd="buy">Buy</button><button class="sell" data-sd="sell">Sell</button></div>'+
-  '<div class="box"><small id="amtLbl">Amount in SOL</small><input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0"><div class="chips" id="quick"></div></div>'+
-  '<div id="qt" style="font-size:12px;color:#3a4566;margin:0 2px 10px">Enter an amount.</div><div id="bal" style="font-size:12px;color:var(--mut);margin:0 2px 10px"></div>'+
-  '<button class="main buy" id="go">Buy</button><div id="status"></div><p class="note">Price comes from the on-chain bonding curve. Memecoins are extremely risky: most go to zero. Only use money you can afford to lose.</p>';
-  $("tb").onclick=()=>{view="explore";cur=null;render()};
-  document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>setSide(b.dataset.sd));
+  '<div class="card" style="cursor:default">'+(im?'<img src="'+esc(im)+'" alt="">':'<div class="ph"></div>')+'<div style="min-width:0"><div class="t">'+esc(nm)+' <span style="color:var(--mut);font-weight:600">$'+esc(sym)+'</span>'+(c.src?'<span class="bdg">'+esc(LBL[c.src]||c.src)+'</span>':'')+(o&&o.dex?'<span class="bdg">'+esc(o.dex)+'</span>':'')+'</div><div class="s">'+esc(c.desc||inf.description||"")+'</div></div></div>'+
+  (o?'<div class="price"><b>'+price(o.priceUsd)+'</b>'+chg(o.change.h24)+'<span style="font-size:11px;color:var(--mut)">24h</span></div>'+
+    '<div style="font-size:12px;margin:2px 2px 0;color:var(--mut)">5m '+chg(o.change.m5)+' · 1h '+chg(o.change.h1)+' · 6h '+chg(o.change.h6)+'</div>':
+    '<div class="sub">'+(err?"Live market data is not available for this coin yet (it can take a few minutes after launch).":"")+'</div>')+
+  (c.mode==="dbc"&&c.progress!=null?'<div class="bar" style="margin:10px 0 4px"><i style="width:'+Math.round((c.progress||0)*100)+'%"></i></div><div style="font-size:12px;color:var(--mut)">'+Math.round(c.progress*100)+'% to graduation</div>':'')+
+  (o?'<div class="stats"><div class="tile"><small>Market cap</small><b>'+money(o.marketCap??o.fdv)+'</b></div><div class="tile"><small>Liquidity</small><b>'+money(o.liquidity)+'</b></div>'+
+    '<div class="tile"><small>Volume 24h</small><b>'+money(o.volume.h24)+'</b></div><div class="tile"><small>Buys / Sells 24h</small><b><span class="up">'+(tx?tx.buys:0)+'</span> / <span class="dn">'+(tx?tx.sells:0)+'</span></b></div></div>':'')+
+  '<div class="dtabs">'+[["chart","📈 Chart"],["trades","🔁 Trades"],["holders","👥 Holders"],["depth","📚 Order book"],["info","ℹ️ Info"]].map(([k,l])=>'<button data-t="'+k+'" class="'+(tab===k?"on":"")+'">'+l+'</button>').join("")+'</div>'+
+  '<div id="tp"></div><div class="links" style="margin:10px 0">'+links.join(" ")+'</div>'+tradeBox()+'<div id="status"></div>'+
+  '<p class="note">Prices and trades come from public on-chain market data and can be a few seconds late. Memecoins are extremely risky: most go to zero. Only use money you can afford to lose.</p>';
+  $("tb").onclick=()=>{view="explore";coin=null;render()};
+  document.querySelectorAll(".dtabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;chartSt=null;document.querySelectorAll(".dtabs button").forEach(x=>x.classList.toggle("on",x===b));loadTab()});
+  document.querySelectorAll(".links a").forEach(a=>a.style.cssText="font-size:12px;font-weight:700;color:#6d9bff;margin-right:12px;cursor:pointer");bindLinks($("app"));
+  bindTrade();loadTab();
+}
+
+/* ---- tab panels ---- */
+const chainQ=()=>({chain:coin.net||coin.chain,address:coin.address||"",pair:coin.pool||coin.pair||""});
+const dsFrame=()=>'<iframe src="https://dexscreener.com/'+encodeURIComponent(DSCHAIN[coin.net]||coin.net||coin.chain)+'/'+encodeURIComponent(coin.pool||coin.pair)+'?embed=1&theme=dark&trades=0&info=0" loading="lazy" style="height:340px"></iframe>';
+const empty=m=>'<div class="empty">'+m+'</div>';
+async function loadTab(){
+  const tp=$("tp");if(!tp||view!=="token")return;const mine=tab,c=coin;
+  if(!(c.pool||c.pair)&&mine!=="info"&&mine!=="holders"){tp.innerHTML=empty("No market data for this coin yet.");return}
+  try{
+    if(mine==="chart")return await loadChart();
+    if(mine==="trades"){const r=await api("/api/token/trades?"+new URLSearchParams(chainQ()));if(!ok(mine,c))return;tp.innerHTML=r.ok?tradesHtml(r.items):empty("Trades are not available right now.");bindLinks(tp)}
+    if(mine==="holders"){if(!tp.innerHTML||tp.dataset.t!==mine)tp.innerHTML=empty("Loading…");const r=await api("/api/token/holders?"+new URLSearchParams(chainQ()));if(!ok(mine,c))return;tp.dataset.t=mine;tp.innerHTML=r.ok?holdersHtml(r):empty("Holders are not available right now.");bindLinks(tp)}
+    if(mine==="depth"){tp.innerHTML=empty("Loading…");const r=await api("/api/token/depth?"+new URLSearchParams(chainQ()));if(!ok(mine,c))return;tp.innerHTML=r.ok?depthHtml(r):empty("Not available right now.")}
+    if(mine==="info"){tp.innerHTML=infoHtml();bindLinks(tp);const cp=$("cp");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(coin.address);toast("Address copied")}catch{toast(coin.address)}}}
+  }catch{if(ok(mine,c))tp.innerHTML=empty("Could not load. Try again.")}
+}
+const ok=(t,c)=>tab===t&&coin===c&&view==="token"&&$("tp");
+
+async function loadChart(){
+  const tp=$("tp"),c=coin;
+  if(!chartSt){
+    tp.innerHTML='<div class="chips src" id="tfs">'+["5m","15m","1h","4h","1d"].map(x=>'<button data-f="'+x+'" class="'+(tf===x?"on":"")+'">'+x+'</button>').join("")+'<button data-f="ds">DexScreener</button></div><div id="chart"></div><div id="cmsg"></div>';
+    document.querySelectorAll("#tfs button").forEach(b=>b.onclick=()=>{
+      if(b.dataset.f==="ds"){chartSt=null;$("tp").innerHTML='<div class="chips src"><button id="back2">← Candles</button></div>'+dsFrame();$("back2").onclick=()=>{chartSt=null;loadChart()};return}
+      tf=b.dataset.f;chartSt=null;loadChart()});
+  }
+  const r=await api("/api/token/ohlcv?"+new URLSearchParams({...chainQ(),tf}));
+  if(!ok("chart",c)||!$("chart"))return;
+  if(!r.ok||!r.candles||r.candles.length<2||!window.LightweightCharts){tp.innerHTML=dsFrame();return}
+  if(!chartSt){
+    const el=$("chart"),last=r.candles[r.candles.length-1].c,pr=last>=1?2:last>=.01?4:last>=1e-4?6:last>=1e-6?8:10;
+    const chart=LightweightCharts.createChart(el,{width:el.clientWidth,height:300,layout:{background:{color:"transparent"},textColor:"#9aa0c8"},
+      grid:{vertLines:{color:"rgba(130,140,200,.12)"},horzLines:{color:"rgba(130,140,200,.12)"}},rightPriceScale:{borderVisible:false},timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false}});
+    const candle=chart.addCandlestickSeries({upColor:"#2ee59d",downColor:"#ff5d7a",borderVisible:false,wickUpColor:"#2ee59d",wickDownColor:"#ff5d7a",priceFormat:{type:"price",precision:pr,minMove:Math.pow(10,-pr)}});
+    const vol=chart.addHistogramSeries({priceFormat:{type:"volume"},priceScaleId:""});vol.priceScale().applyOptions({scaleMargins:{top:.82,bottom:0}});
+    chartSt={chart,candle,vol};
+    window.addEventListener("resize",()=>{if(chartSt&&$("chart"))chartSt.chart.applyOptions({width:$("chart").clientWidth})});
+  }
+  chartSt.candle.setData(r.candles.map(k=>({time:k.t,open:k.o,high:k.h,low:k.l,close:k.c})));
+  chartSt.vol.setData(r.candles.map(k=>({time:k.t,value:k.v,color:k.c>=k.o?"rgba(46,229,157,.4)":"rgba(255,93,122,.4)"})));
+  if(!chartSt.fit){chartSt.chart.timeScale().fitContent();chartSt.fit=1}
+}
+function tradesHtml(items){
+  if(!items.length)return empty("No trades in the last 24h.");
+  return '<div class="tbl tr5"><div class="th"><span>Time</span><span>Type</span><span>USD</span><span>Price</span><span>Wallet</span></div>'+
+    items.map(x=>'<div class="tr" data-u="'+esc(expUrl(coin.net,"tx",x.tx))+'"><span>'+esc(age(x.t))+'</span><span class="'+(x.side==="buy"?"up":"dn")+'">'+(x.side==="buy"?"BUY":"SELL")+'</span><span>'+money(x.usd)+'</span><span>'+price(x.price)+'</span><span class="mono">'+esc(short(x.wallet))+'</span></div>').join("")+'</div>'+
+    '<div class="sub">Latest trades on the main pool. Tap a row to open the transaction.</div>';
+}
+function holdersHtml(r){
+  const s=r.summary||{},top10=r.list.slice(0,10).reduce((a,x)=>a+(x.pct||0),0);
+  const head='<div class="sub" style="margin-top:0">'+(s.count!=null?"<b>"+s.count.toLocaleString("en-US")+"</b> holders · ":"")+(r.list.length?"Top 10 hold <b>"+top10.toFixed(1)+"%</b>":(s.top10!=null?"Top 10 hold <b>"+s.top10+"%</b>":""))+'</div>';
+  if(!r.list.length)return head+empty(r.listUnavailable?"The full top-holders list for this network needs a data key (admin: set MORALIS_API_KEY).":"No holder data.")+(s.top10!=null?'<div class="sub">Top 10: '+s.top10+'% · next 20: '+(s.next20??"—")+'% · next 20: '+(s.next20b??"—")+'% · rest: '+(s.rest??"—")+'%</div>':'');
+  return head+'<div class="tbl hd"><div class="th"><span>#</span><span>Wallet</span><span>Share</span></div>'+
+    r.list.map((h,i)=>'<div class="tr" data-u="'+esc(expUrl(coin.net,"addr",h.address))+'"><span>'+(i+1)+'</span><span class="mono">'+esc(short(h.address))+(h.isPool?' <span class="bdg">pool/contract</span>':'')+(h.label?' <span class="bdg">'+esc(h.label)+'</span>':'')+'</span><span>'+(h.pct!=null?h.pct.toFixed(2)+"%":"—")+'<div class="hb"><i style="width:'+Math.min(100,h.pct||0)+'%"></i></div></span></div>').join("")+'</div>'+
+    '<div class="sub">Pool / bonding-curve / contract wallets can be in the list: they hold liquidity, not a trader. Check this before judging concentration.</div>';
+}
+function depthHtml(r){
+  if(!r.rows.length)return empty("No liquidity data for this coin.");
+  const imp=v=>v==null?"—":'<span class="'+(v>=5?"dn":v>=1?"":"up")+'">'+v.toFixed(2)+"%</span>";
+  const first=r.source==="jupiter"?"Buy with":"Trade size";
+  return '<div class="sub" style="margin-top:0">DEX coins trade against a liquidity pool, not an order book. This table shows how deep that pool is: the price impact (cost) of a trade of each size.</div>'+
+    '<div class="tbl dp"><div class="th"><span>'+first+'</span><span>Buy impact</span><span>Sell impact</span></div>'+r.rows.map(x=>'<div class="tr"><span>'+esc(x.label)+'</span><span>'+imp(x.buyImpact)+'</span><span>'+imp(x.sellImpact)+'</span></div>').join("")+'</div>'+
+    '<div class="sub">'+(r.source==="jupiter"?"Live route quotes (Jupiter). Sell = selling back the tokens that the buy would give you.":"Estimated from the pool's liquidity ("+money(r.liquidity)+"), constant-product model. Real impact can differ.")+'</div>';
+}
+function infoHtml(){
+  const o=ov,c=coin,i=(o&&o.info)||{},h=i.holders||{};
+  const row=(k,v)=>v?'<div class="tile" style="margin-bottom:8px"><small>'+k+'</small><b style="font-size:13px;font-weight:600;overflow-wrap:anywhere">'+v+'</b></div>':'';
+  return row("About",esc(c.desc||i.description||""))+
+    row("Token address",'<span class="mono">'+esc(c.address||"")+'</span> <button class="btn" id="cp" type="button" style="padding:4px 9px;margin-left:6px">Copy</button>')+
+    row("Main pool",o?'<span class="mono">'+esc(o.pool)+'</span>':"")+row("Pair",o?esc(o.name+" · "+(o.dex||"")):"")+row("Pool created",o&&o.created?esc(age(o.created)):"")+
+    row("Holders",h.count!=null?h.count.toLocaleString("en-US"):"")+
+    (o?'<div class="links" style="margin-top:6px"><a data-u="https://dexscreener.com/'+esc(DSCHAIN[c.net]||c.net)+'/'+esc(o.pool)+'">DexScreener</a> <a data-u="https://www.geckoterminal.com/'+esc(c.net)+'/pools/'+esc(o.pool)+'">GeckoTerminal</a></div>':"");
+}
+
+/* ---- buy / sell ---- */
+function tradeBox(){
+  const c=coin,o=ov,sym=esc((o&&o.base.symbol)||c.symbol||"");
+  if(c.mode==="dbc"||c.mode==="jup"){
+    return '<div class="seg"><button class="buy on" data-sd="buy">Buy</button><button class="sell" data-sd="sell">Sell</button></div>'+
+      '<div class="box"><small id="amtLbl">Amount in SOL</small><input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0"><div class="chips" id="quick"></div></div>'+
+      '<div id="qt" style="font-size:12px;color:var(--ink);margin:0 2px 10px">Enter an amount.</div><div id="bal" style="font-size:12px;color:var(--mut);margin:0 2px 10px"></div>'+
+      '<button class="main buy" id="go">Buy $'+sym+'</button>'+
+      '<div class="sub" style="text-align:center">'+(PL.mode()==="deeplink"?"Your wallet opens only in the Phantom app to approve, then you come straight back here.":"Approve in your wallet.")+'</div>';
+  }
+  if(c.mode==="lifi"){
+    const u=s=>"/swap.html?side="+s+"&chain="+o.trade.chainId+"&token="+encodeURIComponent(c.address)+"&sym="+encodeURIComponent((o&&o.base.symbol)||c.symbol||"");
+    return '<div class="seg"><button class="buy on" data-go="'+esc(u("buy"))+'">Buy</button><button class="sell on" data-go="'+esc(u("sell"))+'">Sell</button></div>'+
+      '<div class="sub" style="text-align:center">Trades on this network use WalletConnect: pick your wallet app, approve there, and you return here.</div>';
+  }
+  return '<div class="sub">In-app trading is not available for this network yet. Use the DexScreener or Explorer link above.</div>';
+}
+function bindTrade(){
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{location.href=b.dataset.go});
+  if(!$("amt"))return;
+  document.querySelectorAll(".seg button[data-sd]").forEach(b=>b.onclick=()=>setSide(b.dataset.sd));
   $("amt").oninput=quote;$("go").onclick=trade;setSide("buy");if(wallet)loadBal();
 }
-let bal={sol:0,token:0};
-async function loadBal(){if(!wallet||!cur)return;const r=await api("/api/launch/balance?wallet="+wallet+"&mint="+cur.mint);if(r.ok){bal=r;$("bal").textContent="Balance: "+r.sol.toFixed(4)+" SOL · "+r.token+" $"+cur.symbol}}
-function setSide(s){side=s;document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on",b.dataset.sd===s));
-  $("go").className="main "+s;$("go").textContent=(s==="buy"?"Buy $":"Sell $")+cur.symbol;$("amtLbl").textContent=s==="buy"?"Amount in SOL":"Amount in $"+cur.symbol;
+async function loadBal(){if(!wallet||!coin||!$("bal")||!coin.address)return;const r=await api("/api/launch/balance?wallet="+wallet+"&mint="+coin.address);
+  if(r.ok&&$("bal")){bal=r;$("bal").textContent="Balance: "+r.sol.toFixed(4)+" SOL · "+r.token+" $"+((ov&&ov.base.symbol)||coin.symbol)}}
+function setSide(s){side=s;const sym=(ov&&ov.base.symbol)||coin.symbol||"";
+  document.querySelectorAll(".seg button[data-sd]").forEach(b=>b.classList.toggle("on",b.dataset.sd===s));
+  $("go").className="main "+s;$("go").textContent=(s==="buy"?"Buy $":"Sell $")+sym;$("amtLbl").textContent=s==="buy"?"Amount in SOL":"Amount in $"+sym;
   $("quick").innerHTML=(s==="buy"?[0.1,0.5,1,5].map(v=>'<button data-v="'+v+'">'+v+' SOL</button>'):[25,50,100].map(v=>'<button data-p="'+v+'">'+v+'%</button>')).join("");
   document.querySelectorAll("#quick button").forEach(b=>b.onclick=()=>{$("amt").value=b.dataset.v||String(Math.floor(bal.token*Number(b.dataset.p)/100*1e6)/1e6);quote()});$("amt").value="";$("qt").textContent="Enter an amount."}
 let qT;async function quote(){clearTimeout(qT);const a=$("amt").value;if(!(Number(a)>0)){$("qt").textContent="Enter an amount.";return}
-  qT=setTimeout(async()=>{const r=await api("/api/launch/quote?mint="+cur.mint+"&side="+side+"&amount="+encodeURIComponent(a));
-    $("qt").innerHTML=r.ok?"You receive about <b>"+(Number(r.amountOut)/10**r.outDecimals).toLocaleString(undefined,{maximumFractionDigits:6})+" "+(side==="buy"?"$"+esc(cur.symbol):"SOL")+"</b>":'<span style="color:var(--dn)">'+esc(r.error||"Quote failed")+"</span>"},350)}
+  const base=coin.mode==="dbc"?"/api/launch/quote":"/api/token/quote",sym=(ov&&ov.base.symbol)||coin.symbol||"",c=coin;
+  qT=setTimeout(async()=>{const r=await api(base+"?mint="+coin.address+"&side="+side+"&amount="+encodeURIComponent(a));if(coin!==c||!$("qt"))return;
+    $("qt").innerHTML=r.ok?"You receive about <b>"+(Number(r.amountOut)/10**r.outDecimals).toLocaleString(undefined,{maximumFractionDigits:6})+" "+(side==="buy"?"$"+esc(sym):"SOL")+"</b>"+(r.priceImpactPct!=null&&r.priceImpactPct>0.01?' <span class="'+(r.priceImpactPct>0.05?"dn":"")+'">· price impact '+(r.priceImpactPct*100).toFixed(2)+"%</span>":""):red(friendly(r.error||"Quote failed"))},350)}
 async function trade(){
   const a=$("amt").value;if(!(Number(a)>0))return;$("go").disabled=true;
   try{
-    if(!wallet)await connect();if(!wallet)throw new Error("Connect wallet first");
+    if(!wallet)await connect();
     if(!(await login()))throw new Error("Login required.");
-    const s=await api("/api/launch/swap",{method:"POST",body:JSON.stringify({mint:cur.mint,wallet,side,amount:a,slippageBps:300})});
-    if(!s.ok)throw new Error(s.error||"SWAP_FAILED");
-    setStatus("Approve in your wallet…");const sig=await signSend(s.tx);
-    setStatus('Sent ✔ <a href="https://solscan.io/tx/'+sig+'" target="_blank" rel="noopener">View transaction</a>');
-    setTimeout(loadBal,5000);
-  }catch(e){setStatus('<span style="color:var(--dn)">'+esc(e.message||e)+"</span>")}
-  $("go").disabled=false;
+    const s=await api(coin.mode==="dbc"?"/api/launch/swap":"/api/token/swap",{method:"POST",body:JSON.stringify({mint:coin.address,wallet,side,amount:a,slippageBps:300})});
+    if(!s.ok)throw new Error(friendly(s.error||"SWAP_FAILED"));
+    setStatus(PL.mode()==="deeplink"?"Opening Phantom… approve there, then come back to this app.":"Approve in your wallet…");
+    txDone(await PL.signAndSend(s.tx,{type:"swap",coin:slim(coin),side}));
+  }catch(e){setStatus(red(friendly(e.message||e)))}
+  if($("go"))$("go").disabled=false;
 }
+function txDone(sig){
+  setStatus('Sent ✔ <a data-u="'+esc(expUrl("solana","tx",sig))+'" style="color:#6d9bff;font-weight:700;cursor:pointer">View transaction</a>');bindLinks($("status"));
+  setTimeout(()=>{loadBal();if(tab==="trades"||tab==="chart")loadTab()},6000);
+}
+setInterval(()=>{if(view==="token"&&!document.hidden&&(tab==="trades"||tab==="chart"))loadTab()},20000);
 
-function render(){view==="create"?renderCreate():view==="token"&&cur?openToken(cur.mint):renderExplore()}
-$("back").onclick=()=>{if(view==="token"){view="explore";cur=null;render()}else if(history.length>1)history.back();else location.href="/"};
+function render(){view==="create"?renderCreate():view==="token"&&coin?openDetail(coin):renderExplore()}
+$("back").onclick=()=>{if(view==="token"){view="explore";coin=null;render()}else if(history.length>1)history.back();else location.href="/"};
 (async()=>{cfg=await api("/api/launch/config");
   if(qs.get("mint")&&cfg.enabled)openToken(qs.get("mint"));else render();
-  const p=provider();if(p&&p.isConnected&&p.publicKey){wallet=p.publicKey.toString();$("wbtn").textContent=short(wallet)}})();
+})();
 </script>
 </body></html>
