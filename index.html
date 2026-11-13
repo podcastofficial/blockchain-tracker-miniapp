@@ -429,7 +429,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 
 <section class="page" id="page-tokens">
   <div class="page-head"><div><div class="eyebrow">RESEARCH / RISK ANALYSIS</div><h1 class="page-title">Token Intelligence</h1><p class="page-desc">Inspect token metadata, contract permissions, liquidity and holder concentration.</p></div></div>
-  <div class="card"><div class="card-head"><div><div class="card-title">Token Security Scanner</div><div class="card-sub">Enter a contract address and choose its network</div></div><span class="tag yellow">EVIDENCE-BASED</span></div><div class="form-grid"><div class="field"><label>Blockchain</label><select id="scanNetwork" class="control" style="width:100%"></select></div><div class="field"><label>Token Contract Address</label><input id="scanAddress" placeholder="Paste public contract address"></div></div><button class="btn primary" id="scanBtn">Analyze Token</button><div class="form-message" id="scanMessage"></div></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Token Security Scanner</div><div class="card-sub">Enter a contract address and choose its network</div></div><span class="tag yellow">EVIDENCE-BASED</span></div><div class="form-grid"><div class="field"><label>Blockchain</label><select id="scanNetwork" class="control" style="width:100%"></select></div><div class="field"><label>Token Contract Address</label><input id="scanAddress" placeholder="Paste public contract address"></div></div><button class="btn primary" id="scanBtn">Analyze Token</button><div class="form-message" id="scanMessage"></div><div class="card-sub" id="scanQuota" style="margin-top:8px"></div></div>
   <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Security Checks</div><span class="tag green">GOPLUS · TONAPI</span></div><div id="securityChecks"></div></div><div class="card"><div class="card-head"><div class="card-title">Token Research</div><span class="tag" id="researchTag">DEXSCREENER</span></div><div id="tokenResearch"><div class="empty"><div class="empty-icon">◉</div><strong>No token selected</strong>Paste a contract address and press Analyze Token.</div></div></div></div>
   <div class="notice">A risk score is not a guarantee of safety. Scanner findings must include evidence, timestamp and chain-specific limitations; unknown checks must remain unknown.</div>
 </section>
@@ -1184,6 +1184,8 @@ function renderResearch(pair){
 }
 const timeout=(ms)=>{const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal};
 async function getJSON(url){const r=await fetch(url,{signal:timeout(15000)});if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
+async function loadQuota(){const el=$("scanQuota");if(!el||!window.BT||!window.BT.backendUser)return;try{const q=await window.BT.apiRequest("/scanner/quota");el.textContent=q.unlimited?"Scans: unlimited on your plan":"Free scans left today: "+q.remaining+" / "+q.freeLimit+(q.credits?" · Scanner credits: "+q.credits:"")}catch(e){}}
+window.addEventListener("bt-auth",loadQuota);
 const btn=$("scanBtn");
 btn.onclick=async()=>{
   const net=$("scanNetwork").value,addr=$("scanAddress").value.trim(),msg=$("scanMessage");
@@ -1192,14 +1194,16 @@ btn.onclick=async()=>{
   msg.textContent="";btn.disabled=true;btn.textContent="Scanning…";
   $("securityChecks").innerHTML='<div class="empty">Running security checks…</div>';
   $("tokenResearch").innerHTML='<div class="empty">Loading market data…</div>';
-  const GPU="https://api.gopluslabs.io/api/v1/";
-  let secP;
-  if(GP[net])secP=getJSON(GPU+"token_security/"+GP[net]+"?contract_addresses="+encodeURIComponent(EVM.includes(net)?addr.toLowerCase():addr));
-  else if(net==="solana")secP=getJSON(GPU+"solana/token_security?contract_addresses="+encodeURIComponent(addr));
-  else if(net==="ton")secP=getJSON("https://tonapi.io/v2/jettons/"+encodeURIComponent(addr));
-  else secP=Promise.resolve(null);
-  const mktP=getJSON("https://api.dexscreener.com/latest/dex/tokens/"+encodeURIComponent(addr));
-  const [sec,mkt]=await Promise.allSettled([secP,mktP]);
+  let sc;
+  try{sc=await window.BT.apiRequest("/scanner/scan",{method:"POST",body:JSON.stringify({network:net,address:addr})})}
+  catch(e){
+    msg.textContent=e.message==="SCAN_LIMIT"?"Free scans for today are finished. Redeem Token Scanner credits in Profile → MBC Points, or upgrade your plan.":e.message==="UPSTREAM_UNAVAILABLE"?"Scan services are busy. This scan was not counted, please try again.":e.status===401?"Open the Mini App inside Telegram and sign in to scan.":e.message==="JOIN_REQUIRED"?"":"Scan failed. Please try again.";
+    $("securityChecks").innerHTML='<div class="empty">No scan yet</div>';
+    $("tokenResearch").innerHTML='<div class="empty">No token selected</div>';
+    btn.disabled=false;btn.textContent="Analyze Token";loadQuota();return;
+  }
+  const sec=sc.sec?{status:"fulfilled",value:sc.sec}:{status:"rejected"};
+  const mkt=sc.mkt?{status:"fulfilled",value:sc.mkt}:{status:"rejected"};
   const stamp=new Date().toLocaleString();
   if(sec.status!=="fulfilled")renderUnavailable(net==="ton"?"TON data service could not be reached. It may be rate-limited, try again in a few seconds.":"Security service could not be reached. Try again.");
   else if(net==="ton"){
@@ -1217,7 +1221,7 @@ btn.onclick=async()=>{
     pairs.sort((a,b)=>(Number(b.liquidity&&b.liquidity.usd)||0)-(Number(a.liquidity&&a.liquidity.usd)||0));
     renderResearch(pairs[0]);
   }
-  btn.disabled=false;btn.textContent="Analyze Token";
+  btn.disabled=false;btn.textContent="Analyze Token";loadQuota();
 };
 })();
 </script>
@@ -1769,7 +1773,7 @@ async function loadWhales(){
     g("wfInFoot").textContent=d.labelsSupported?"Wallet → known exchange":"Labels on Ethereum only";g("wfOutFoot").textContent=d.labelsSupported?"Known exchange → wallet":"Labels on Ethereum only";
     const who=(a,l)=>l?`<b class="lbl">${E(l)}</b>`:E(short(a));
     const flow=e=>e.toLabel&&!e.fromLabel?" · exchange deposit":e.fromLabel&&!e.toLabel?" · exchange withdrawal":"";
-    g("wfWindow").textContent="Last ~"+Math.max(1,Math.round(d.windowSec/60))+" min on "+(NAME[d.network]||d.network);
+    g("wfWindow").textContent="Last ~"+Math.max(1,Math.round(d.windowSec/60))+" min on "+(NAME[d.network]||d.network)+(d.locked?" · 🔒 Preview: latest "+d.events.length+" only. Unlock the full feed with Advanced Analytics (Profile → MBC Points) or a paid plan.":"");
     g("wfList").innerHTML=d.events.length?d.events.map(e=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:14px">🐋 ${money(e.usd)} ${E(e.symbol)}</strong><span class="muted" style="font-size:10px">~${age(e.ageSec)} ago</span></div><div class="muted address" style="font-size:10px;margin:4px 0">${who(e.from,e.fromLabel)} → ${who(e.to,e.toLabel)}<span style="font-family:Sora,sans-serif">${flow(e)}</span></div>${String(e.link).startsWith("https://")?`<a href="${E(e.link)}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue)">View transaction ↗</a>`:""}</div>`).join(""):"No transfers above this size in the scanned blocks. Try a lower minimum.";
     wlast=Date.now();
   }catch(e){g("wfList").textContent=e.message==="RPC_BUSY"?"Network RPC is busy. Tap Refresh in a few seconds.":"Could not load whale feed."}
@@ -2339,7 +2343,7 @@ async function load(force){
   if(!BT.backendUser){tag("SIGN IN",false);note("Sign in required","Open this Mini App inside Telegram to see your portfolio history.");return}
   if(!force&&Date.now()-loadedAt<30000)return;
   busy=true;
-  try{const h=await BT.apiRequest("/portfolio/history");pts=Array.isArray(h.points)?h.points:[];loadedAt=Date.now();draw()}
+  try{const h=await BT.apiRequest("/portfolio/history");pts=Array.isArray(h.points)?h.points:[];loadedAt=Date.now();{const sb=$("dashHistSub");if(sb)sb.textContent=h.locked?"Last 7 days · 🔒 30-day history unlocks with Advanced Analytics":"Total value from your balance syncs (30 days)"}draw()}
   catch(e){tag("ERROR",false);note("Could not load history","Try again in a moment.")}
   busy=false;
 }
