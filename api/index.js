@@ -56,6 +56,9 @@ async function telegramLogin(req, res) {
   try {
     const telegramUser = verifyTelegramInitData(req.body?.initData);
 
+    const prior = await db().query(`SELECT last_login_at FROM users WHERE telegram_user_id=$1`, [String(telegramUser.id)]);
+    const firstLogin = !prior.rowCount || prior.rows[0].last_login_at === null;   // also true for accounts the bot created on /start
+
     const result = await db().query(
       `INSERT INTO users
         (telegram_user_id, username, first_name, last_name, language_code, is_premium, last_login_at)
@@ -86,7 +89,7 @@ async function telegramLogin(req, res) {
     }
 
     // New user that arrived through a referral link: start_param is part of the signed initData.
-    if (inserted) {
+    if (inserted || firstLogin) {
       try { await attachReferral(user.id, new URLSearchParams(req.body.initData).get("start_param")); } catch { /* referral is best-effort */ }
     }
 
