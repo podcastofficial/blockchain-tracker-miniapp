@@ -26,6 +26,7 @@ pg.Pool.prototype.query = async function (sql, p = []) {
   if (/SET status='suppressed', last_error='rate_limited'/.test(sql)) { notifs.find(x => x.id === p[0]).status = "suppressed"; return { rows: [], rowCount: 1 }; }
   if (/SET status='retry'/.test(sql)) { const n = notifs.find(x => x.id === p[0]); n.status = "retry"; n.next_attempt_at = Date.now() + Number(p[1]) * 1000; n.last_error = p[2]; return { rows: [], rowCount: 1 }; }
   if (/UPDATE community_notifications SET status=\$2/.test(sql)) { const n = notifs.find(x => x.id === p[0]); n.status = p[1]; n.last_error = p[2]; if (p[3]) n.kind = p[3]; return { rows: [], rowCount: 1 }; }
+  if (/SELECT status FROM community_notifications WHERE id=\$1/.test(sql)) { const n = notifs.find(x => x.id === p[0]); return { rows: n ? [{ status: n.status }] : [], rowCount: n ? 1 : 0 }; }
   if (/INSERT INTO community_admins/.test(sql)) { adminUpserts++; return { rows: [], rowCount: 1 }; }
   if (/SET can_post=FALSE/.test(sql)) { community.can_post = false; return { rows: [], rowCount: 1 }; }
   if (/SELECT \* FROM community_addresses WHERE id=/.test(sql)) return { rows: [{ id: 7, family: "evm", address: EVM, address_norm: EVM.toLowerCase(), network: null, submitted_by_telegram_id: 5, status: "pending_chain" }], rowCount: 1 };
@@ -41,6 +42,7 @@ globalThis.fetch = async (url, o = {}) => {
   url = String(url);
   if (url.includes("api.telegram.org")) {
     const b = JSON.parse(o.body), method = url.split("/").pop(); sent.push({ method, ...b });
+    if (method === "deleteMessage" && deleteDenied) return json({ ok: false, error_code: 400, description: "message can't be deleted" });
     if (method === "getChatMember") return json({ ok: true, result: { status: b.user_id === 5 ? "administrator" : "member" } });
     if (method !== "sendMessage") return json({ ok: true, result: true });
     if (tgMode === "500") return json({ ok: false, error_code: 500, description: "Internal Server Error" });
@@ -70,6 +72,7 @@ globalThis.fetch = async (url, o = {}) => {
 const { processCommunityMessage, processCommunityCallback } = await import("../lib/community_track.js");
 const { processNotification, processQueue, fmtUsd, riskNotes, MAX_ATTEMPTS } = await import("../lib/community_notify.js");
 const { decodeAbiString } = await import("../lib/community_enrich.js");
+let deleteDenied = false;
 let fail = 0; const t = (n, ok) => { if (!ok) fail++; console.log(ok ? "PASS" : "FAIL", n); };
 const msg = (text, extra = {}) => ({ message_id: 42, chat: { id: -100, type: "supergroup" }, from: { id: 5 }, text, ...extra });
 const msgs = () => sent.filter(s => s.method === "sendMessage");
@@ -106,8 +109,17 @@ reset(); contractAddr = "";
 await processCommunityMessage(msg("check " + EVM));
 t("ambiguous EVM: asks for network, nothing queued", msgs().length === 1 && /Which network/.test(msgs()[0].text) && notifs.length === 0);
 sent.length = 0;
-await processCommunityCallback({ id: "cb1", data: "cm:7:base", from: { id: 5 }, message: { message_id: 77, chat: { id: -100, type: "supergroup" } } });
-t("network choice: queues and posts details as a reply", msgs().length === 1 && /Wallet detected/.test(msgs()[0].text) && /Base/.test(msgs()[0].text) && msgs()[0].reply_to_message_id === 77);
+await processCommunityCallback({ id: "cb1", data: "cm:7:base", from: { id: 5 }, message: { message_id: 77, chat: { id: -100, type: "supergroup" }, reply_to_message: { message_id: 42 } } });
+t("network choice: details posted as a reply to the member's ORIGINAL message", msgs().length === 1 && /Wallet detected/.test(msgs()[0].text) && /Base/.test(msgs()[0].text) && msgs()[0].reply_to_message_id === 42);
+const iSend = sent.findIndex(s => s.method === "sendMessage"), iDel = sent.findIndex(s => s.method === "deleteMessage");
+t("network choice: 'loading details…' prompt is deleted AFTER the details are posted", iDel > iSend && iSend >= 0 && sent[iDel].message_id === 77 && sent[iDel].chat_id === -100);
+reset(); tgMode = "500";
+await processCommunityCallback({ id: "cb2", data: "cm:7:base", from: { id: 5 }, message: { message_id: 78, chat: { id: -100, type: "supergroup" }, reply_to_message: { message_id: 42 } } });
+t("if posting failed the prompt is NOT deleted; it says details are coming", !sent.some(s => s.method === "deleteMessage") && sent.some(s => s.method === "editMessageText" && s.message_id === 78 && /shortly/.test(s.text)));
+reset(); deleteDenied = true;
+await processCommunityCallback({ id: "cb3", data: "cm:7:base", from: { id: 5 }, message: { message_id: 79, chat: { id: -100, type: "supergroup" } } });
+t("no permission to delete: prompt is edited to a short 'Done' instead; no original message -> plain post", sent.some(s => s.method === "editMessageText" && s.message_id === 79 && /Done/.test(s.text)) && msgs()[0].reply_to_message_id === undefined);
+deleteDenied = false; reset();
 
 reset({ networks: ["ethereum", "base"] });
 await processCommunityMessage(msg("sent " + HASH));
