@@ -35,6 +35,13 @@ await t("config patch validation", () => {
   assert.ok(P.validateConfigPatch({ rewards: { daily_login: { points: -1 } } }).error);
   assert.ok(P.validateConfigPatch({}).error);
 });
+await t("referral can never be capped", () => {
+  assert.ok(P.validateConfigPatch({ rewards: { referral: { capped: true } } }).error);
+  assert.ok(P.validateConfigPatch({ rewards: { referral: { dailyMax: 3 } } }).error);
+  assert.ok(P.validateConfigPatch({ rewards: { referral: { points: 60 } } }).value);
+  assert.equal(P.DEFAULTS.rewards.referral.capped, false);
+  assert.equal(P.DEFAULTS.rewards.referral.dailyMax, undefined);
+});
 await t("ad signature: valid, tampered, replayed-late, wrong secret", () => {
   const now = Date.now(), ts = Math.floor(now / 1000), sig = P.adSignature("s3cret", "111", "evt_123456", ts);
   assert.equal(P.verifyAdSignature("s3cret", "111", "evt_123456", ts, sig, now), true);
