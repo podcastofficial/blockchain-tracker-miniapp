@@ -15,15 +15,21 @@ Copy these files over the repo (same paths). Changed existing files: `api/index.
 - api/index.js: mounts `/api/points/*`; `POST /api/subscription/create-payment` accepts optional `redemptionId` (server reserved discount).
 - payments.js: `confirmForPayment` inside the existing confirmation transaction (reserved -> spent atomically with plan activation).
 
+## First-open daily reward
+- Bot: `/start` now creates the account (if new) and shows a **🎁 Claim daily reward** button (hidden once claimed today). Tapping it credits the login reward and answers with the new balance. Changed file: `lib/bot.js`.
+- Mini App: on first open of the day a dismissible banner offers the claim (`assets/points-ui.js`).
+- `api/index.js` login now also links referrals for accounts the bot created first (otherwise referrals would be lost when a user taps /start before opening the app).
+- Changed files list: add `lib/bot.js`.
+
 ## Checkout flow
 quote (`/discount/quote {planCode}`) -> reserve (`/discount/reserve {planCode, points}`) -> create-payment `{planCode, chain, redemptionId}` -> user pays -> points deducted automatically on confirmation. `/discount/confirm` is a read-only status check (deduction is never client-triggered). `/discount/release` cancels an unpaid reservation.
 
 ## Decisions you must confirm (defaults chosen)
 1. **$1 Pro plan cannot use tiers**: 20% of $1 = $0.20 < smallest tier $0.50. Options: set `discount.flex=true` (multiples of 100 points, up to 200 pts on Pro) or accept that discounts start at the $2.50 plan.
-2. Referral (50) and one-time wallet/contract (10) rewards are OUTSIDE the 100/day cap; login, ads, daily task are inside. Change via admin settings `rewards.<code>.capped`.
+2. **Referral income has NO cap of any kind** (no daily cap, no per-referrer limit; admin settings reject any attempt to cap it). One-time wallet/contract (10) rewards are also outside the 100/day cap; login, ads, daily task are inside.
 3. Inactivity reset = successful claim, earn or redeem only (not login, not background).
 4. Daily task = "Sync balances in Portfolio today" (server-verified via portfolio_snapshots). Replace with your own verifiers if wanted.
-5. Referral qualifies when the invited user adds their first valid wallet/contract (existing `referred_by` link), max 10/day per referrer.
+5. Referral qualifies when the invited user adds their first valid wallet/contract (existing `referred_by` link). Still enforced: one reward per referred user, no self-referral, blocked referrers get nothing.
 6. Ads: provider-neutral HMAC callback `POST /api/points/ad-callback {telegramId,eventId,ts,sig}`; sig = HMAC-SHA256(POINTS_AD_SECRET, `${telegramId}.${eventId}.${ts}`) hex. Needs your ad provider to call it.
 7. Paid discount edge: if a reservation is released while a late payment still confirms, points are deducted if available, otherwise an audit row `points.discount_shortfall` is written (balance never goes negative).
 
