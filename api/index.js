@@ -30,6 +30,7 @@ import { runMaintenance } from "../lib/maintenance.js";
 import { communityApi } from "../lib/community_api.js";
 import { pointsApi } from "../lib/points_api.js";
 import { forceJoinApi, joinBlocked } from "../lib/forcejoin.js";
+import { scannerApi } from "../lib/scanner.js";
 import { attachReservation } from "../lib/points.js";
 
 const RECEIVERS = {
@@ -689,6 +690,7 @@ export default async function handler(req, res) {
 
     if (path.startsWith("/api/community")) return await communityApi(req, res, path);
     if (path.startsWith("/api/points")) return await pointsApi(req, res, path);
+    if (path.startsWith("/api/scanner/")) return await scannerApi(req, res, path);
     if (path === "/api/watchlist") return await watchlist(req, res);
     if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
     if (path === "/api/defi/overview") return await defiOverview(req, res);
