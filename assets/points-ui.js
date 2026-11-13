@@ -41,6 +41,26 @@
       await load(); const m = document.getElementById("mbcMsg"); if (m) m.textContent = c ? `+${out.awarded} points` : "Boost activated";
     } catch (err) { const m = document.getElementById("mbcMsg"); if (m) m.textContent = MSG[err.message] || "Could not complete that."; btn.disabled = false; }
   }
+  // First open of the day: offer the daily reward right away (dismissible, shown once per session).
+  async function offerDaily() {
+    if (document.getElementById("mbcDailyBanner") || sessionStorage.getItem("mbcOffer")) return;
+    try {
+      const t = await api("/tasks"), d = t.tasks.find(x => x.code === "daily_login"); if (!d || !d.claimable) return;
+      sessionStorage.setItem("mbcOffer", "1");
+      const b = document.createElement("div"); b.id = "mbcDailyBanner";
+      b.style.cssText = "position:fixed;left:12px;right:12px;bottom:76px;z-index:9999;padding:12px 14px;border-radius:14px;background:var(--card,#fff);color:var(--text,#222);box-shadow:0 8px 28px #0003;display:flex;gap:10px;align-items:center;justify-content:space-between";
+      b.innerHTML = `<span>🎁 Daily reward ready: <b>+${d.points} MBC Points</b></span><span><button class="btn primary" id="mbcDailyGo">Claim</button> <button class="btn" id="mbcDailyX" aria-label="Dismiss">✕</button></span>`;
+      document.body.appendChild(b);
+      b.querySelector("#mbcDailyX").onclick = () => b.remove();
+      b.querySelector("#mbcDailyGo").onclick = async () => {
+        try { const o = await api("/claim", { method: "POST", body: JSON.stringify({ task: "daily_login" }) }); b.querySelector("span").innerHTML = `🎉 +${o.awarded} MBC Points added`; }
+        catch (e) { b.querySelector("span").textContent = MSG[e.message] || "Could not claim right now."; }
+        setTimeout(() => b.remove(), 2500); load();
+      };
+    } catch { /* signed out or points unavailable: stay silent */ }
+  }
+  window.addEventListener("bt-auth", () => setTimeout(offerDaily, 600));
+  setTimeout(offerDaily, 2500);
   document.addEventListener("click", ev => { if (ev.target.closest('[data-page="profile"]')) setTimeout(load, 150); });
   window.addEventListener("bt-auth", () => { if (document.getElementById("page-profile")?.classList.contains("active")) load(); });
   if (document.readyState !== "loading") mount(); else document.addEventListener("DOMContentLoaded", mount);
