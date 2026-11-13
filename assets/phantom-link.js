@@ -43,7 +43,18 @@
     u.searchParams.set("back",location.pathname+location.search);
     return u.toString();
   }
-  function deeplink(url){location.href=url}
+  function deeplink(url){
+    // Never navigate Telegram's embedded WebView directly to a wallet deep link.
+    // Phantom's HTTPS universal link is opened externally; this avoids ERR_UNKNOWN_URL_SCHEME.
+    if(!/^https:\/\/phantom\.app\/ul\/v1\//i.test(url)) throw Error("Invalid Phantom wallet link");
+    const tg=window.Telegram&&window.Telegram.WebApp;
+    if(tg&&typeof tg.openLink==="function"){
+      tg.openLink(url);
+      return;
+    }
+    const w=window.open(url,"_blank","noopener,noreferrer");
+    if(!w) throw Error("Could not open Phantom. Please open this Mini App in Telegram and try again.");
+  }
   async function start(kind, payload, ctx){
     if(!window.nacl||!nacl.box)throw Error("Secure wallet bridge did not load. Reload the page.");
     const kp=nacl.box.keyPair(), nonce=bytes(24), sid=Array.from(bytes(16),x=>x.toString(16).padStart(2,"0")).join("");
@@ -78,21 +89,25 @@
     if(!plain)throw Error("Could not decrypt Phantom response");
     return {result:safeJson(nacl.util.encodeUTF8(plain)),shared};
   }
+  async function finishConnect(p,j){
+    if(j.errorCode||j.errorMessage)throw Error(j.errorMessage||"Phantom connection cancelled");
+    const d=decryptResult(p,j),result=d.result;
+    const pub=result.public_key;
+    if(!pub)throw Error("Phantom did not return a wallet address");
+    connected=pub;
+    localStorage.setItem("mbt_phantom_wallet",connected);
+    localStorage.setItem(SESSION,result.session||"");
+    window.__mbtPhantomShared=d.shared;
+    localStorage.removeItem(STORE);
+    return connected;
+  }
   async function connect(){
     if(wallet())return wallet();
     const sid=await start("connect");
-    // On mobile the page is backgrounded while Phantom opens; resume() completes this promise after return.
-    return new Promise((resolve,reject)=>{
-      const started=Date.now();const timer=setInterval(async()=>{
-        try{
-          const pending=load();if(!pending||pending.sid!==sid){clearInterval(timer);return reject(Error("Wallet connection cancelled"))}
-          if(pending.result){clearInterval(timer);if(pending.result.error) return reject(Error(pending.result.error));
-            const pub=pending.result.public_key;if(!pub)return reject(Error("Phantom did not return a wallet address"));
-            connected=pub;resolve(pub)}
-          else if(Date.now()-started>120000){clearInterval(timer);reject(Error("Wallet connection timed out"))}
-        }catch(e){clearInterval(timer);reject(e)}
-      },500);
-    });
+    const j=await poll(sid,120000);
+    const p=load();
+    if(!p||p.sid!==sid)throw Error("Phantom session expired. Please connect again.");
+    return finishConnect(p,j);
   }
   async function signAndSend(txBase64,ctx){
     if(!wallet())await connect();
@@ -110,15 +125,15 @@
   async function resume(callback){
     const p=load();if(!p||Date.now()-p.created>15*60*1000)return;
     try{
-      const j=await poll(p.sid,2500);if(!j)return;
+      const j=await poll(p.sid,120000);
       if(j.errorCode||j.errorMessage){localStorage.removeItem(STORE);callback({error:j.errorMessage||"Phantom request cancelled",kind:p.kind});return}
-      const d=decryptResult(p,j),result=d.result,shared=d.shared;
       if(p.kind==="connect"){
-        connected=result.public_key||null;
-        if(connected){localStorage.setItem("mbt_phantom_wallet",connected);localStorage.setItem(SESSION,result.session||"");window.__mbtPhantomShared=shared}
-        p.result=result;save(p);callback({kind:"connect",wallet:connected});
+        const w=await finishConnect(p,j);
+        callback({kind:"connect",wallet:w});
       }else{
+        const d=decryptResult(p,j),result=d.result;
         localStorage.removeItem(STORE);
+        if(!result.signature)throw Error("Phantom did not return a transaction signature");
         callback({kind:"sign",signature:result.signature,ctx:p.ctx||{}});
       }
     }catch(e){localStorage.removeItem(STORE);callback({error:e.message||"Phantom connection failed",kind:p.kind})}
