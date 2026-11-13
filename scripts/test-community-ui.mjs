@@ -67,4 +67,8 @@ t("activity shows readable labels and changed fields", /Settings updated/.test(g
 
 rejectWith = "COMMUNITY_NOT_FOUND"; click({ cmtyTab: "overview" }); await tick();
 t("lost admin access shows a clear message", /no longer an admin/.test(getEl("cmtyPane").innerHTML));
+rejectWith = "COMMUNITY_NOT_SET_UP"; await ctx.BT_COMMUNITY.loadList(true);
+t("not-set-up error explains the migration step", /migrations/.test(getEl("cmtyGate").textContent));
+rejectWith = "INTERNAL_SERVER_ERROR"; await ctx.BT_COMMUNITY.loadList(true);
+t("unknown errors still show their code for troubleshooting", /INTERNAL_SERVER_ERROR/.test(getEl("cmtyGate").textContent));
 console.log(fail ? `\n${fail} FAILED` : "\nall passed"); process.exit(fail ? 1 : 0);

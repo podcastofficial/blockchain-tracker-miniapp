@@ -92,6 +92,9 @@ t("remove address from another community's id space -> 404", (await call("POST",
 t("remove address: invalid id", (await call("POST", "/api/community/1/address-remove", { body: { addressId: "x" } })).status === 400);
 t("GET on control route not allowed", (await call("GET", "/api/community/1/control")).status === 404);
 
+pg.Pool.prototype.query = async () => { const e = new Error('relation "communities" does not exist'); e.code = "42P01"; throw e; };
+r = await call("GET", "/api/community");
+t("missing tables -> clear 503 COMMUNITY_NOT_SET_UP (not a generic 500)", r.status === 503 && r.body.error === "COMMUNITY_NOT_SET_UP");
 const v = validateSettings({ networks: ["base", "base"] });
 t("validateSettings dedupes networks", v.value.networks.length === 1);
 console.log(fail ? `\n${fail} FAILED` : "\nall passed"); process.exit(fail ? 1 : 0);
