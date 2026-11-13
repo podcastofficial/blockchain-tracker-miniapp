@@ -1647,7 +1647,7 @@ function draw(d){
   g("ocCount").textContent=d.rules.length+" / "+d.limit;
   g("ocToday").textContent=d.stats.today;g("ocSent").textContent=d.stats.sent;g("ocFailed").textContent=d.stats.failed;
   const wa=g("walletAlertCount");if(wa)wa.textContent=d.rules.filter(r=>r.kind==="wallet").length;const da=g("dashAlerts");if(da)da.textContent=d.stats.today;
-  g("ocRules").innerHTML=d.rules.length?d.rules.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${KINDS[r.kind]||E(r.kind)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${E(r.network)}${r.address?" · "+E(r.address.slice(0,8)+"…"+r.address.slice(-6)):""}${r.kind==="contract"?"":" · ≥ $"+Number(r.min_usd).toLocaleString()}${r.last_error?" · ⚠ "+E(r.last_error):""}${r.last_run_at?"":" · waiting for first scan"}</div></div><button class="btn danger small" data-oc-del="${r.id}">Delete</button></div>`).join(""):'<div class="empty"><strong>No on-chain rules</strong>Add a wallet, whale or contract rule above.</div>';
+  g("ocRules").innerHTML=d.rules.length?d.rules.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)"><div style="min-width:0;flex:1"><strong style="font-size:11px">${KINDS[r.kind]||E(r.kind)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${E(r.network)}${r.address?" · "+E(r.address.slice(0,8)+"…"+r.address.slice(-6)):""}${r.kind==="contract"?"":" · ≥ $"+Number(r.min_usd).toLocaleString()}${r.last_error?" · ⚠ "+E(r.last_error):""}${r.last_run_at?"":" · waiting for first scan"}</div><div style="font-size:10px;margin-top:5px;color:${r.status==="active"?"var(--green, #22c55e)":"var(--muted)"}">${r.status==="active"?"🔔 Notifications ON":"🔕 Notifications OFF"}</div></div><div style="display:flex;gap:6px;align-items:center;flex-shrink:0"><button class="btn small ${r.status==="active"?"":"primary"}" data-oc-toggle="${r.id}" data-enabled="${r.status==="active"?"1":"0"}">${r.status==="active"?"🔔 ON":"🔕 OFF"}</button><button class="btn danger small" data-oc-del="${r.id}">Delete</button></div></div>`).join(""):'<div class="empty"><strong>No on-chain rules</strong>Add a wallet, whale or contract rule above.</div>';
   g("ocEvents").innerHTML=d.events.length?d.events.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);white-space:pre-line">${E(e.summary.split("\n").slice(0,2).join("\n"))}<div style="font-size:9px">${new Date(e.created_at).toLocaleString()} · ${E(e.delivery_status)}</div></div>`).join(""):"No events yet.";
 }
 async function load(manual){
@@ -1666,6 +1666,14 @@ g("ocAdd").addEventListener("click",async()=>{
   b.disabled=false;
 });
 document.addEventListener("click",async e=>{
+  const toggle=e.target.closest("[data-oc-toggle]");
+  if(toggle){
+    toggle.disabled=true;
+    const enabled=toggle.dataset.enabled!=="1";
+    try{await BT.apiRequest("/alerts/onchain",{method:"PATCH",body:JSON.stringify({id:Number(toggle.dataset.ocToggle),enabled})});BT.toast(enabled?"Alerts enabled for this address":"Alerts disabled for this address");}
+    catch(x){BT.toast(ERR[x.message]||"Could not update this address setting");}
+    load(true);return;
+  }
   const del=e.target.closest("[data-oc-del]");
   if(del){del.disabled=true;try{await BT.apiRequest("/alerts/onchain?id="+encodeURIComponent(del.dataset.ocDel),{method:"DELETE"})}catch(x){}load(true);return}
   const mon=e.target.closest("[data-mon-contract]");
