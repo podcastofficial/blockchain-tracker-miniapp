@@ -86,18 +86,18 @@ t("riskNotes flags are facts, not verdicts", riskNotes({ liquidity: 5000, create
 
 // ---------- flows ----------
 reset({ networks: ["ethereum"] });
-await processCommunityMessage(msg("Wallet: " + EVM));
+await processCommunityMessage(msg("/track " + EVM));
 t("wallet: posted to originating chat with balance + explorer link", msgs().length === 1 && msgs()[0].chat_id === -100 && /Wallet detected/.test(msgs()[0].text) && /1\.5 ETH \(~\$3,000\)/.test(msgs()[0].text) && /etherscan\.io\/address/.test(JSON.stringify(msgs()[0].reply_markup)));
 t("wallet: attribution + no safety claim", /Powered by Multi Blockchain Tracker/.test(msgs()[0].text) && /not a safety verdict/.test(msgs()[0].text));
 t("notification marked sent", notifs[0].status === "sent" && notifs[0].kind === "wallet");
 
 reset({ networks: ["base"] }); contractAddr = TOKEN;
-await processCommunityMessage(msg(TOKEN));
+await processCommunityMessage(msg("/track " + TOKEN));
 t("token: name, price, liquidity, notes and Token Details button", /Token detected/.test(msgs()[0].text) && /Test Token<\/b> \(TST\)/.test(msgs()[0].text) && /Liquidity:<\/b> \$5,000/.test(msgs()[0].text) && /Low liquidity/.test(msgs()[0].text) && /Token Details/.test(JSON.stringify(msgs()[0].reply_markup)));
 t("token: replies to the original message", msgs()[0].reply_to_message_id === 42);
 
 reset({ networks: ["base"] }); rpcFail = true; contractAddr = TOKEN2;
-await processCommunityMessage(msg(TOKEN2));
+await processCommunityMessage(msg("/track " + TOKEN2));
 t("provider outage: still posts, marks data unavailable, invents nothing", msgs().length === 1 && /Unavailable right now/.test(msgs()[0].text) && !/Price:/.test(msgs()[0].text));
 rpcFail = false; contractAddr = TOKEN;
 
@@ -106,7 +106,7 @@ await processCommunityMessage(msg("/track " + TRON));
 t("tron wallet via /track", /Wallet detected/.test(msgs()[0].text) && /Tron/.test(msgs()[0].text) && /5 TRX/.test(msgs()[0].text));
 
 reset(); contractAddr = "";
-await processCommunityMessage(msg("check " + EVM));
+await processCommunityMessage(msg("/track " + EVM));
 t("ambiguous EVM: asks for network, nothing queued", msgs().length === 1 && /Which network/.test(msgs()[0].text) && notifs.length === 0);
 sent.length = 0;
 await processCommunityCallback({ id: "cb1", data: "cm:7:base", from: { id: 5 }, message: { message_id: 77, chat: { id: -100, type: "supergroup" }, reply_to_message: { message_id: 42 } } });
@@ -122,7 +122,7 @@ t("no permission to delete: prompt is edited to a short 'Done' instead; no origi
 deleteDenied = false; reset();
 
 reset({ networks: ["ethereum", "base"] });
-await processCommunityMessage(msg("sent " + HASH));
+await processCommunityMessage(msg("/tx " + HASH));
 t("tx hash: found on the right chain, status, amount, block time", /Transaction/.test(msgs()[0].text) && /Ethereum/.test(msgs()[0].text) && /Success/.test(msgs()[0].text) && /2 ETH/.test(msgs()[0].text) && /2026-11-13 12:30 UTC/.test(msgs()[0].text) && /etherscan\.io\/tx/.test(JSON.stringify(msgs()[0].reply_markup)));
 reset({ networks: ["ethereum"] }); sent.length = 0;
 await processCommunityMessage(msg("/tx 0x" + "cd".repeat(32)));
@@ -130,16 +130,31 @@ t("tx hash not found: says so plainly", /wasn't found/.test(msgs()[0].text));
 
 // duplicates / retries
 reset({ networks: ["ethereum"] });
-await processCommunityMessage(msg(EVM, { message_id: 1 })); recentSeen = true;
-await processCommunityMessage(msg(EVM, { message_id: 2 }));
-t("auto: repeat inside window suppressed", msgs().length === 1);
-await processCommunityMessage(msg("/track " + EVM, { message_id: 3 }));
-t("command: repeat still answered", msgs().length === 2);
-await processCommunityMessage(msg("/track " + EVM, { message_id: 3 }));
+await processCommunityMessage(msg("/track " + EVM, { message_id: 1 })); recentSeen = true;
+await processCommunityMessage(msg("/track " + EVM, { message_id: 2 }));
+t("command: a repeat of the same address is still answered", msgs().length === 2);
+await processCommunityMessage(msg("/track " + EVM, { message_id: 2 }));
 t("same message can never post twice (dedupe key)", msgs().length === 2);
 
+// COMMAND-ONLY: normal messages are never scanned
+reset({ networks: ["ethereum"] });
+await processCommunityMessage(msg("look at this " + EVM)); await processCommunityMessage(msg(HASH)); await processCommunityMessage(msg(EVM, { chat: { id: -100, type: "channel" }, from: undefined }));
+t("plain message / channel post with an address or tx hash: ignored (no reply, nothing queued)", msgs().length === 0 && notifs.length === 0);
+reset({ networks: ["ethereum"], auto_detect: true });
+await processCommunityMessage(msg("wallet " + EVM));
+t("even with the old auto_detect flag on, nothing is scanned", msgs().length === 0 && notifs.length === 0);
+reset({ networks: ["ethereum"] });
+await processCommunityMessage(msg("/track", { reply_to_message: { message_id: 40, text: "send funds to " + EVM } }));
+t("/track as a reply uses the address from the replied message", msgs().length === 1 && /Wallet detected/.test(msgs()[0].text) && msgs()[0].reply_to_message_id === 42);
+reset({ networks: ["ethereum"] });
+await processCommunityMessage(msg("/tx", { reply_to_message: { message_id: 40, text: "hash " + HASH } }));
+t("/tx as a reply uses the hash from the replied message", msgs().length === 1 && /Transaction/.test(msgs()[0].text));
+reset({ networks: ["ethereum"] });
+await processCommunityMessage(msg("/track"));
+t("/track with nothing to look up: shows usage, no lookup", msgs().length === 1 && /Usage: \/track/.test(msgs()[0].text) && notifs.length === 0);
+
 reset({ networks: ["ethereum"] }); tgMode = "500";
-await processCommunityMessage(msg(EVM));
+await processCommunityMessage(msg("/track " + EVM));
 t("telegram 500: kept for retry with backoff, not lost", notifs[0].status === "retry" && notifs[0].attempts === 1 && notifs[0].next_attempt_at > Date.now());
 t("not retried before its time", (await processQueue(500)).processed === 0 && notifs[0].attempts === 1);
 tgMode = "ok"; notifs[0].next_attempt_at = 0; sent.length = 0;
@@ -147,28 +162,26 @@ await processQueue(2000);
 t("worker retry delivers it exactly once", notifs[0].status === "sent" && notifs[0].attempts === 2 && msgs().length === 1);
 
 reset({ networks: ["ethereum"] }); tgMode = "500";
-await processCommunityMessage(msg(EVM));
+await processCommunityMessage(msg("/track " + EVM));
 for (let i = 0; i < MAX_ATTEMPTS; i++) { notifs[0].next_attempt_at = 0; await processQueue(500); }
 t("dead-letter after max attempts", notifs[0].status === "dead" && notifs[0].attempts === MAX_ATTEMPTS);
 
 reset({ networks: ["ethereum"] }); tgMode = "kicked";
-await processCommunityMessage(msg(EVM));
+await processCommunityMessage(msg("/track " + EVM));
 t("bot kicked: dead immediately, posting disabled", notifs[0].status === "dead" && community.can_post === false);
 
 // limits / settings
 reset({ networks: ["ethereum"], max_notifications_per_hour: 1 });
-await processCommunityMessage(msg(EVM, { message_id: 1 })); await processCommunityMessage(msg("/track " + EVM, { message_id: 2 }));
+await processCommunityMessage(msg("/track " + EVM, { message_id: 1 })); await processCommunityMessage(msg("/track " + EVM, { message_id: 2 }));
 t("hourly limit: second notification suppressed", msgs().length === 1 && notifs[1].status === "suppressed");
 reset({ networks: ["ethereum"], detect_wallets: false });
-await processCommunityMessage(msg(EVM));
-t("wallet detection off: nothing posted (auto)", msgs().length === 0 && notifs[0].status === "suppressed");
 await processCommunityMessage(msg("/track " + EVM, { message_id: 9 }));
-t("wallet detection off: explicit /track still answers", msgs().length === 1);
+t("wallet type toggle off: explicit /track still answers", msgs().length === 1);
 reset({ networks: ["ethereum"] });
-await processCommunityMessage(msg(EVM)); sent.length = 0; community.status = "paused"; notifs.push({ id: 99, community_id: 1, subject: { type: "address", family: "evm", address: EVM, network: "ethereum" }, mode: "auto", status: "pending", attempts: 0, next_attempt_at: 0 });
+await processCommunityMessage(msg("/track " + EVM)); sent.length = 0; community.status = "paused"; notifs.push({ id: 99, community_id: 1, subject: { type: "address", family: "evm", address: EVM, network: "ethereum" }, mode: "auto", status: "pending", attempts: 0, next_attempt_at: 0 });
 await processNotification(99);
 t("queued notification dropped if community was paused meanwhile", notifs.find(n => n.id === 99).status === "suppressed" && msgs().length === 0);
-reset(); await processCommunityMessage(msg(EVM, { from: { id: 9, is_bot: true } }));
+reset(); await processCommunityMessage(msg("/track " + EVM, { from: { id: 9, is_bot: true } }));
 t("bot-authored message ignored (no loops)", notifs.length === 0 && msgs().length === 0);
 reset();
 await processCommunityMessage(msg("/settings"));
