@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#05060d">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#f4f8ff">
+<meta name="color-scheme" content="light">
 <link rel="icon" type="image/png" href="/assets/favicon-64.png">
 <link rel="apple-touch-icon" href="/assets/logo-192.png">
 <meta property="og:title" content="Multi Blockchain Tracker">
@@ -322,8 +322,8 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .dx-pool{display:flex;justify-content:space-between;gap:10px;align-items:center;width:100%;border:0;background:none;border-bottom:1px solid var(--border);padding:9px 0;cursor:pointer;font-family:inherit;color:var(--text);text-align:left;font-size:11px}
 .dx-pool small{color:var(--muted);font-size:10px;display:block}
 </style>
-<link rel="stylesheet" href="/assets/theme.css">
-<script defer src="/assets/fx3d.js"></script>
+<script>(function(){var d=false;try{d=localStorage.getItem("mbc_theme")==="dark"}catch(e){}window.MBC_DARK=d;document.documentElement.setAttribute("data-theme",d?"dark":"light");var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d?"#05060d":"#f4f8ff";var c=document.querySelector('meta[name="color-scheme"]');if(c)c.content=d?"dark":"light";document.write('<link rel="stylesheet" id="themeCss" href="/assets/theme'+(d?'-dark':'')+'.css">')})();</script>
+<script defer src="/assets/fx3d.js"></script><script defer src="/assets/theme-switch.js"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -758,7 +758,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <script>
 (function(){
 "use strict";
-const tg=window.Telegram&&window.Telegram.WebApp;if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#050b1f");tg.setBackgroundColor("#050b1f")}catch(e){}}
+const tg=window.Telegram&&window.Telegram.WebApp;if(tg){tg.ready();tg.expand();try{tg.setHeaderColor("#f4f8ff");tg.setBackgroundColor("#f4f8ff")}catch(e){}}
 const STORAGE="blockchain_tracker_watchlist_v2",ALERTS="blockchain_tracker_alert_drafts_v1";
 const NETWORKS=[
 {id:"ethereum",name:"Ethereum",symbol:"ETH",abbr:"ETH"},{id:"bsc",name:"BNB Smart Chain",symbol:"BNB",abbr:"BNB"},{id:"polygon",name:"Polygon",symbol:"POL",abbr:"POL"},{id:"arbitrum",name:"Arbitrum One",symbol:"ARB",abbr:"ARB"},{id:"base",name:"Base",symbol:"ETH",abbr:"BASE"},{id:"optimism",name:"Optimism",symbol:"ETH",abbr:"OP"},{id:"avalanche",name:"Avalanche C-Chain",symbol:"AVAX",abbr:"AVAX"},{id:"solana",name:"Solana",symbol:"SOL",abbr:"SOL"},{id:"tron",name:"TRON",symbol:"TRX",abbr:"TRX"},{id:"ton",name:"TON",symbol:"TON",abbr:"TON"}];
@@ -1066,7 +1066,7 @@ function drawChart(){
   const wrap=document.createElement("div");wrap.className="tradingview-widget-container";wrap.style.cssText="height:100%;width:100%";
   const inner=document.createElement("div");inner.className="tradingview-widget-container__widget";inner.style.cssText="height:100%;width:100%";
   const sc=document.createElement("script");sc.src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";sc.async=true;
-  sc.text=JSON.stringify({autosize:true,symbol:$("chartSymbol").value,interval:"60",timezone:"Asia/Kolkata",theme:"dark",style:"1",locale:"en",allow_symbol_change:true,hide_side_toolbar:false,support_host:"https://www.tradingview.com"});
+  sc.text=JSON.stringify({autosize:true,symbol:$("chartSymbol").value,interval:"60",timezone:"Asia/Kolkata",theme:(window.MBC_DARK?"dark":"light"),style:"1",locale:"en",allow_symbol_change:true,hide_side_toolbar:false,support_host:"https://www.tradingview.com"});
   wrap.appendChild(inner);wrap.appendChild(sc);host.appendChild(wrap);
 }
 document.addEventListener("click",e=>{if(e.target.closest('[data-page="tools"]')&&!tvReady){tvReady=true;setTimeout(drawChart,50)}});
@@ -1487,7 +1487,7 @@ function openDex(p){
   if(!p)return;box.hidden=true;++token;cur={id:"",days:7,kind:"dex"};
   const bt=p.baseToken||{},qt=p.quoteToken||{},pc=p.priceChange||{},info=p.info||{},tx=(p.txns&&p.txns.h24)||{};
   const net=NETN[p.chainId]?p.chainId:"";
-  const frame="https://dexscreener.com/"+encodeURIComponent(p.chainId)+"/"+encodeURIComponent(p.pairAddress)+"?embed=1&theme=dark&trades=0&info=0";
+  const frame="https://dexscreener.com/"+encodeURIComponent(p.chainId)+"/"+encodeURIComponent(p.pairAddress)+"?embed=1&theme="+(window.MBC_DARK?"dark":"light")+"&trades=0&info=0";
   const dsUrl=/^https:\/\/dexscreener\.com\//.test(p.url||"")?p.url:"https://dexscreener.com/"+encodeURIComponent(p.chainId)+"/"+encodeURIComponent(p.pairAddress);
   const sites=(info.websites||[]).map(w=>({l:"Website",u:safeUrl(w&&w.url)})).concat((info.socials||[]).map(s=>({l:cap(s&&s.type),u:safeUrl(s&&s.url)}))).filter(x=>x.u).slice(0,5);
   const addr=String(bt.address||"");
@@ -2735,7 +2735,7 @@ function drawMetas(){
 
 /* ---------- detail modal ---------- */
 let cur=null,cseq=0,withTrades=false;
-const frameUrl=(it,tr)=>"https://dexscreener.com/"+encodeURIComponent(it.chain)+"/"+encodeURIComponent(it.pair)+"?embed=1&theme=dark&info=0&trades="+(tr?1:0);
+const frameUrl=(it,tr)=>"https://dexscreener.com/"+encodeURIComponent(it.chain)+"/"+encodeURIComponent(it.pair)+"?embed=1&theme="+(window.MBC_DARK?"dark":"light")+"&info=0&trades="+(tr?1:0);
 const dsUrl=it=>it.url||"https://dexscreener.com/"+encodeURIComponent(it.chain)+"/"+encodeURIComponent(it.pair);
 const stat=(l,v)=>'<div class="cm-s"><small>'+l+"</small><b>"+v+"</b></div>";
 function liveHtml(it){
