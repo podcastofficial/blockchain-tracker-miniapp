@@ -33,6 +33,15 @@ select{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding
 <body>
 <div id="bar"><button class="btn" id="back" type="button">← Back</button><img class="bar-logo" src="/assets/logo-96.png" alt="Multi Blockchain Tracker" width="30" height="30"><b id="ttl">Swap</b><button class="btn" id="wbtn" type="button">Connect wallet</button></div>
 <div id="fatal" style="display:none"></div>
+<div class="wrap" id="pick" style="display:none">
+  <div class="box"><small>Network</small><select id="pkNet" style="width:100%"></select></div>
+  <div class="box"><small>Token</small><select id="pkTok" style="width:100%"></select>
+    <input id="pkAddr" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Token contract address" style="display:none;width:100%;margin-top:10px;font-size:14px;font-weight:600;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 12px;color:var(--ink);font-family:inherit"></div>
+  <div class="chips" id="pkSide"><button type="button" data-s="buy" class="on">🟢 Buy</button><button type="button" data-s="sell">🔴 Sell</button></div>
+  <div id="pkErr" class="info warn" style="display:none"></div>
+  <button class="main" id="pkGo" type="button" style="margin-top:12px">Continue</button>
+  <p class="note">Choose the network and the token you want to trade. You can also open Swap from any coin page. Non-custodial: you approve every transaction inside your own wallet.</p>
+</div>
 <div class="wrap" id="app">
   <div class="box"><small id="payLbl">You pay</small><div class="row"><input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0" autocomplete="off"><select id="paySel"></select><span class="fix" id="payFix" style="display:none"></span></div></div>
   <div class="box"><small>You receive (estimate)</small><div class="row"><div class="recv" id="recv">—</div><select id="recvSel" style="margin-left:auto"></select><span class="fix" id="recvFix" style="margin-left:auto;display:none"></span></div></div>
@@ -73,6 +82,28 @@ const C = {
   43114: { name: "Avalanche", sym: "AVAX", rpc: "https://avalanche-c-chain-rpc.publicnode.com", ex: "https://snowtrace.io/tx/", st: [["USDC","0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",6],["USDT","0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",6]] }
 };
 const CH = C[chain];
+/* ---- opened without a coin (Home -> Swap): let the user pick network + token first ---- */
+if (!q.get("chain") && !q.get("token")) {
+  $("app").style.display = "none"; $("wbtn").style.display = "none"; $("pick").style.display = "block"; $("ttl").textContent = "Swap";
+  const NETS = [...Object.entries(C).map(([id, c]) => [Number(id), c.name, c.sym, false]), [SOL, "Solana", "SOL", true]];
+  $("pkNet").innerHTML = NETS.map(n => `<option value="${n[0]}">${n[1]}</option>`).join("");
+  let pSide = "buy";
+  const fillTok = () => { const n = NETS.find(x => String(x[0]) === $("pkNet").value); $("pkTok").innerHTML = `<option value="native">${n[2]} (native coin)</option><option value="custom">Other token (paste contract address)</option>`; $("pkAddr").style.display = "none"; $("pkAddr").placeholder = n[3] ? "Token mint address (Solana)" : "Token contract address (0x…)"; };
+  $("pkNet").onchange = fillTok; fillTok();
+  $("pkTok").onchange = () => { $("pkAddr").style.display = $("pkTok").value === "custom" ? "block" : "none"; };
+  $("pkSide").onclick = e => { const b = e.target.closest("button[data-s]"); if (!b) return; pSide = b.dataset.s; [...$("pkSide").children].forEach(x => x.classList.toggle("on", x === b)); };
+  $("pkGo").onclick = () => {
+    const id = Number($("pkNet").value), n = NETS.find(x => x[0] === id), err = m => { $("pkErr").textContent = m; $("pkErr").style.display = "block"; };
+    let token = "native", symbol = n[2];
+    if ($("pkTok").value === "custom") {
+      token = $("pkAddr").value.trim(); symbol = "TOKEN";
+      if (n[3] ? !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(token) : !/^0x[0-9a-fA-F]{40}$/.test(token)) return err(n[3] ? "Enter a valid Solana token mint address." : "Enter a valid token contract address (0x… with 40 characters).");
+    }
+    const qs = new URLSearchParams({ chain: String(id), token, side: pSide, sym: symbol });
+    location.href = (n[3] ? "/swap-widget.html?" : "/swap.html?") + qs;
+  };
+  await new Promise(() => {});   // stop here: the rest of this page needs a chosen coin
+}
 if (chain !== SOL && (!CH || !/^(native|0x[0-9a-fA-F]{40})$/.test(tokenParam))) fatal("This coin cannot be swapped in the app (unsupported network or token).");
 const coinAddr = tokenParam === "native" ? NATIVE : tokenParam;
 const isNative = a => a.toLowerCase() === NATIVE;
