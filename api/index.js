@@ -28,6 +28,7 @@ import { referral, attachReferral } from "../lib/referral.js";
 import { alertHistory } from "../lib/history.js";
 import { exportApi } from "../lib/export.js";
 import { confirmPayment } from "../lib/payments.js";
+import { renderKey, loadTemplates } from "../lib/templates.js";
 import { runMaintenance } from "../lib/maintenance.js";
 import { communityApi } from "../lib/community_api.js";
 import { scanCommunityContracts } from "../lib/community_contracts.js";
@@ -626,11 +627,17 @@ async function priceAlertsRun() {
       continue;
     }
     const fmt = n => n >= 1 ? n.toLocaleString("en-US", { maximumFractionDigits: 4 }) : String(Number(n.toPrecision(4)));
-    const text = `🔔 ${r.symbol} is ${r.direction === "above" ? "above" : "below"} $${fmt(r.target)}\nPrice now: $${fmt(p)}`;
+    const diffPct = (p - r.target) / r.target * 100;
+    let text = `🔔 ${r.symbol} is ${r.direction === "above" ? "above" : "below"} $${fmt(r.target)}\nPrice now: $${fmt(p)}`, parse_mode;   // plain fallback if the template cannot render
+    try {
+      text = renderKey("price_alert", { symbol: r.symbol, direction: r.direction === "above" ? "above" : "below", direction_icon: r.direction === "above" ? "📈" : "📉", target: "$" + fmt(r.target), price: "$" + fmt(p),
+        diff: (diffPct >= 0 ? "🟢 +" : "🔴 −") + Math.abs(diffPct).toFixed(2) + "%", time: new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC" }, await loadTemplates());
+      parse_mode = "HTML";
+    } catch { /* keep the plain text */ }
     try {
       const t = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: r.telegram_user_id, text })
+        body: JSON.stringify({ chat_id: r.telegram_user_id, text, ...(parse_mode ? { parse_mode, disable_web_page_preview: true } : {}) })
       });
       if (!t.ok) await db().query(`UPDATE price_alerts SET delivery_error=$2 WHERE id=$1`, [r.id, "TELEGRAM_" + t.status]);
     } catch {
