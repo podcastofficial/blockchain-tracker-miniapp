@@ -1,4 +1,4 @@
-/* Aurora Obsidian 3D effects — no libraries, ~4KB. Safe: does nothing if reduced-motion is on. */
+/* Blue Glass Light effects — no libraries, ~4KB. Safe: does nothing if reduced-motion is on. */
 (function(){
   "use strict";
   if(window.__fx3d)return;window.__fx3d=1;
@@ -35,14 +35,16 @@
   function size(){W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
   size();addEventListener("resize",size);
 
-  var COLORS=["45,226,230","160,107,255","255,95,184","109,123,255","255,194,74"];
+  var CL=["24,196,255","29,91,255","124,92,255","15,47,184","255,176,32"];
+  var CD=["45,226,230","160,107,255","255,95,184","109,123,255","255,194,74"];
+  function dark(){return document.documentElement.getAttribute("data-theme")==="dark";}
   var N=touch?9:16,items=[];
   function mk(i){
     return{x:Math.random()*W,y:Math.random()*H,z:Math.random()*.8+.2,
       s:(18+Math.random()*34),rx:Math.random()*6.28,ry:Math.random()*6.28,
       vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,
       vrx:(Math.random()-.5)*.012,vry:(Math.random()-.5)*.012,
-      c:COLORS[i%COLORS.length],t:i%3}; /* 0 cube, 1 octahedron, 2 ring */
+      c:i%5,t:i%3}; /* 0 cube, 1 octahedron, 2 ring */
   }
   for(var i=0;i<N;i++)items.push(mk(i));
 
@@ -56,8 +58,8 @@
     c=Math.cos(ay);s=Math.sin(ay);var x2=x*c+z1*s,z2=-x*s+z1*c;return[x2,y1,z2];
   }
   function draw(it){
-    var a=.10+it.z*.22,col="rgba("+it.c+",";
-    ctx.lineWidth=1.1;ctx.strokeStyle=col+a+")";ctx.shadowColor=col+"0.55)";ctx.shadowBlur=10*it.z;
+    var dk=dark(),a=dk?.10+it.z*.22:.16+it.z*.30,col="rgba("+(dk?CD:CL)[it.c]+",";
+    ctx.lineWidth=1.1;ctx.strokeStyle=col+a+")";ctx.shadowColor=col+(dk?"0.55)":"0.35)");ctx.shadowBlur=(dk?10:8)*it.z;
     var sc=it.s*it.z;
     if(it.t===2){ /* 3D ring */
       ctx.beginPath();
