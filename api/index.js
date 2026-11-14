@@ -32,6 +32,7 @@ import { renderKey, loadTemplates } from "../lib/templates.js";
 import { runMaintenance } from "../lib/maintenance.js";
 import { communityApi } from "../lib/community_api.js";
 import { scanCommunityContracts } from "../lib/community_contracts.js";
+import { scanChatWatches } from "../lib/chat_watch.js";
 import { pointsApi } from "../lib/points_api.js";
 import { forceJoinApi, joinBlocked } from "../lib/forcejoin.js";
 import { scannerApi } from "../lib/scanner.js";
@@ -689,6 +690,10 @@ export default async function handler(req, res) {
     if (path === "/api/cron/community-contracts") {
       if (!cronAuthorized(req)) return send(res,401,{ok:false,error:"UNAUTHORIZED"});
       return send(res,200,{ok:true,...await scanCommunityContracts()});
+    }
+    if (path === "/api/cron/chat-watches") {
+      if (!cronAuthorized(req)) return send(res,401,{ok:false,error:"UNAUTHORIZED"});
+      return send(res,200,{ok:true,...await scanChatWatches(),contracts:await scanCommunityContracts()});
     }
 
     if (path === "/api/auth/code") return await codeLogin(req, res);
