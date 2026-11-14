@@ -39,4 +39,7 @@ UPDATE community_contract_watches w SET chat_id = c.chat_id FROM communities c W
 CREATE UNIQUE INDEX IF NOT EXISTS uq_ccw_chat ON community_contract_watches(chat_id, network, token_norm) WHERE chat_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_ccw_chat ON community_contract_watches(chat_id, status);
 
+-- Community monitor: auto-watch every address members submit with /track (admins toggle with /autowatch on|off).
+ALTER TABLE community_settings ADD COLUMN IF NOT EXISTS auto_watch BOOLEAN NOT NULL DEFAULT TRUE;
+
 COMMIT;
