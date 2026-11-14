@@ -87,13 +87,13 @@ t("riskNotes flags are facts, not verdicts", riskNotes({ liquidity: 5000, create
 // ---------- flows ----------
 reset({ networks: ["ethereum"] });
 await processCommunityMessage(msg("/track " + EVM));
-t("wallet: posted to originating chat with balance + explorer link", msgs().length === 1 && msgs()[0].chat_id === -100 && /Wallet detected/.test(msgs()[0].text) && /1\.5 ETH \(~\$3,000\)/.test(msgs()[0].text) && /etherscan\.io\/address/.test(JSON.stringify(msgs()[0].reply_markup)));
+t("wallet: posted to originating chat with balance + explorer link", msgs().length === 1 && msgs()[0].chat_id === -100 && /WALLET DETECTED/.test(msgs()[0].text) && /1\.5 ETH \(~\$3,000\)/.test(msgs()[0].text) && /etherscan\.io\/address/.test(JSON.stringify(msgs()[0].reply_markup)));
 t("wallet: attribution + no safety claim", /Powered by Multi Blockchain Tracker/.test(msgs()[0].text) && /not a safety verdict/.test(msgs()[0].text));
 t("notification marked sent", notifs[0].status === "sent" && notifs[0].kind === "wallet");
 
 reset({ networks: ["base"] }); contractAddr = TOKEN;
 await processCommunityMessage(msg("/track " + TOKEN));
-t("token: name, price, liquidity, notes and Token Details button", /Token detected/.test(msgs()[0].text) && /Test Token<\/b> \(TST\)/.test(msgs()[0].text) && /Liquidity:<\/b> \$5,000/.test(msgs()[0].text) && /Low liquidity/.test(msgs()[0].text) && /Token Details/.test(JSON.stringify(msgs()[0].reply_markup)));
+t("token: name, price, liquidity, notes and Token Details button", /TOKEN DETECTED/.test(msgs()[0].text) && /Name:<\/b> Test Token \(TST\)/.test(msgs()[0].text) && /Liquidity:<\/b> \$5,000/.test(msgs()[0].text) && /Low liquidity/.test(msgs()[0].text) && /Token Details/.test(JSON.stringify(msgs()[0].reply_markup)));
 t("token: replies to the original message", msgs()[0].reply_to_message_id === 42);
 
 reset({ networks: ["base"] }); rpcFail = true; contractAddr = TOKEN2;
@@ -103,14 +103,14 @@ rpcFail = false; contractAddr = TOKEN;
 
 reset({ networks: ["tron"] }); contractAddr = "";
 await processCommunityMessage(msg("/track " + TRON));
-t("tron wallet via /track", /Wallet detected/.test(msgs()[0].text) && /Tron/.test(msgs()[0].text) && /5 TRX/.test(msgs()[0].text));
+t("tron wallet via /track", /WALLET DETECTED/.test(msgs()[0].text) && /Tron/.test(msgs()[0].text) && /5 TRX/.test(msgs()[0].text));
 
 reset(); contractAddr = "";
 await processCommunityMessage(msg("/track " + EVM));
 t("ambiguous EVM: asks for network, nothing queued", msgs().length === 1 && /Which network/.test(msgs()[0].text) && notifs.length === 0);
 sent.length = 0;
 await processCommunityCallback({ id: "cb1", data: "cm:7:base", from: { id: 5 }, message: { message_id: 77, chat: { id: -100, type: "supergroup" }, reply_to_message: { message_id: 42 } } });
-t("network choice: details posted as a reply to the member's ORIGINAL message", msgs().length === 1 && /Wallet detected/.test(msgs()[0].text) && /Base/.test(msgs()[0].text) && msgs()[0].reply_to_message_id === 42);
+t("network choice: details posted as a reply to the member's ORIGINAL message", msgs().length === 1 && /WALLET DETECTED/.test(msgs()[0].text) && /Base/.test(msgs()[0].text) && msgs()[0].reply_to_message_id === 42);
 const iSend = sent.findIndex(s => s.method === "sendMessage"), iDel = sent.findIndex(s => s.method === "deleteMessage");
 t("network choice: 'loading details…' prompt is deleted AFTER the details are posted", iDel > iSend && iSend >= 0 && sent[iDel].message_id === 77 && sent[iDel].chat_id === -100);
 reset(); tgMode = "500";
@@ -123,7 +123,7 @@ deleteDenied = false; reset();
 
 reset({ networks: ["ethereum", "base"] });
 await processCommunityMessage(msg("/tx " + HASH));
-t("tx hash: found on the right chain, status, amount, block time", /Transaction/.test(msgs()[0].text) && /Ethereum/.test(msgs()[0].text) && /Success/.test(msgs()[0].text) && /2 ETH/.test(msgs()[0].text) && /2026-11-13 12:30 UTC/.test(msgs()[0].text) && /etherscan\.io\/tx/.test(JSON.stringify(msgs()[0].reply_markup)));
+t("tx hash: found on the right chain, status, amount, block time", /TRANSACTION REPORT/.test(msgs()[0].text) && /Ethereum/.test(msgs()[0].text) && /Success/.test(msgs()[0].text) && /2 ETH/.test(msgs()[0].text) && /2026-11-13 12:30 UTC/.test(msgs()[0].text) && /etherscan\.io\/tx/.test(JSON.stringify(msgs()[0].reply_markup)));
 reset({ networks: ["ethereum"] }); sent.length = 0;
 await processCommunityMessage(msg("/tx 0x" + "cd".repeat(32)));
 t("tx hash not found: says so plainly", /wasn't found/.test(msgs()[0].text));
@@ -145,10 +145,10 @@ await processCommunityMessage(msg("wallet " + EVM));
 t("even with the old auto_detect flag on, nothing is scanned", msgs().length === 0 && notifs.length === 0);
 reset({ networks: ["ethereum"] });
 await processCommunityMessage(msg("/track", { reply_to_message: { message_id: 40, text: "send funds to " + EVM } }));
-t("/track as a reply uses the address from the replied message", msgs().length === 1 && /Wallet detected/.test(msgs()[0].text) && msgs()[0].reply_to_message_id === 42);
+t("/track as a reply uses the address from the replied message", msgs().length === 1 && /WALLET DETECTED/.test(msgs()[0].text) && msgs()[0].reply_to_message_id === 42);
 reset({ networks: ["ethereum"] });
 await processCommunityMessage(msg("/tx", { reply_to_message: { message_id: 40, text: "hash " + HASH } }));
-t("/tx as a reply uses the hash from the replied message", msgs().length === 1 && /Transaction/.test(msgs()[0].text));
+t("/tx as a reply uses the hash from the replied message", msgs().length === 1 && /TRANSACTION REPORT/.test(msgs()[0].text));
 reset({ networks: ["ethereum"] });
 await processCommunityMessage(msg("/track"));
 t("/track with nothing to look up: shows usage, no lookup", msgs().length === 1 && /Usage: \/track/.test(msgs()[0].text) && notifs.length === 0);

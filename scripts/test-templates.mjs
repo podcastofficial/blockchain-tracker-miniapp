@@ -71,7 +71,7 @@ t("whale event carries a templated html text (custom)", out.events.length > 0 &&
 t("whale event keeps the plain summary for the Mini App history", /^🐋 Whale transfer on ethereum\n\$2,000,000/.test(out.events[0].summary));
 store.delete("whale"); T.clearTemplateCache();
 const out2 = await scanRule({ kind: "whale", network: "ethereum", min_usd: 10000, state: { block: 990 } });
-t("whale event default layout", /Whale transfer<\/b> · 🔷 Ethereum/.test(out2.events[0].html) && /href="https:\/\/etherscan\.io\/tx\//.test(out2.events[0].html));
+t("whale event default layout", /WHALE TRANSFER ALERT<\/b>/.test(out2.events[0].html) && /Network:<\/b> Ethereum/.test(out2.events[0].html) && /href="https:\/\/etherscan\.io\/tx\//.test(out2.events[0].html));
 
 const list = [{ id: "bitcoin", symbol: "BTC", name: "Bitcoin", price: 100, rank: 1, c1h: 1, c4h: 2, c8h: 3, c24h: 4, spark: [] }];
 const post = await composePost({ title: "x", list, template: "📈 <b>{network}</b>\n{coins}\n{more}\n{time}", vars: { network: "Crypto", time: "T" }, media: "none", buttons: false });
