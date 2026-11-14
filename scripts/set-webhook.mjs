@@ -7,7 +7,7 @@ const appUrl = (process.env.APP_URL || process.env.MINIAPP_URL || "").replace(/\
 const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
 const COMMANDS = [
   ["track","Look up an address, token or transaction"],["watchwallet","Alert on a wallet's incoming/outgoing transactions"],
-  ["watchactivity","Alert on smart-contract activity"],["watchcontract","Alert on token BUY/SELL"],["watchlist","Show active watches"],
+  ["watchactivity","Alert on smart-contract activity"],["watchcontract","Alert on token BUY/SELL"],["watchlist","Show active watches"],["autowatch","Auto-watch addresses sent with /track"],
   ["unwatch","Remove a watch"],["trackinfo","Status / details of an address"],["settings","Open settings"],["price","Live price, e.g. /price btc"],
   ["alerts","Your active alerts"],["help","All commands"]
 ].map(([command, description]) => ({ command, description }));
