@@ -707,6 +707,24 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <div class="card-title" style="margin-top:18px;font-size:12px">Recent channel posts</div>
     <div class="table-wrap"><table><thead><tr><th>Time</th><th>Channel</th><th>Type</th><th>Status</th><th>Message</th></tr></thead><tbody id="chLog"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
   </div>
+  <div class="card" style="margin-top:15px" id="tpCard">
+    <div class="card-head"><div><div class="card-title">Alert Texts</div><div class="card-sub">Change how every bot message looks: transaction, wallet, token, BUY/SELL, price, whale, new token, liquidity and more. Tap one to edit.</div></div></div>
+    <div id="tpList"><div class="muted">Loading…</div></div>
+    <div id="tpEd" style="display:none;margin-top:14px;padding:14px;border:1.5px solid var(--border);border-radius:12px">
+      <div class="card-title" id="tpEdTitle" style="margin-bottom:2px"></div><div class="card-sub" id="tpEdGroup" style="margin-bottom:10px"></div>
+      <div class="field"><label for="tpText">Message text</label><textarea id="tpText" maxlength="3000" spellcheck="false" style="min-height:230px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px"></textarea></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn small" type="button" data-tp-wrap="b"><b>B</b></button><button class="btn small" type="button" data-tp-wrap="i"><i>I</i></button><button class="btn small" type="button" data-tp-wrap="u"><u>U</u></button><button class="btn small" type="button" data-tp-wrap="code">&lt;/&gt;</button>
+        <button class="btn small" type="button" data-tp-ins="━━━━━━━━━━━━━━━━━━">━ line</button>
+      </div>
+      <div class="muted" style="font-size:10px">Tap a placeholder to insert it. If the data for a line is missing, that line is hidden automatically. <b>{name?}</b> keeps the line even when empty. Emojis are fine.</div>
+      <div id="tpVars" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px"></div>
+      <div class="card-title" style="font-size:12px">Preview (sample data)</div>
+      <div id="tpPrev" style="white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.45;padding:12px;border:1px solid var(--border);border-radius:12px;margin:6px 0 12px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="tpPreviewBtn" type="button">👁 Preview</button><button class="btn primary small" id="tpSave" type="button">Save</button><button class="btn small" id="tpReset" type="button">↺ Default</button><button class="btn small" id="tpClose" type="button">Close</button></div>
+      <div class="muted" id="tpMsg" style="font-size:11px;margin-top:8px"></div>
+    </div>
+  </div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Payments</div><div class="card-sub">Latest 50 invoices</div></div><select class="control" id="adPayFilter"><option value="">All</option><option value="confirmed">Confirmed</option><option value="pending">Pending</option><option value="verifying">Verifying</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div><div class="table-wrap"><table><thead><tr><th>Created</th><th>User</th><th>Plan</th><th>Network</th><th>Amount</th><th>Status</th><th>Tx</th></tr></thead><tbody id="adPayRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Users</div><div class="card-sub">Search by @username, Telegram ID or internal ID</div></div></div><div class="toolbar"><input class="control" id="adUserQ" placeholder="Search users" style="flex:1;min-width:160px"><button class="btn" id="adUserBtn" type="button">Search</button></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>User</th><th>Plan</th><th>Joined</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adUserRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Grant Plan</div><div class="card-sub">Gives a paid plan without payment. Every grant is audit-logged.</div></div></div><div class="form-grid"><div class="field"><label for="adGrantUser">Internal user ID</label><input id="adGrantUser" type="number" min="1" step="1" inputmode="numeric" placeholder="Tap Grant on a user row"></div><div class="field"><label for="adGrantPlan">Plan</label><select id="adGrantPlan"><option value="pro">Pro</option><option value="business">Business</option><option value="enterprise">Enterprise</option></select></div><div class="field"><label for="adGrantDays">Days (1 to 3650)</label><input id="adGrantDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30"></div></div><button class="btn primary" id="adGrantBtn" type="button" style="margin-top:12px">Grant plan</button><div class="form-message" id="adGrantMsg"></div></div>
@@ -2106,7 +2124,7 @@ async function loadAdmin(force){
     const d=await api("/admin/stats");
     isAdmin=true;adShown=true;adT=Date.now();showAdminUi();
     gate.style.display="none";bodyEl.style.display="";
-    drawAdminStats(d);drawProviders();loadPayments();loadUsers();loadChannels();
+    drawAdminStats(d);drawProviders();loadPayments();loadUsers();loadChannels();loadTemplatesUi();
   }catch(e){
     isAdmin=false;adShown=false;gate.style.display="";bodyEl.style.display="none";
     gate.textContent=e.status===403?"This account is not on the admin list.":(ADMSG[e.message]||"Could not load admin data. Try again.");
@@ -2299,6 +2317,61 @@ g("chCard").addEventListener("click",async e=>{
       case"run":ra.disabled=true;await post("/admin/rule-run",{id},d=>d.posted?"Posted to channel":d.error?"Failed: "+d.error:"Nothing to post right now");break;
       case"del":if(confirm("Delete this alert?"))await post("/admin/rule-delete",{id},"Alert deleted");break;
     }
+  }
+});
+/* ---- Alert texts (editable message formats) ---- */
+const TPMSG={TEMPLATES_NOT_MIGRATED:"Run db/alert_templates.sql in your Neon database, then refresh.",UNKNOWN_PLACEHOLDER:"Unknown placeholder",TEMPLATE_BAD_HTML:"Formatting problem",TEMPLATE_EMPTY:"The text is empty.",TEMPLATE_TOO_LONG:"Too long (max 3000 characters).",TEMPLATES_FAILED:"Server error. Try again.",UNKNOWN_TEMPLATE:"Unknown alert text."};
+const tpMsg=e=>(TPMSG[e.message]||ADMSG[e.message]||"Request failed.")+(e.payload&&e.payload.detail?": "+e.payload.detail:"");
+let tpData=null,tpKey=null;
+const tpFind=k=>tpData&&tpData.find(t=>t.key===k);
+function tpSafe(html){ /* Telegram HTML subset only: b i u s code pre a(https) blockquote; everything else becomes plain text */
+  const ok=new Set(["B","STRONG","I","EM","U","INS","S","STRIKE","DEL","CODE","PRE","A","BLOCKQUOTE"]),tpl=document.createElement("template");tpl.innerHTML=String(html||"");
+  const walk=(n,out)=>{for(const c of n.childNodes){
+    if(c.nodeType===3)out.appendChild(document.createTextNode(c.nodeValue));
+    else if(c.nodeType===1&&ok.has(c.tagName)){const el=document.createElement(c.tagName.toLowerCase());if(c.tagName==="A"){const h=c.getAttribute("href")||"";if(/^https:\/\//.test(h)){el.setAttribute("href",h);el.setAttribute("target","_blank");el.setAttribute("rel","noopener noreferrer")}}else if(c.tagName==="CODE"||c.tagName==="PRE")el.style.fontFamily="ui-monospace,Menlo,monospace";walk(c,el);out.appendChild(el)}
+    else if(c.nodeType===1)walk(c,out)}};
+  const box=document.createElement("div");walk(tpl.content,box);return box;
+}
+function tpShowPreview(html){const el=g("tpPrev");el.textContent="";el.appendChild(tpSafe(html))}
+function tpRender(){
+  if(!tpData)return;const groups={};tpData.forEach(t=>(groups[t.group]||=[]).push(t));
+  g("tpList").innerHTML=Object.entries(groups).map(([name,list])=>`<div class="card-title" style="font-size:12px;margin:14px 0 6px">${E(name)}</div>`+list.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border)"><div style="min-width:0"><strong style="font-size:12px">${E(t.title)}</strong><div class="muted mono" style="font-size:10px">${E(t.key)}</div></div><div style="display:flex;gap:8px;align-items:center"><span class="tag ${t.custom?"yellow":"green"}">${t.custom?"CUSTOM":"DEFAULT"}</span><button class="btn small" type="button" data-tp-edit="${E(t.key)}">Edit</button></div></div>`).join("")).join("");
+}
+async function loadTemplatesUi(){
+  try{const d=await api("/admin/templates");tpData=d.templates;tpRender();if(tpKey&&tpFind(tpKey))tpOpen(tpKey,true)}
+  catch(e){g("tpList").innerHTML=empty(e.message==="TEMPLATES_NOT_MIGRATED"?"Alert texts not set up yet":"Could not load alert texts",tpMsg(e))}
+}
+function tpOpen(key,keepText){
+  const t=tpFind(key);if(!t)return;tpKey=key;
+  g("tpEdTitle").textContent=t.title;g("tpEdGroup").textContent=t.group+" · "+(t.custom?"custom text":"default text");
+  if(!keepText)g("tpText").value=t.text;g("tpMsg").textContent="";tpShowPreview(t.preview);
+  g("tpVars").innerHTML=Object.entries(t.vars).map(([k,d])=>`<button class="btn small" type="button" data-tp-var="${E(k)}" title="${E(d)}" style="font-family:ui-monospace,Menlo,monospace;font-size:11px">{${E(k)}}</button>`).join("")||'<span class="muted" style="font-size:10px">This text has no placeholders.</span>';
+  g("tpEd").style.display="";g("tpEd").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function tpInsert(before,after=""){
+  const ta=g("tpText"),a=ta.selectionStart,b=ta.selectionEnd,sel=ta.value.slice(a,b);
+  ta.value=ta.value.slice(0,a)+before+sel+after+ta.value.slice(b);ta.focus();const pos=a+before.length+sel.length+(sel?after.length:0);ta.setSelectionRange(sel?pos:a+before.length,sel?pos:a+before.length);
+}
+g("tpCard").addEventListener("click",async ev=>{
+  const b=ev.target.closest("button");if(!b)return;
+  if(b.dataset.tpEdit){tpOpen(b.dataset.tpEdit);return}
+  if(b.dataset.tpVar){tpInsert("{"+b.dataset.tpVar+"}");return}
+  if(b.dataset.tpWrap){tpInsert("<"+b.dataset.tpWrap+">","</"+b.dataset.tpWrap+">");return}
+  if(b.dataset.tpIns){tpInsert(b.dataset.tpIns);return}
+  const msg=g("tpMsg");
+  if(b.id==="tpClose"){g("tpEd").style.display="none";tpKey=null;return}
+  if(!tpKey)return;
+  if(b.id==="tpPreviewBtn"||b.id==="tpSave"){
+    const save=b.id==="tpSave";b.disabled=true;msg.style.color="";msg.textContent=save?"Saving…":"Checking…";
+    try{const d=await api(save?"/admin/template-save":"/admin/template-preview",{method:"POST",body:JSON.stringify({key:tpKey,text:g("tpText").value})});tpShowPreview(d.preview);
+      if(save){toast("Alert text saved");msg.textContent="Saved ✓ — new messages use this text (within 30 seconds).";await loadTemplatesUi()}else msg.textContent="Looks good ✓"}
+    catch(e){msg.style.color="var(--red,#ef4444)";msg.textContent=tpMsg(e)}
+    b.disabled=false;return;
+  }
+  if(b.id==="tpReset"){
+    if(!confirm("Go back to the default text for this alert?"))return;
+    b.disabled=true;try{const d=await api("/admin/template-reset",{method:"POST",body:JSON.stringify({key:tpKey})});g("tpText").value=d.text;tpShowPreview(d.preview);toast("Default text restored");await loadTemplatesUi()}catch(e){msg.style.color="var(--red,#ef4444)";msg.textContent=tpMsg(e)}
+    b.disabled=false;
   }
 });
 onPage("admin",()=>loadAdmin(false));
@@ -2766,7 +2839,6 @@ function warnings(c){
   const w=[];
   if(c.status==="paused")w.push("Monitoring is paused. Nothing is detected or posted until you resume.");
   if(!c.canPost)w.push(c.type==="channel"?"The bot needs the “Post messages” admin permission in this channel.":"The bot cannot post in this chat. Check its permissions.");
-  if(c.type!=="channel"&&!c.canRead)w.push("Make the bot a group admin (or turn off its privacy mode) so it can see messages for automatic detection. /track commands work either way.");
   return w.map(x=>`<div class="notice">${esc(x)}</div>`).join("");
 }
 const statusTag=s=>s==="active"?'<span class="tag green">ACTIVE</span>':s==="paused"?'<span class="tag yellow">PAUSED</span>':'<span class="tag red">DISCONNECTED</span>';
@@ -2812,8 +2884,9 @@ function renderSettings(s){
   const nets=Object.entries(st.networks).map(([k,v])=>`<label style="display:inline-flex;gap:6px;align-items:center;margin:0 14px 8px 0;font-size:11px"><input type="checkbox" data-cmty-net="${esc(k)}"${s.networks.includes(k)?" checked":""} style="accent-color:#7c3aed"> ${esc(v)}</label>`).join("");
   const c=st.cur;
   return `<div class="card"><div class="card-head"><div><div class="card-title">Detection</div><div class="card-sub">What the bot reacts to in this chat</div></div></div>
-    ${chk("cmtyAuto","Automatic detection","Scan messages and channel posts for addresses",s.auto_detect)}${chk("cmtyCmd","Command detection","Respond to /track and /tx",s.command_detect)}
-    ${chk("cmtyW","Wallets","Post details when a wallet address is found",s.detect_wallets)}${chk("cmtyC","Contracts","Post details when a contract is found",s.detect_contracts)}${chk("cmtyT","Tokens","Post details when a token is found",s.detect_tokens)}
+    <div class="notice" style="margin:0 0 10px">The bot looks at an address only when someone sends <b>/track</b> or <b>/tx</b> (or replies to a message with /track). Normal messages are never scanned.</div>
+    ${chk("cmtyCmd","Commands","Respond to /track and /tx",s.command_detect)}
+    ${chk("cmtyW","Wallets","Answer /track for wallet addresses",s.detect_wallets)}${chk("cmtyC","Contracts","Answer /track for smart contracts",s.detect_contracts)}${chk("cmtyT","Tokens","Answer /track for tokens",s.detect_tokens)}
     <div class="card-title" style="margin-top:16px">Networks</div><div class="card-sub" style="margin-bottom:10px">Leave all unticked to allow every supported network. With one EVM network selected the bot never has to ask which chain a 0x address is on.</div>${nets}
     <div class="toolbar" style="margin-top:12px"><label class="muted" style="font-size:11px">Duplicate window (minutes)<br><input class="control" id="cmtyDedupe" type="number" min="1" max="10080" value="${esc(s.dedupe_window_minutes)}" style="width:130px"></label><label class="muted" style="font-size:11px">Max replies per hour<br><input class="control" id="cmtyLimit" type="number" min="1" max="600" value="${esc(s.max_notifications_per_hour)}" style="width:130px"></label></div>
     <div class="toolbar" style="margin-top:6px"><button class="btn primary" id="cmtySave" type="button">Save settings</button><span class="muted" id="cmtySaveMsg" style="font-size:11px"></span></div></div>
@@ -2884,7 +2957,7 @@ async function openCommunity(id){
 }
 async function saveSettings(){
   const btn=$("cmtySave"),out=$("cmtySaveMsg");
-  const body={auto_detect:$("cmtyAuto").checked,command_detect:$("cmtyCmd").checked,detect_wallets:$("cmtyW").checked,detect_contracts:$("cmtyC").checked,detect_tokens:$("cmtyT").checked,
+  const body={auto_detect:false,command_detect:$("cmtyCmd").checked,detect_wallets:$("cmtyW").checked,detect_contracts:$("cmtyC").checked,detect_tokens:$("cmtyT").checked,
     networks:[...document.querySelectorAll("[data-cmty-net]")].filter(x=>x.checked).map(x=>x.dataset.cmtyNet),dedupe_window_minutes:Number($("cmtyDedupe").value),max_notifications_per_hour:Number($("cmtyLimit").value)};
   if(!Number.isInteger(body.dedupe_window_minutes)||body.dedupe_window_minutes<1||body.dedupe_window_minutes>10080){out.textContent="Duplicate window must be 1–10080 minutes.";return}
   if(!Number.isInteger(body.max_notifications_per_hour)||body.max_notifications_per_hour<1||body.max_notifications_per_hour>600){out.textContent="Hourly limit must be 1–600.";return}
