@@ -93,7 +93,7 @@ t("notification marked sent", notifs[0].status === "sent" && notifs[0].kind === 
 
 reset({ networks: ["base"] }); contractAddr = TOKEN;
 await processCommunityMessage(msg(TOKEN));
-t("token: name, price, liquidity, notes and Token Details button", /Token detected/.test(msgs()[0].text) && /Test Token<\/b> \(TST\)/.test(msgs()[0].text) && /Liquidity: \$5,000/.test(msgs()[0].text) && /Low liquidity/.test(msgs()[0].text) && /Token Details/.test(JSON.stringify(msgs()[0].reply_markup)));
+t("token: name, price, liquidity, notes and Token Details button", /Token detected/.test(msgs()[0].text) && /Test Token<\/b> \(TST\)/.test(msgs()[0].text) && /Liquidity:<\/b> \$5,000/.test(msgs()[0].text) && /Low liquidity/.test(msgs()[0].text) && /Token Details/.test(JSON.stringify(msgs()[0].reply_markup)));
 t("token: replies to the original message", msgs()[0].reply_to_message_id === 42);
 
 reset({ networks: ["base"] }); rpcFail = true; contractAddr = TOKEN2;
