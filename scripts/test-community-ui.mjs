@@ -40,12 +40,12 @@ t("add-to-group / add-to-channel links built from the bot username", /startgroup
 click({ cmtyAdd: "https://t.me/mbc_bot?startgroup" }); t("add button opens Telegram link", opened[0] === "https://t.me/mbc_bot?startgroup");
 t("single community opens automatically on Overview", /Active addresses/.test(getEl("cmtyPane").innerHTML));
 t("overview shows counts, attention figures and notification types", /stat-value">4</.test(getEl("cmtyPane").innerHTML) && /1 retrying · 1 failed · 2 skipped/.test(getEl("cmtyPane").innerHTML) && /Transactions/.test(getEl("cmtyPane").innerHTML) && /Wallets/.test(getEl("cmtyPane").innerHTML));
-t("group without read access shows the privacy/admin warning", /group admin/.test(getEl("cmtyWarn").innerHTML));
+t("command-only: no privacy-mode warning any more (commands work for every group)", !/group admin/.test(getEl("cmtyWarn").innerHTML));
 t("title is set via textContent (no HTML injection)", getEl("cmtyTitle").textContent === evil);
 
 click({ cmtyTab: "settings" }); await tick();
-t("settings form shows current values and network selection", /id="cmtyAuto" checked/.test(getEl("cmtyPane").innerHTML) && /id="cmtyCmd">/.test(getEl("cmtyPane").innerHTML) && /data-cmty-net="base" checked/.test(getEl("cmtyPane").innerHTML) && /value="60"/.test(getEl("cmtyPane").innerHTML));
-Object.assign(getEl("cmtyAuto"), { checked: false }); Object.assign(getEl("cmtyCmd"), { checked: true }); Object.assign(getEl("cmtyW"), { checked: true }); Object.assign(getEl("cmtyC"), { checked: true }); Object.assign(getEl("cmtyT"), { checked: false });
+t("settings form shows current values and network selection", /Normal messages are never scanned/.test(getEl("cmtyPane").innerHTML) && !/id="cmtyAuto"/.test(getEl("cmtyPane").innerHTML) && /id="cmtyCmd">/.test(getEl("cmtyPane").innerHTML) && /data-cmty-net="base" checked/.test(getEl("cmtyPane").innerHTML) && /value="60"/.test(getEl("cmtyPane").innerHTML));
+Object.assign(getEl("cmtyCmd"), { checked: true }); Object.assign(getEl("cmtyW"), { checked: true }); Object.assign(getEl("cmtyC"), { checked: true }); Object.assign(getEl("cmtyT"), { checked: false });
 getEl("cmtyDedupe").value = "45"; getEl("cmtyLimit").value = "20"; netBoxes = [{ checked: true, dataset: { cmtyNet: "base" } }, { checked: false, dataset: { cmtyNet: "ethereum" } }];
 click({}, "cmtySave"); await tick();
 t("save sends exactly the form values", posted.length === 1 && JSON.stringify(posted[0].body) === JSON.stringify({ auto_detect: false, command_detect: true, detect_wallets: true, detect_contracts: true, detect_tokens: false, networks: ["base"], dedupe_window_minutes: 45, max_notifications_per_hour: 20 }) && /Saved/.test(getEl("cmtySaveMsg").textContent));

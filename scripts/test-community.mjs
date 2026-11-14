@@ -176,7 +176,10 @@ await processCommunityMessage(msg("/track " + EVM, { message_id: 1 })); await pr
 t("hourly limit: second notification suppressed", msgs().length === 1 && notifs[1].status === "suppressed");
 reset({ networks: ["ethereum"], detect_wallets: false });
 await processCommunityMessage(msg("/track " + EVM, { message_id: 9 }));
-t("wallet type toggle off: explicit /track still answers", msgs().length === 1);
+t("wallet answers turned off by the admin: /track on a wallet posts nothing", msgs().length === 0 && notifs[0].status === "suppressed");
+reset({ networks: ["ethereum"], detect_tokens: false });
+await processCommunityMessage(msg("/track " + EVM, { message_id: 10 }));
+t("only the turned-off type is skipped (wallet still answered)", msgs().length === 1);
 reset({ networks: ["ethereum"] });
 await processCommunityMessage(msg("/track " + EVM)); sent.length = 0; community.status = "paused"; notifs.push({ id: 99, community_id: 1, subject: { type: "address", family: "evm", address: EVM, network: "ethereum" }, mode: "auto", status: "pending", attempts: 0, next_attempt_at: 0 });
 await processNotification(99);
