@@ -670,6 +670,12 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
         <div><div class="eyebrow">SELECTED MARKET</div><div class="spot-pair" id="spotPair">—</div><div class="muted" id="spotChain">Choose a market</div></div>
         <div class="spot-last"><small>Last internal trade</small><strong id="spotLastPrice">—</strong><small id="spotLastTime">No completed trades yet</small></div>
       </div>
+      <div class="card spot-chart-card" style="margin-bottom:14px">
+        <div class="card-head spot-chart-head"><div><div class="card-title">Market chart</div><div class="card-sub" id="spotChartCaption">Candles from completed internal spot trades</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="spot-timeframes" id="spotTimeframes"><button type="button" class="active" data-spot-tf="15m">15m</button><button type="button" data-spot-tf="1h">1H</button><button type="button" data-spot-tf="4h">4H</button><button type="button" data-spot-tf="1d">1D</button></div><div class="spot-timeframes"><button type="button" class="active" data-spot-indicator="sma7">SMA 7</button><button type="button" data-spot-indicator="sma25">SMA 25</button></div></div></div>
+        <div class="spot-ticker-strip"><div><small>24h change</small><strong id="spotTickerChange">—</strong></div><div><small>24h high</small><strong id="spotTickerHigh">—</strong></div><div><small>24h low</small><strong id="spotTickerLow">—</strong></div><div><small>24h volume</small><strong id="spotTickerVolume">—</strong></div><div><small>24h trades</small><strong id="spotTickerTrades">—</strong></div></div>
+        <div class="spot-chart-wrap"><canvas id="spotChart" aria-label="Internal spot market candlestick chart"></canvas><div id="spotChartEmpty" class="spot-chart-empty">No completed internal trades yet. Candles appear after orders match.</div></div>
+        <div class="spot-chart-legend"><span><i class="up"></i> Bullish</span><span><i class="down"></i> Bearish</span><span><i style="background:#f0b90b"></i> SMA 7</span><span><i style="background:#8b7cff"></i> SMA 25</span><span>Volume is base-asset quantity</span></div>
+      </div>
       <div class="grid spot-columns">
         <div class="card">
           <div class="card-head"><div><div class="card-title">Order book</div><div class="card-sub">Open internal limit orders</div></div></div>
@@ -689,6 +695,10 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
           <button class="btn primary" id="spotSubmit" type="button" style="width:100%;margin-top:12px">Buy</button>
           <div class="form-message" id="spotMessage" role="status"></div>
         </div>
+      </div>
+      <div class="card" style="margin-top:15px">
+        <div class="card-head"><div><div class="card-title">Recent market trades</div><div class="card-sub">Latest completed matches for this market</div></div><span class="tag" id="spotRecentCount">0 trades</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Price (USDT)</th><th>Amount</th><th>Total (USDT)</th></tr></thead><tbody id="spotRecentTrades"><tr><td colspan="4" class="muted">No completed trades yet.</td></tr></tbody></table></div>
       </div>
       <div class="card" style="margin-top:15px">
         <div class="card-head"><div><div class="card-title">Open orders</div><div class="card-sub">Cancel an unfilled limit order to release reserved funds.</div></div></div>
@@ -814,6 +824,14 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   </div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Payments</div><div class="card-sub">Latest 50 invoices</div></div><select class="control" id="adPayFilter"><option value="">All</option><option value="confirmed">Confirmed</option><option value="pending">Pending</option><option value="verifying">Verifying</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div><div class="table-wrap"><table><thead><tr><th>Created</th><th>User</th><th>Plan</th><th>Network</th><th>Amount</th><th>Status</th><th>Tx</th></tr></thead><tbody id="adPayRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Users</div><div class="card-sub">Search by @username, Telegram ID or internal ID</div></div></div><div class="toolbar"><input class="control" id="adUserQ" placeholder="Search users" style="flex:1;min-width:160px"><button class="btn" id="adUserBtn" type="button">Search</button></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>User</th><th>Plan</th><th>Joined</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adUserRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
+  <div class="card spot-admin-card" style="margin-top:15px" id="spotAdminCard">
+    <div class="card-head"><div><div class="card-title">Spot Exchange Control</div><div class="card-sub">Internal exchange activity and market availability · admin-only endpoints</div></div><button class="btn small" id="adSpotRefresh" type="button">↻ Refresh</button></div>
+    <div class="grid stats-grid spot-admin-stats"><div class="stat-card"><div class="stat-top">Active markets</div><div class="stat-value" id="adSpotMarkets">—</div></div><div class="stat-card"><div class="stat-top">Open orders</div><div class="stat-value" id="adSpotOpen">—</div></div><div class="stat-card"><div class="stat-top">Trades (24h)</div><div class="stat-value" id="adSpotTrades">—</div></div><div class="stat-card"><div class="stat-top">Volume (24h)</div><div class="stat-value" id="adSpotVolume">—</div></div></div>
+    <div class="card-title" style="margin:16px 0 8px">Market availability</div><div class="table-wrap"><table><thead><tr><th>Market</th><th>Chain</th><th>24h trades</th><th>24h volume</th><th>Status</th><th>Action</th></tr></thead><tbody id="adSpotMarketRows"><tr><td colspan="6" class="muted">Open Admin Panel to load.</td></tr></tbody></table></div>
+    <div class="card-title" style="margin:18px 0 8px">Latest spot orders</div><div class="table-wrap"><table><thead><tr><th>Order</th><th>User</th><th>Market</th><th>Side</th><th>Type</th><th>Amount</th><th>Filled</th><th>Status</th><th>Time</th></tr></thead><tbody id="adSpotOrderRows"><tr><td colspan="9" class="muted">—</td></tr></tbody></table></div>
+    <div class="card-title" style="margin:18px 0 8px">Latest completed trades</div><div class="table-wrap"><table><thead><tr><th>Trade</th><th>Market</th><th>Price</th><th>Amount</th><th>Total</th><th>Buyer</th><th>Seller</th><th>Time</th></tr></thead><tbody id="adSpotTradeRows"><tr><td colspan="8" class="muted">—</td></tr></tbody></table></div>
+    <div class="form-message" id="adSpotMessage" role="status"></div>
+  </div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Wallet withdrawals</div><div class="card-sub">Approve or reject requests. After manually broadcasting a transfer, record its transaction hash to complete settlement.</div></div><button class="btn small" id="adWithdrawRefresh" type="button">↻ Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>User</th><th>Asset / chain</th><th>Destination</th><th>Amount + fee</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adWithdrawRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Grant Plan</div><div class="card-sub">Gives a paid plan without payment. Every grant is audit-logged.</div></div></div><div class="form-grid"><div class="field"><label for="adGrantUser">Internal user ID</label><input id="adGrantUser" type="number" min="1" step="1" inputmode="numeric" placeholder="Tap Grant on a user row"></div><div class="field"><label for="adGrantPlan">Plan</label><select id="adGrantPlan"><option value="pro">Pro</option><option value="business">Business</option><option value="enterprise">Enterprise</option></select></div><div class="field"><label for="adGrantDays">Days (1 to 3650)</label><input id="adGrantDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30"></div></div><button class="btn primary" id="adGrantBtn" type="button" style="margin-top:12px">Grant plan</button><div class="form-message" id="adGrantMsg"></div></div>
   </div>
@@ -3335,7 +3353,7 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const api=(p,o)=>window.BT.apiRequest(p,o);
 const fmt=(v,n=8)=>Number(v||0).toLocaleString("en-US",{maximumFractionDigits:n});
-const state={markets:[],market:null,side:"buy",balances:null,loading:false};
+const state={markets:[],market:null,side:"buy",balances:null,loading:false,timeframe:"15m",candles:[],chartHover:null,indicators:{sma7:true,sma25:false}};
 function msg(s,ok=false){const e=$("spotMessage");if(e){e.textContent=s||"";e.className="form-message"+(ok?" success":"")}}
 function currentAssetCode(){return state.side==="buy"?state.market?.quote_code:state.market?.base_code}
 function renderMarkets(){
@@ -3395,19 +3413,41 @@ function updateSummary(){
  if(type==="limit"&&price>0)$("spotOrderSummary").textContent=`Estimated order value: ${fmt(qty*price,6)} USDT`;
  else $("spotOrderSummary").textContent=type==="market"?"Market orders execute only against available internal order-book liquidity.":"Enter a valid limit price.";
 }
+function drawChart(){
+ const canvas=$("spotChart"),empty=$("spotChartEmpty");if(!canvas)return;
+ const rect=canvas.getBoundingClientRect(),dpr=Math.max(1,window.devicePixelRatio||1),w=Math.max(280,rect.width),h=Math.max(180,rect.height);
+ canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+ const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const data=state.candles||[];if(!data.length){empty.style.display="grid";return}empty.style.display="none";
+ const left=8,right=66,top=12,bottom=42,volH=48,plotW=w-left-right,plotH=h-top-bottom-volH;
+ const hi=Math.max(...data.map(x=>x.h)),lo=Math.min(...data.map(x=>x.l)),pad=(hi-lo||hi*.02||1)*.08,min=lo-pad,max=hi+pad,range=max-min||1;
+ const y=v=>top+(max-v)/range*plotH,slot=plotW/data.length,cw=Math.max(2,Math.min(11,slot*.62));
+ ctx.font="10px Arial";ctx.textBaseline="middle";ctx.strokeStyle="rgba(132,142,156,.18)";ctx.fillStyle="#848e9c";ctx.lineWidth=1;
+ for(let i=0;i<=4;i++){const yy=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();const val=max-(max-min)*i/4;ctx.fillText(fmt(val,8),w-right+5,yy)}
+ const maxV=Math.max(1,...data.map(x=>x.v));
+ data.forEach((c,i)=>{const x=left+i*slot+slot/2,up=c.c>=c.o,color=up?"#0ecb81":"#f6465d";ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke();const yo=y(Math.max(c.o,c.c)),yc=y(Math.min(c.o,c.c)),bh=Math.max(1,yc-yo);ctx.fillRect(x-cw/2,yo,cw,bh);const vh=c.v/maxV*volH;ctx.globalAlpha=.48;ctx.fillRect(x-cw/2,top+plotH+bottom+volH-vh,cw,vh);ctx.globalAlpha=1;});
+ const drawSma=(period,color)=>{if(data.length<period)return;ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.4;let started=false;for(let i=period-1;i<data.length;i++){let sum=0;for(let j=i-period+1;j<=i;j++)sum+=data[j].c;const xx=left+i*slot+slot/2,yy=y(sum/period);if(!started){ctx.moveTo(xx,yy);started=true}else ctx.lineTo(xx,yy)}ctx.stroke()};
+ if(state.indicators.sma7)drawSma(7,"#f0b90b");if(state.indicators.sma25)drawSma(25,"#8b7cff");
+ const first=data[0],last=data[data.length-1];ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText(new Date(first.t*1000).toLocaleString([], {month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"}),left,h-12);ctx.textAlign="right";ctx.fillText(new Date(last.t*1000).toLocaleString([], {month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"}),w-right,h-12);ctx.textAlign="left";
+ if(state.chartHover!=null){const idx=Math.max(0,Math.min(data.length-1,Math.floor((state.chartHover-left)/slot))),c=data[idx],x=left+idx*slot+slot/2;ctx.strokeStyle="rgba(240,185,11,.75)";ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+plotH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#eaecef";ctx.fillText(`O ${fmt(c.o,8)}  H ${fmt(c.h,8)}  L ${fmt(c.l,8)}  C ${fmt(c.c,8)}`,left,top+8);}
+}
+async function loadChart(){if(!state.market)return;try{const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);state.candles=d.candles||[];$ ("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed internal trades only`;drawChart()}catch(e){state.candles=[];drawChart();$("spotChartCaption").textContent="Internal chart data unavailable"}}
+async function loadTicker(){if(!state.market)return;try{const d=await api(`/trading/ticker?market=${state.market.id}`),t=d.ticker||{};$("spotTickerChange").textContent=t.changePct==null?"—":`${Number(t.changePct)>=0?"+":""}${Number(t.changePct).toFixed(2)}%`;
+ $("spotTickerChange").style.color=Number(t.changePct)>=0?"#0ecb81":"#f6465d";$("spotTickerHigh").textContent=t.high?fmt(t.high,8):"—";$("spotTickerLow").textContent=t.low?fmt(t.low,8):"—";$("spotTickerVolume").textContent=t.quoteVolume?fmt(t.quoteVolume,2)+" USDT":"—";$("spotTickerTrades").textContent=String(t.trades||0)}catch(e){}}
+async function loadRecentMarketTrades(){if(!state.market)return;try{const d=await api(`/trading/recent?market=${state.market.id}&limit=30`),rows=d.trades||[];$("spotRecentCount").textContent=rows.length+" trades";$("spotRecentTrades").innerHTML=rows.map(t=>`<tr><td>${new Date(t.createdAt).toLocaleTimeString()}</td><td class="${Number(t.price)>=0?"":""}">${fmt(t.price,8)}</td><td>${fmt(t.quantity)}</td><td>${fmt(t.quoteAmount,6)}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">No completed trades yet.</td></tr>'}catch(e){$("spotRecentTrades").innerHTML='<tr><td colspan="4" class="muted">Market trades unavailable.</td></tr>'}}
 async function selectMarket(id){
  state.market=state.markets.find(m=>m.id===Number(id))||null;if(!state.market)return;
  $("spotPair").textContent=`${state.market.base_symbol} / ${state.market.quote_symbol}`;
  $("spotChain").textContent=state.market.chain+" · Internal spot market";
  $("spotBaseLabel").textContent=state.market.base_symbol;
- renderMarkets();renderSide();await Promise.all([loadBook(),loadHistory()]);
+ renderMarkets();renderSide();await Promise.all([loadBook(),loadHistory(),loadChart(),loadTicker(),loadRecentMarketTrades()]);
 }
 async function loadMarkets(){
  $("spotMarkets").innerHTML='<div class="muted">Loading markets…</div>';
  try{
   const d=await api("/trading/markets");state.markets=d.markets||[];
   renderMarkets();
-  if(state.markets.length){const id=state.market?.id||state.markets[0].id;await selectMarket(id)}
+  if(state.markets.length){const id=state.market&&state.markets.some(m=>m.id===state.market.id)?state.market.id:state.markets[0].id;await selectMarket(id)}
   else $("spotMarkets").innerHTML='<div class="muted">No supported USDT markets are configured.</div>';
  }catch(e){$("spotMarkets").textContent="Could not load internal markets."}
 }
@@ -3444,6 +3484,30 @@ document.addEventListener("click",e=>{
 $("spotOrderType").addEventListener("change",()=>{$("spotPriceField").style.display=$("spotOrderType").value==="limit"?"block":"none";updateSummary()});
 $("spotQuantity").addEventListener("input",updateSummary);$("spotPrice").addEventListener("input",updateSummary);
 $("spotMarketSearch").addEventListener("input",renderMarkets);
+document.querySelectorAll("[data-spot-tf]").forEach(b=>b.addEventListener("click",()=>{state.timeframe=b.dataset.spotTf;document.querySelectorAll("[data-spot-tf]").forEach(x=>x.classList.toggle("active",x===b));loadChart()}));
+document.querySelectorAll("[data-spot-indicator]").forEach(b=>b.addEventListener("click",()=>{const key=b.dataset.spotIndicator;state.indicators[key]=!state.indicators[key];b.classList.toggle("active",state.indicators[key]);drawChart()}));
+$("spotChart")?.addEventListener("pointermove",e=>{const r=e.currentTarget.getBoundingClientRect();state.chartHover=e.clientX-r.left;drawChart()});
+$("spotChart")?.addEventListener("pointerleave",()=>{state.chartHover=null;drawChart()});
+window.addEventListener("resize",drawChart);
+async function loadSpotAdmin(){
+ const msg=$("adSpotMessage");if(!$("spotAdminCard"))return;msg.textContent="Loading spot exchange administration…";
+ try{const d=await window.BT.apiRequest("/trading/admin/overview"),s=d.stats||{};
+  $("adSpotMarkets").textContent=`${s.markets_active||0} / ${s.markets_total||0}`;$("adSpotOpen").textContent=String(s.open_orders||0);$("adSpotTrades").textContent=String(s.trades_24h||0);$("adSpotVolume").textContent=fmt(s.volume_24h,2)+" USDT";
+  $("adSpotMarketRows").innerHTML=(d.markets||[]).map(m=>`<tr><td><strong>${esc(m.base_symbol)}/${esc(m.quote_symbol)}</strong><div class="muted">${esc(m.symbol)}</div></td><td>${esc(m.chain)}</td><td>${Number(m.trades_24h||0)}</td><td>${fmt(m.volume_24h,2)} USDT</td><td><span class="tag ${m.is_active?"green":"red"}">${m.is_active?"Active":"Disabled"}</span></td><td><button class="btn small ${m.is_active?"danger":"primary"}" data-spot-admin-toggle="${m.id}" data-active="${m.is_active?"0":"1"}">${m.is_active?"Disable":"Enable"}</button></td></tr>`).join("")||'<tr><td colspan="6" class="muted">No markets configured.</td></tr>';
+  $("adSpotOrderRows").innerHTML=(d.orders||[]).map(o=>`<tr><td>#${o.id}</td><td>${esc(o.username?"@"+o.username:o.telegram_user_id)}</td><td>${esc(o.symbol)}</td><td>${esc(o.side)}</td><td>${esc(o.order_type)}</td><td>${fmt(o.quantity)}</td><td>${fmt(o.filled_quantity)}</td><td>${esc(o.status)}</td><td>${new Date(o.created_at).toLocaleString()}</td></tr>`).join("")||'<tr><td colspan="9" class="muted">No orders yet.</td></tr>';
+  $("adSpotTradeRows").innerHTML=(d.trades||[]).map(t=>`<tr><td>#${t.id}</td><td>${esc(t.symbol)}</td><td>${fmt(t.price,8)}</td><td>${fmt(t.quantity)}</td><td>${fmt(t.quote_amount,6)}</td><td>${esc(t.buyer||"—")}</td><td>${esc(t.seller||"—")}</td><td>${new Date(t.created_at).toLocaleString()}</td></tr>`).join("")||'<tr><td colspan="8" class="muted">No completed trades yet.</td></tr>';
+  msg.textContent="Spot exchange data refreshed.";
+ }catch(e){msg.textContent=e.message==="FORBIDDEN"?"This Telegram account is not on the admin allowlist.":e.message==="AUTH_REQUIRED"?"Sign in through the authorized Telegram admin account.":"Spot admin data unavailable: "+e.message}
+}
+document.addEventListener("click",async e=>{
+ if(e.target.id==="adSpotRefresh")loadSpotAdmin();
+ const b=e.target.closest("[data-spot-admin-toggle]");if(!b)return;
+ const active=b.dataset.active==="1",id=Number(b.dataset.spotAdminToggle);b.disabled=true;
+ try{await window.BT.apiRequest("/trading/admin/market",{method:"POST",body:JSON.stringify({marketId:id,active})});$("adSpotMessage").textContent=active?"Market enabled.":"Market disabled.";await loadSpotAdmin();await loadMarkets()}
+ catch(err){$("adSpotMessage").textContent=err.message==="OPEN_ORDERS_EXIST"?"Cannot disable this market while open orders remain. Cancel or settle them first.":"Market update failed: "+err.message;b.disabled=false}
+});
+const spotAdminObserver=new MutationObserver(()=>{if($("page-admin")?.classList.contains("active"))loadSpotAdmin()});
+if($("page-admin"))spotAdminObserver.observe($("page-admin"),{attributes:true,attributeFilter:["class"]});
 window.BT_SPOT={async selectForAsset(symbol,chain){
  if(!state.markets.length)await loadMarkets();
  const m=state.markets.find(x=>String(x.base_symbol).toLowerCase()===String(symbol).toLowerCase()&&(!chain||String(x.chain).toLowerCase()===String(chain).toLowerCase()));
@@ -3459,7 +3523,7 @@ if(spotParams.get("spot")==="1"){
  },300);
 }
 window.addEventListener("bt-auth",()=>{if($("page-trade")?.classList.contains("active")){loadBalances();loadHistory()}});
-setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory()}},15000);
+setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory();loadChart();loadTicker();loadRecentMarketTrades()}},15000);
 })();
 </script>
 
