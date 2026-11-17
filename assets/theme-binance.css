@@ -273,3 +273,86 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   #page-dashboard .stat-value{font-size:20px}
   #page-dashboard #fjCard .fj-row{gap:6px}
 }
+
+/* Phase 2 — Wallet Terminal + Token Intelligence, Binance-inspired polish. */
+#page-wallets .page-head,#page-tokens .page-head{padding-bottom:14px;border-bottom:1px solid #2b3139;margin-bottom:16px}
+#page-wallets .page-title,#page-tokens .page-title{letter-spacing:-.035em}
+#page-wallets .head-actions,#page-tokens .head-actions{gap:8px}
+#page-wallets .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#page-wallets .stat-card{position:relative;overflow:hidden;background:linear-gradient(145deg,#1e2329 0%,#181a20 72%)!important;border:1px solid #2b3139!important;border-radius:14px!important;padding:15px!important;box-shadow:none!important}
+#page-wallets .stat-card:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:#f0b90b}
+#page-wallets .stat-top{font-size:11px!important;font-weight:650;color:#848e9c!important}
+#page-wallets .stat-symbol{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:9px;background:#2b3139;color:#f0b90b;font-size:16px}
+#page-wallets .stat-value{font-size:25px!important;font-weight:750!important;letter-spacing:-.04em;color:#eaecef!important;margin:10px 0 4px}
+#page-wallets .stat-foot{font-size:10px!important;color:#848e9c!important}
+#page-wallets .card,#page-tokens .card{background:#181a20!important;border:1px solid #2b3139!important;border-radius:15px!important;box-shadow:none!important}
+#page-wallets .toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:2px 0 13px}
+#page-wallets .toolbar .control{min-width:145px;flex:1}
+#page-wallets .table-wrap{overflow:auto;border-radius:11px!important}
+#page-wallets table{min-width:720px;border-collapse:separate;border-spacing:0}
+#page-wallets thead th{position:sticky;top:0;z-index:1;padding:12px 13px;font-size:10px;letter-spacing:.045em;text-transform:uppercase}
+#page-wallets tbody td{padding:13px;font-size:11px;vertical-align:middle}
+#page-wallets td.address{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#b7bdc6;font-size:10px}
+#page-wallets tbody tr{transition:background .15s ease}
+#page-wallets tbody tr:hover td{background:#222830!important}
+#page-wallets tbody .btn{font-size:10px;padding:7px 9px;white-space:nowrap}
+#page-wallets #waList{font-size:11px!important;line-height:1.6}
+#page-wallets #waList>div{padding:12px 0!important;border-bottom:1px solid #2b3139!important}
+#page-wallets #waList strong{color:#eaecef}
+#page-wallets #walletEmpty{padding:26px 12px}
+
+/* Scanner input panel and evidence/result surfaces. */
+#page-tokens>.card:first-of-type{padding:18px!important;border-top:3px solid #f0b90b!important}
+#page-tokens .card-head{align-items:center;gap:10px}
+#page-tokens .card-title{font-size:14px;font-weight:700;color:#eaecef}
+#page-tokens .form-grid{gap:12px;margin:15px 0}
+#page-tokens .field label{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#848e9c!important;margin-bottom:7px}
+#page-tokens #scanAddress,#page-tokens #scanNetwork{min-height:44px}
+#page-tokens #scanBtn{min-height:42px;min-width:150px;font-weight:750}
+#page-tokens #scanMessage{margin-top:9px;color:#f0b90b;font-size:11px}
+#page-tokens #scanQuota{font-size:10px!important;color:#848e9c!important}
+#page-tokens .section-grid{gap:12px;margin-top:13px}
+#page-tokens .section-grid>.card{padding:16px!important;min-width:0}
+#page-tokens .section-grid .card-head{padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid #2b3139}
+#page-tokens #securityChecks .sec-sum{padding:13px 14px;margin-bottom:9px;border-radius:11px;border:1px solid #3a414a;background:#1e2329;color:#eaecef;font-size:12px;font-weight:750}
+#page-tokens #securityChecks .sec-sum.good{border-color:#155c42;background:#102a22}
+#page-tokens #securityChecks .sec-sum.warn{border-color:#66521a;background:#2b2411}
+#page-tokens #securityChecks .sec-sum.bad{border-color:#71313b;background:#2b171b}
+#page-tokens #securityChecks .sec-sum.unk{border-color:#3a414a;background:#1e2329}
+#page-tokens #securityChecks .sec-sum small{display:block;margin-top:5px;color:#848e9c;font-size:9px;font-weight:500;line-height:1.5}
+#page-tokens #securityChecks .chk{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid #2b3139;font-size:10px;color:#b7bdc6}
+#page-tokens #securityChecks .chk:last-child{border-bottom:0}
+#page-tokens #securityChecks .status{flex:0 0 auto;font-size:9px;font-weight:700}
+#page-tokens #tokenResearch .res-head{display:flex;align-items:center;gap:11px;padding:4px 0 13px}
+#page-tokens #tokenResearch .coin{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;position:relative;overflow:hidden;background:#2b3139;color:#f0b90b;font-weight:800}
+#page-tokens #tokenResearch .coin img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#page-tokens #tokenResearch .res-head strong{display:block;color:#eaecef;font-size:13px}
+#page-tokens #tokenResearch .res-head span{display:block;margin-top:4px;color:#848e9c;font-size:9px}
+#page-tokens #tokenResearch .res-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#page-tokens #tokenResearch .res-cell{padding:11px;border-radius:10px;background:#1e2329;border:1px solid #2b3139;min-width:0}
+#page-tokens #tokenResearch .res-cell small{display:block;color:#848e9c;font-size:9px;margin-bottom:6px}
+#page-tokens #tokenResearch .res-cell b{display:block;color:#eaecef;font-size:12px;overflow-wrap:anywhere}
+#page-tokens #tokenResearch .res-link{display:inline-flex;margin-top:12px;color:#f0b90b;font-size:10px;font-weight:700;text-decoration:none}
+#page-tokens #tokenResearch .res-link:hover{text-decoration:underline}
+#page-tokens .notice{margin-top:13px}
+
+@media(max-width:900px){
+  #page-wallets .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #page-tokens .section-grid{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  #page-wallets .page-head,#page-tokens .page-head{align-items:flex-start}
+  #page-wallets .head-actions{width:100%;display:flex;justify-content:space-between}
+  #page-wallets .stats-grid{gap:8px}
+  #page-wallets .stat-card{padding:12px!important;border-radius:12px!important}
+  #page-wallets .stat-value{font-size:22px!important}
+  #page-wallets .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #page-wallets .toolbar input{grid-column:1/-1}
+  #page-wallets .toolbar .control{min-width:0;width:100%}
+  #page-tokens>.card:first-of-type{padding:14px!important}
+  #page-tokens .form-grid{grid-template-columns:1fr}
+  #page-tokens #scanBtn{width:100%}
+  #page-tokens .section-grid>.card{padding:13px!important}
+  #page-tokens #securityChecks .chk{font-size:9px}
+  #page-tokens #tokenResearch .res-cell{padding:9px}
+}
