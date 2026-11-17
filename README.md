@@ -124,3 +124,18 @@ The scheduled GitHub Actions worker calls `/api/cron/community-contracts` every 
 ## Binance-inspired dark interface
 
 The app includes an optional visual skin in `assets/theme-binance.css`, using a near-black surface palette and yellow accents inspired by common exchange-terminal patterns. The project retains its own name, logo, and product identity; it is not affiliated with Binance. The theme is loaded by `index.html` and does not change backend behavior or market-data sources.
+
+## Deposit auto-detect (subscription payments)
+
+Users no longer need to paste a transaction hash. Each invoice has a unique USDT amount; `lib/deposits.js` finds the incoming
+transfer with exactly that amount (BEP20 via `eth_getLogs`, TRC20 via TronGrid), re-verifies it with `verifyOnChain()` and
+activates the plan with the same `confirmPayment()` used by manual verify (referral + MBC Points stay consistent).
+
+- Triggers: the app polls `GET /api/subscription/payment-status?id=<paymentId>` (throttled per chain), the existing 5-minute
+  worker (`/api/cron/alerts` -> maintenance -> `deposits`), and `GET /api/cron/deposits` (Bearer `CRON_SECRET`; can be called every minute from cron-job.org).
+- Not enough confirmations yet: invoice becomes `verifying` with the tx hash and `recheckPayments()` finishes it.
+- Invoices expired in the last 30 min are still scanned, but only transfers made inside the invoice window count.
+- Manual "Verify payment" (paste hash) stays as a fallback.
+- Env (all optional): `DEPOSIT_AUTODETECT=0` turns it off, `BSC_LOGS_CHUNK` (default 3000 blocks per `eth_getLogs`),
+  `BEP20_SCAN_MAX_BLOCKS` (default 120000), `BSC_RPC_URL`, `TRONGRID_API_KEY` (recommended: more requests/min).
+- No DB migration needed. Test: `npm run test:deposits`.
