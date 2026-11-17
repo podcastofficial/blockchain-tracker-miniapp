@@ -40,6 +40,8 @@ import { forceJoinApi, joinBlocked } from "../lib/forcejoin.js";
 import { scannerApi } from "../lib/scanner.js";
 import { attachReservation } from "../lib/points.js";
 import { trialApi } from "../lib/trial.js";
+import { portfolioCombined, portfolioReport } from "../lib/portfolio_pro.js";
+import { digestApi, cronDigest } from "../lib/digest.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -676,6 +678,10 @@ export default async function handler(req, res) {
 
     if (path === "/api/portfolio/balances") return await portfolioBalances(req, res);
     if (path === "/api/portfolio/history") return await portfolioHistory(req, res);
+    if (path === "/api/portfolio/combined") return await portfolioCombined(req, res);
+    if (path === "/api/portfolio/report") return await portfolioReport(req, res);
+    if (path === "/api/digest/settings" || path === "/api/digest/send-now") return await digestApi(req, res, path);
+    if (path === "/api/cron/digest") return await cronDigest(req, res);
     if (path === "/api/pnl") return await pnlRoute(req, res);
     // Smart Money modules are loaded lazily: a missing/outdated file here can only break Smart Money, never the whole API.
     if (path === "/api/smart-money") return await (await import("../lib/smart_money.js")).smartMoney(req, res);
