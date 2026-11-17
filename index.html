@@ -432,6 +432,12 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <div class="card-head" style="margin-top:18px"><div><div class="card-title">Smart Money Intelligence</div><div class="card-sub">Observed activity and performance from your followed wallets · last 24h signals / 30d stats</div></div><button class="btn small" id="smartIntelRefresh" type="button">↻ Analyze</button></div>
     <div class="grid stats-grid" style="margin-top:10px"><div class="stat-card"><div class="stat-top">Followed Wallets</div><div class="stat-value" id="smiFollowed">—</div></div><div class="stat-card"><div class="stat-top">With History</div><div class="stat-value" id="smiHistory">—</div></div><div class="stat-card"><div class="stat-top">Observed Signals</div><div class="stat-value" id="smiSignals">—</div></div></div>
     <div class="grid section-grid" style="margin-top:12px"><div class="card"><div class="card-title">Wallet Performance Ranking</div><div class="card-sub">Research score is not a profitability guarantee</div><div id="smiWallets" class="muted" style="margin-top:10px">Tap Analyze to load cached PnL history.</div></div><div class="card"><div class="card-title">Smart Money Signals</div><div class="card-sub">Same token bought or sold by at least two followed wallets</div><div id="smiSignalsList" class="muted" style="margin-top:10px">No analysis loaded.</div></div></div>
+    <div class="smi-settings" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px">
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="smiAutoRefresh"> Auto-refresh in background</label>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="smiAlerts"> Telegram alert when 2+ wallets trade same token</label>
+      <span class="muted" id="smiSettingsMsg" style="font-size:10px"></span>
+    </div>
+    <div id="smiDetail" class="card" style="display:none;margin-top:12px"></div>
     <div id="smiLimitations" class="muted" style="font-size:10px;margin-top:10px"></div>
     <div class="card" style="margin-top:14px">
       <div class="card-title">Contract → Smart Wallet Discovery</div>
@@ -957,6 +963,24 @@ const buy=e.target.closest("[data-buy-plan]");if(buy){selectedPaymentPlan=buy.da
 const chain=e.target.closest("[data-pay-chain]");if(chain&&selectedPaymentPlan){startPayment(selectedPaymentPlan,chain.dataset.payChain);return}
 const open=e.target.closest("[data-open]");if(open){openItem(open.dataset.open);return}
 const edit=e.target.closest("[data-edit-item]");if(edit){const item=watchlist.find(i=>i.id===edit.dataset.editItem);if(item)openItem(item.type,item.id);return}
+const smiDet=e.target.closest("[data-smi-detail]");if(smiDet){
+  const [net,...rest]=smiDet.dataset.smiDetail.split("|"),addr=rest.join("|"),box=$("smiDetail");
+  box.style.display="block";box.innerHTML='<div class="muted">Loading wallet detail…</div>';
+  apiRequest("/smart-money/wallet?network="+encodeURIComponent(net)+"&address="+encodeURIComponent(addr)).then(d=>{
+    const m=v=>v==null?"—":(v<0?"−":"")+"$"+Math.abs(Number(v)).toLocaleString("en-US",{maximumFractionDigits:2});
+    const sm=d.summary||{};
+    const toks=(d.topTokens||[]).map(t=>`<tr><td>${esc(t.token)}</td><td>${m(t.realizedUsd)}</td><td>${m(t.unrealizedUsd)}</td><td>${t.unknownCost?"cost unknown":"ok"}</td></tr>`).join("");
+    const trs=(d.recentTrades||[]).map(t=>`<tr><td>${new Date(t.ts).toLocaleString()}</td><td>${t.side==="buy"?"🟢 Buy":"🔴 Sell"}</td><td>${esc(t.token)}</td><td>${m(t.usdValue)}</td><td>${t.pnlUsd==null?"—":m(t.pnlUsd)}</td></tr>`).join("");
+    box.innerHTML=`<div class="card-head"><div><div class="card-title">${esc(d.wallet.name)} <span class="muted" style="font-size:11px">${esc(d.wallet.network)} · ${esc(String(d.wallet.address).slice(0,8))}…</span></div><div class="card-sub">Score ${d.score==null?"—":d.score+"/100"} · 30d realized ${m(sm.realizedUsd)} · unrealized ${m(sm.unrealizedUsd)} · win rate ${sm.winRate==null?"—":(sm.winRate*100).toFixed(1)+"%"} · ${Number(sm.trades||0)} swaps (30d) · ${Number(sm.swaps24h||0)} in 24h · volume ${m(sm.volume30dUsd)}</div></div><button class="btn small" type="button" id="smiDetailClose">✕</button></div>`+
+      (d.indexed?"":'<div class="notice">This wallet is not indexed yet. Tap Analyze first.</div>')+
+      (toks?`<div class="card-title" style="margin-top:10px">Top tokens</div><div class="table-wrap"><table><thead><tr><th>Token</th><th>Realized</th><th>Unrealized</th><th>Cost</th></tr></thead><tbody>${toks}</tbody></table></div>`:"")+
+      (trs?`<div class="card-title" style="margin-top:10px">Recent trades</div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Side</th><th>Token</th><th>Value</th><th>PnL</th></tr></thead><tbody>${trs}</tbody></table></div>`:'<div class="empty">No swaps found in indexed history.</div>')+
+      `<div class="muted" style="font-size:10px;margin-top:8px">${(d.limitations||[]).map(esc).join(" · ")}</div>`;
+    box.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }).catch(err=>{box.innerHTML='<div class="empty">Could not load wallet detail: '+esc(err.message||"error")+'</div>'});
+  return;
+}
+if(e.target.closest("#smiDetailClose")){$("smiDetail").style.display="none";return}
 const smartIntel=e.target.closest("#smartIntelRefresh");if(smartIntel){
   const put=(id,v)=>{const el=$(id);if(el)el.textContent=v};
   smartIntel.disabled=true;
@@ -997,7 +1021,7 @@ const smartIntel=e.target.closest("#smartIntelRefresh");if(smartIntel){
     const money=v=>v==null?"—":(v<0?"−":"")+"$"+Math.abs(Number(v)).toLocaleString("en-US",{maximumFractionDigits:2});
     const ws=$("smiWallets"),ss=$("smiSignalsList");
 
-    if(ws)ws.innerHTML=d.wallets?.length?'<div class="table-wrap"><table><thead><tr><th>Wallet</th><th>Score</th><th>Realized PnL</th><th>Win rate</th><th>Trades</th></tr></thead><tbody>'+d.wallets.map(w=>`<tr><td><strong>${esc(w.name)}</strong><div class="muted">${esc(w.network)} · ${esc(String(w.address).slice(0,8))}…</div></td><td>${w.score==null?'—':w.score+'/100'}<div class="muted">${esc(({not_indexed:"Not indexed yet – tap Analyze again",no_swaps:"No swaps found in indexed history",few_closed_trades:"Needs 3+ closed trades ("+Number(w.tradesTotal||0)+" swaps found)"})[w.status]||w.scoreConfidence)}</div></td><td>${money(w.realizedUsd)}</td><td>${w.winRate==null?'—':(w.winRate*100).toFixed(1)+'%'}</td><td>${Number(w.closedTrades||0)} closed</td></tr>`).join('')+'</tbody></table></div>':'<div class="empty">No followed Smart Money wallets found. Add wallets using the Smart Money category.</div>';
+    if(ws)ws.innerHTML=d.wallets?.length?'<div class="table-wrap"><table><thead><tr><th>Wallet</th><th>Score</th><th>Realized PnL</th><th>Win rate</th><th>Trades</th></tr></thead><tbody>'+d.wallets.map(w=>`<tr><td><strong>${esc(w.name)}</strong><div class="muted">${esc(w.network)} · ${esc(String(w.address).slice(0,8))}…</div></td><td>${w.score==null?'—':w.score+'/100'}<div class="muted">${esc(({not_indexed:"Not indexed yet – tap Analyze again",no_swaps:"No swaps found in indexed history",few_closed_trades:"Needs 3+ closed trades ("+Number(w.tradesTotal||0)+" swaps found)"})[w.status]||w.scoreConfidence)}</div></td><td>${money(w.realizedUsd)}</td><td>${w.winRate==null?'—':(w.winRate*100).toFixed(1)+'%'}</td><td>${Number(w.closedTrades||0)} closed<div><button class="btn small" type="button" data-smi-detail="${esc(w.network)}|${esc(w.address)}">Details</button></div></td></tr>`).join('')+'</tbody></table></div>':'<div class="empty">No followed Smart Money wallets found. Add wallets using the Smart Money category.</div>';
 
     if(ss)ss.innerHTML=d.signals?.length?d.signals.map(x=>`<div style="padding:9px 0;border-bottom:1px solid var(--line)"><strong>${x.type==='MULTI_WALLET_ACCUMULATION'?'🟢 Accumulation':'🔴 Distribution'} · ${esc(x.token)}</strong><div class="muted">${esc(x.network)} · ${x.wallets} wallets · ${money(x.observedVolumeUsd)} observed volume</div><small>${new Date(x.latestAt).toLocaleString()}</small></div>`).join(''):'<div class="empty">No multi-wallet accumulation or distribution signals in the last 24 hours.</div>';
 
@@ -3152,4 +3176,28 @@ window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadL
 </script>
 <script src="/assets/points-ui.js" defer></script>
 <script src="/assets/forcejoin-ui.js" defer></script>
+<script>
+(function(){
+  var loaded=false;
+  function msg(t){var el=document.getElementById("smiSettingsMsg");if(el)el.textContent=t||""}
+  function load(){
+    if(loaded||!document.getElementById("smiAutoRefresh"))return;
+    apiRequest("/smart-money/settings").then(function(d){
+      loaded=true;
+      document.getElementById("smiAutoRefresh").checked=!!d.autoRefresh;
+      document.getElementById("smiAlerts").checked=!!d.alerts;
+    }).catch(function(){});
+  }
+  function save(){
+    var body={autoRefresh:document.getElementById("smiAutoRefresh").checked,alerts:document.getElementById("smiAlerts").checked};
+    msg("Saving…");
+    apiRequest("/smart-money/settings",{method:"POST",body:JSON.stringify(body)}).then(function(){
+      msg(body.alerts?"Saved. Signal alerts go to your Telegram bot chat (checked every ~5 min).":"Saved.");
+    }).catch(function(err){msg("Could not save: "+(err.message||"error"))});
+  }
+  document.addEventListener("change",function(e){if(e.target&&(e.target.id==="smiAutoRefresh"||e.target.id==="smiAlerts"))save()});
+  document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest('[data-page="wallets"],#smartIntelRefresh'))load()});
+  setTimeout(load,2500);
+})();
+</script>
 </body></html>

@@ -16,7 +16,8 @@ import { adminApi } from "../lib/admin.js";
 import { defiOverview } from "../lib/defi.js";
 import { txHistory } from "../lib/txhistory.js";
 import { pnlRoute } from "../lib/pnl.js";
-import { smartMoney } from "../lib/smart_money.js";
+import { smartMoney, smartMoneyWallet, smartMoneySettings } from "../lib/smart_money.js";
+import { cronSmartMoney } from "../lib/smart_money_worker.js";
 import { contractIntelligence } from "../lib/contract_intelligence.js";
 import { multiChainOverview } from "../lib/multichain.js";
 import { telegramWebhook } from "../lib/bot.js";
@@ -678,6 +679,9 @@ export default async function handler(req, res) {
     if (path === "/api/portfolio/history") return await portfolioHistory(req, res);
     if (path === "/api/pnl") return await pnlRoute(req, res);
     if (path === "/api/smart-money") return await smartMoney(req, res);
+    if (path === "/api/smart-money/wallet") return await smartMoneyWallet(req, res);
+    if (path === "/api/smart-money/settings") return await smartMoneySettings(req, res);
+    if (path === "/api/cron/smart-money") return await cronSmartMoney(req, res);
     if (path === "/api/contract/intelligence") return await contractIntelligence(req, res);
 
     if (path === "/api/market/overview") return await marketOverview(req, res);
