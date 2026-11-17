@@ -469,9 +469,9 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="page-head"><div><div class="eyebrow">ON-CHAIN INTELLIGENCE</div><h1 class="page-title">Whale Terminal</h1><p class="page-desc">Track large transfers, watched wallets and exchange flows.</p></div><div class="head-actions"><button class="btn primary" id="whaleRuleBtn">＋ Create Whale Rule</button></div></div>
   <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Large Transfers <span class="stat-symbol">◉</span></div><div class="stat-value" id="wfCount">—</div><div class="stat-foot" id="wfWindow">Open feed below</div></div><div class="stat-card"><div class="stat-top">Tracked Volume <span class="stat-symbol">＄</span></div><div class="stat-value" id="wfVol">—</div><div class="stat-foot">Shown transfers, USDT/USDC</div></div><div class="stat-card"><div class="stat-top">Exchange Inflow <span class="stat-symbol">↓</span></div><div class="stat-value" id="wfIn">—</div><div class="stat-foot" id="wfInFoot">Wallet → known exchange</div></div><div class="stat-card"><div class="stat-top">Exchange Outflow <span class="stat-symbol">↑</span></div><div class="stat-value" id="wfOut">—</div><div class="stat-foot" id="wfOutFoot">Known exchange → wallet</div></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Live Whale Feed</div><div class="card-sub">Large USDT/USDC transfers from the most recent blocks</div></div><span class="tag" id="wfTag">LIVE</span></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select class="control" id="wfNet"><option value="ethereum">Ethereum</option><option value="bsc">BNB Smart Chain</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option><option value="base">Base</option><option value="optimism">Optimism</option><option value="avalanche">Avalanche</option></select><select class="control" id="wfMin"><option value="50000">≥ $50K</option><option value="100000" selected>≥ $100K</option><option value="250000">≥ $250K</option><option value="500000">≥ $500K</option><option value="1000000">≥ $1M</option></select><button class="btn" id="wfRefresh">↻ Refresh</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select class="control" id="wfNet"><option value="ethereum">Ethereum</option><option value="bsc">BNB Smart Chain</option><option value="polygon">Polygon</option></select><select class="control" id="wfMin"><option value="50000">≥ $50K</option><option value="100000" selected>≥ $100K</option><option value="250000">≥ $250K</option><option value="500000">≥ $500K</option><option value="1000000">≥ $1M</option></select><button class="btn" id="wfRefresh">↻ Refresh</button></div>
     <div id="wfList" class="muted" style="font-size:12px">Open this page to load the feed.</div></div>
-  <div class="notice">Exchange names are matched against a small built-in list of well-known Ethereum wallets, so inflow and outflow totals are partial. Exchange labels are currently shown on Ethereum only; other networks show verified addresses.</div>
+  <div class="notice">Exchange names are matched against a small built-in list of well-known Ethereum wallets, so inflow and outflow totals are partial. Labels are shown on Ethereum only.</div>
 </section>
 
 <section class="page" id="page-contracts">
@@ -1748,8 +1748,8 @@ g("ocSaved").addEventListener("change",e=>{const[v,a]=e.target.value.split("|");
 g("ocAdd").addEventListener("click",async()=>{
   const b=g("ocAdd"),kind=g("ocKind").value;b.disabled=true;g("ocMsg").textContent="Saving…";
   try{
-    await BT.apiRequest("/alerts/onchain",{method:"POST",body:JSON.stringify({kind,network:g("ocNet").value,address:g("ocAddr").value.trim(),minUsd:kind==="contract"?0.01:Number(g("ocMin").value)})});
-    g("ocMsg").textContent="Rule added. The first scan sets a starting point, alerts start after that.";g("ocAddr").value="";load(true);
+    const result=await BT.apiRequest("/alerts/onchain",{method:"POST",body:JSON.stringify({kind,network:g("ocNet").value,address:g("ocAddr").value.trim(),minUsd:kind==="contract"?0.01:Number(g("ocMin").value)})});
+    g("ocMsg").textContent=result.duplicate?"This exact rule already existed. Existing rule reactivated; no duplicate created.":"Rule added. The first scan sets a starting point, alerts start after that.";g("ocAddr").value="";load(true);
   }catch(e){g("ocMsg").textContent=ERR[e.message]||"Could not add rule."}
   b.disabled=false;
 });
