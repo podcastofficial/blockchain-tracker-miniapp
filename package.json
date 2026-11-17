@@ -13,6 +13,7 @@
     "pg": "^8.13.1"
   },
   "scripts": {
+    "test:wallet": "node scripts/test-wallet.mjs",
     "test:pnl": "node scripts/test-pnl.mjs",
     "test:deposits": "node scripts/test-deposits.mjs",
     "test:swaps": "node scripts/test-swaps.mjs",

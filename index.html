@@ -343,6 +343,8 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <button data-page="contracts"><span class="nav-icon">⌘</span>Smart Contracts</button>
     <button data-page="community"><span class="nav-icon">☷</span>Community Monitor</button>
     <button data-page="defi"><span class="nav-icon">◫</span>DeFi Analytics</button>
+    <button data-page="assets"><span class="nav-icon">＄</span>Assets</button>
+    <button data-page="trade"><span class="nav-icon">⇄</span>Spot Trade</button>
     <button data-page="portfolio"><span class="nav-icon">◩</span>Portfolio Analytics</button>
     <button data-page="alerts"><span class="nav-icon">♧</span>Alert Center</button>
     <button data-page="tools"><span class="nav-icon">⚖</span>Trading Tools</button>
@@ -646,6 +648,20 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="notice">Your profile details are private and are never shown to other users. Export limit: 6 files per minute.</div>
 </section>
 
+<section class="page" id="page-assets">
+  <div class="page-head"><div><div class="eyebrow">EXCHANGE / WALLET</div><h1 class="page-title">Assets</h1><p class="page-desc">Your internal exchange wallet, deposit addresses, balances and transaction ledger.</p></div><div class="head-actions"><button class="btn" id="assetsRefresh" type="button">↻ Refresh</button><button class="btn primary" id="assetsCreate" type="button">Create wallet</button></div></div>
+  <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Estimated total value</div><div class="stat-value" id="assetTotalUsd">$0.00</div><div class="stat-foot">Across supported assets</div></div><div class="stat-card"><div class="stat-top">Available</div><div class="stat-value" id="assetAvailable">—</div><div class="stat-foot">Ready to trade or withdraw</div></div><div class="stat-card"><div class="stat-top">In orders / withdrawals</div><div class="stat-value" id="assetLocked">—</div><div class="stat-foot">Temporarily locked funds</div></div><div class="stat-card"><div class="stat-top">Wallet status</div><div class="stat-value" id="assetWalletStatus">Not created</div><div class="stat-foot">Custodial wallet</div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Your assets</div><div class="card-sub">Balances are credited after on-chain confirmation.</div></div></div><div class="table-wrap"><table><thead><tr><th>Asset</th><th>Network</th><th>Available</th><th>Locked</th><th>Value</th></tr></thead><tbody id="assetRows"><tr><td colspan="5" class="muted">Sign in and create your wallet to view assets.</td></tr></tbody></table></div></div>
+  <div class="grid section-grid" style="margin-top:15px"><div class="card"><div class="card-head"><div><div class="card-title">Deposit</div><div class="card-sub">Send USDT only on the selected network. Never send other tokens.</div></div></div><div id="assetDepositAddresses"><div class="muted">Create your wallet to generate deposit addresses.</div></div><div class="notice">Deposits are credited after the required network confirmations. Always verify the network before sending.</div></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Withdraw USDT</div><div class="card-sub">Requests are reviewed by the admin before broadcast.</div></div></div><div class="form-grid"><div class="field"><label>Asset / network</label><select class="control" id="withdrawAsset"><option value="usdt-bsc">USDT · BEP20</option><option value="usdt-tron">USDT · TRC20</option></select></div><div class="field"><label>Amount</label><input class="control" id="withdrawAmount" type="number" min="0" step="any" placeholder="0.00"></div><div class="field full"><label>Destination address</label><input class="control" id="withdrawAddress" placeholder="Enter your BEP20 / TRC20 address" autocomplete="off"></div></div><button class="btn primary" id="withdrawSubmit" type="button" style="margin-top:10px">Request withdrawal</button><div class="form-message" id="withdrawMessage"></div></div></div>
+  <div class="grid section-grid" style="margin-top:15px"><div class="card"><div class="card-head"><div class="card-title">Deposit history</div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Network</th><th>Amount</th><th>Status</th><th>Transaction</th></tr></thead><tbody id="assetDepositRows"><tr><td colspan="5" class="muted">No deposits loaded.</td></tr></tbody></table></div></div><div class="card"><div class="card-head"><div class="card-title">Withdrawal history</div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Network</th><th>Amount</th><th>Status</th><th>Transaction</th></tr></thead><tbody id="assetWithdrawalRows"><tr><td colspan="5" class="muted">No withdrawals loaded.</td></tr></tbody></table></div></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Balance ledger</div><div class="card-sub">Every credited deposit and withdrawal balance change.</div></div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Type</th><th>Asset</th><th>Available change</th><th>Balance after</th></tr></thead><tbody id="assetLedgerRows"><tr><td colspan="5" class="muted">No ledger entries loaded.</td></tr></tbody></table></div></div>
+</section>
+<section class="page" id="page-trade">
+  <div class="page-head"><div><div class="eyebrow">EXCHANGE / SPOT</div><h1 class="page-title">Spot Trading</h1><p class="page-desc">Internal order matching will use your exchange wallet. External DEX execution is not used for internal spot orders.</p></div></div>
+  <div class="notice">Spot matching engine is being added after wallet deposits, withdrawals and ledger controls are verified. No buy or sell order is accepted in this build yet; this prevents an order from being shown as executed before the matching engine is active.</div>
+  <div class="grid section-grid" style="margin-top:15px"><div class="card"><div class="card-title">Markets</div><div class="muted" style="margin-top:8px">USDT pairs will appear here once the exchange market registry and pricing feed are enabled.</div></div><div class="card"><div class="card-title">Order panel</div><div class="field" style="margin-top:10px"><label>Market</label><select class="control" disabled><option>USDT / BNB</option></select></div><div class="field" style="margin-top:10px"><label>Order type</label><select class="control" disabled><option>Market</option><option>Limit</option></select></div><div class="field" style="margin-top:10px"><label>Amount</label><input class="control" disabled placeholder="0.00"></div><button class="btn primary" disabled style="margin-top:10px">Trading not active yet</button></div></div>
+</section>
 <section class="page" id="page-subscription">
   <div class="page-head"><div><div class="eyebrow">ACCOUNT / BILLING</div><h1 class="page-title">Subscription & API</h1><p class="page-desc">Plans and account status are loaded from the live Blockchain Tracker backend. All paid plans are priced in USDT.</p></div><span class="tag yellow" id="authStatus">Checking account…</span></div>
   <div class="card" style="margin-bottom:15px">
@@ -758,13 +774,14 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   </div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Payments</div><div class="card-sub">Latest 50 invoices</div></div><select class="control" id="adPayFilter"><option value="">All</option><option value="confirmed">Confirmed</option><option value="pending">Pending</option><option value="verifying">Verifying</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div><div class="table-wrap"><table><thead><tr><th>Created</th><th>User</th><th>Plan</th><th>Network</th><th>Amount</th><th>Status</th><th>Tx</th></tr></thead><tbody id="adPayRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Users</div><div class="card-sub">Search by @username, Telegram ID or internal ID</div></div></div><div class="toolbar"><input class="control" id="adUserQ" placeholder="Search users" style="flex:1;min-width:160px"><button class="btn" id="adUserBtn" type="button">Search</button></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>User</th><th>Plan</th><th>Joined</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adUserRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
+  <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Wallet withdrawals</div><div class="card-sub">Approve or reject requests. After manually broadcasting a transfer, record its transaction hash to complete settlement.</div></div><button class="btn small" id="adWithdrawRefresh" type="button">↻ Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>User</th><th>Asset / chain</th><th>Destination</th><th>Amount + fee</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adWithdrawRows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Grant Plan</div><div class="card-sub">Gives a paid plan without payment. Every grant is audit-logged.</div></div></div><div class="form-grid"><div class="field"><label for="adGrantUser">Internal user ID</label><input id="adGrantUser" type="number" min="1" step="1" inputmode="numeric" placeholder="Tap Grant on a user row"></div><div class="field"><label for="adGrantPlan">Plan</label><select id="adGrantPlan"><option value="pro">Pro</option><option value="business">Business</option><option value="enterprise">Enterprise</option></select></div><div class="field"><label for="adGrantDays">Days (1 to 3650)</label><input id="adGrantDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30"></div></div><button class="btn primary" id="adGrantBtn" type="button" style="margin-top:12px">Grant plan</button><div class="form-message" id="adGrantMsg"></div></div>
   </div>
 </section>
 </div>
 </main>
 <nav class="mobile-nav" id="mobileNav">
-  <button class="active" data-page="dashboard"><span>▦</span>Home</button><button data-page="wallets"><span>◈</span>Wallets</button><button data-page="tokens"><span>◉</span>Scanner</button><button data-page="tools"><span>⚖</span>Tools</button><button data-page="alerts"><span>♧</span>Alerts</button><button data-page="profile"><span>☻</span>Profile</button>
+  <button class="active" data-page="dashboard"><span>▦</span>Home</button><button data-page="assets"><span>＄</span>Assets</button><button data-page="trade"><span>⇄</span>Trade</button><button data-page="wallets"><span>◈</span>Wallets</button><button data-page="tokens"><span>◉</span>Scanner</button><button data-page="tools"><span>⚖</span>Tools</button><button data-page="alerts"><span>♧</span>Alerts</button><button data-page="profile"><span>☻</span>Profile</button>
 </nav>
 </div>
 
@@ -926,7 +943,7 @@ $("alertList").className=alerts.length?"":"empty";
 $("alertList").innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${esc(a.type)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${esc(netName(a.network))} · ${a.threshold?`Threshold $${esc(a.threshold)}`:"No threshold"} · Draft only</div></div><button class="btn danger small" data-alert-remove="${esc(a.id)}">Delete</button></div>`).join(""):'<div class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div>';
 }
 window.addEventListener("bt-oc-rules",()=>{try{render()}catch(e){}});
-function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",dex:"DEX Screener",contracts:"Smart Contracts",community:"Community Monitor",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
+function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",assets:"Assets",trade:"Spot Trading",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",dex:"DEX Screener",contracts:"Smart Contracts",community:"Community Monitor",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
 function openItem(type,editId){$("itemForm").reset();$("itemType").value=type;$("itemEditId").value=editId||"";const existing=editId?watchlist.find(i=>i.id===editId):null;if(existing){$("itemName").value=existing.name||"";$("network").value=existing.network;$("network").disabled=true;$("address").value=existing.address;$("category").value=existing.category||"Custom";$("itemNotes").value=existing.notes||"";$("address").readOnly=true;$("modalTitle").textContent="Edit Wallet Details";$("saveItem").textContent="Save Changes"}else{$("network").disabled=false;$("address").readOnly=false;$("modalTitle").textContent=type==="wallet"?"Add Wallet":"Add Smart Contract";$("saveItem").textContent=type==="wallet"?"Save Wallet":"Save Contract"}$("formMessage").textContent="";$("itemModal").classList.add("open");$("itemName").focus()}
 function closeModal(id){$(id).classList.remove("open")}
 let selectedPaymentPlan=null;
@@ -3222,4 +3239,58 @@ window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadL
   setTimeout(load,2500);
 })();
 </script>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const fmt=(v,n=6)=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:n});
+  const money=v=>'$'+Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function loadAssets(){
+    const rows=$('assetRows');if(!rows)return;
+    rows.innerHTML='<tr><td colspan="5" class="muted">Loading wallet…</td></tr>';
+    try{
+      if(!window.BT?.backendUser && !window.BT?.user && !window.backendUser){
+        // The API remains the source of truth; unauthenticated users receive AUTH_REQUIRED below.
+      }
+      const w=await apiRequest('/wallet/create',{method:'POST',body:'{}'});
+      $('assetWalletStatus').textContent='Active';
+      const [b,d,wd,l]=await Promise.all([
+        apiRequest('/wallet/balances'),apiRequest('/wallet/deposits'),apiRequest('/wallet/withdrawals'),apiRequest('/wallet/ledger?limit=50')
+      ]);
+      $('assetTotalUsd').textContent=money(b.totalUsd);
+      let avail=0,locked=0;
+      (b.assets||[]).forEach(x=>{avail+=Number(x.available||0)*Number(x.usdPrice||0);locked+=Number(x.locked||0)*Number(x.usdPrice||0)});
+      $('assetAvailable').textContent=money(avail);$('assetLocked').textContent=money(locked);
+      const nonzero=(b.assets||[]).filter(x=>Number(x.available||0)||Number(x.locked||0));
+      $('assetRows').innerHTML=(nonzero.length?nonzero:(b.assets||[]).filter(x=>['usdt-bsc','usdt-tron'].includes(x.code))).map(x=>`<tr><td><strong>${safe(x.symbol)}</strong><div class="muted">${safe(x.code)}</div></td><td>${safe(x.chain.toUpperCase())}</td><td>${fmt(x.available,8)}</td><td>${fmt(x.locked,8)}</td><td>${money((Number(x.available||0)+Number(x.locked||0))*Number(x.usdPrice||0))}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No supported assets.</td></tr>';
+      $('assetDepositAddresses').innerHTML=(w.addresses||[]).filter(x=>x.network==='evm'||x.network==='tron').map(x=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><strong>${x.network==='evm'?'USDT · BEP20 address':'USDT · TRC20 address'}</strong><div class="address" style="word-break:break-all;margin:6px 0">${safe(x.address)}</div><button class="btn small" type="button" data-copy-wallet="${safe(x.address)}">Copy address</button></div>`).join('');
+      $('assetDepositRows').innerHTML=(d.deposits||[]).map(x=>`<tr><td>${new Date(x.detected_at).toLocaleString()}</td><td>${safe(x.chain.toUpperCase())}</td><td>${fmt(x.amount,8)} ${safe(x.symbol)}</td><td><span class="tag green">${safe(x.status)}</span></td><td class="mono">${safe(String(x.tx_hash).slice(0,12))}…</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No deposits yet.</td></tr>';
+      $('assetWithdrawalRows').innerHTML=(wd.withdrawals||[]).map(x=>`<tr><td>${new Date(x.requested_at).toLocaleString()}</td><td>${safe(x.chain.toUpperCase())}</td><td>${fmt(x.amount,8)} ${safe(x.symbol)}</td><td><span class="tag">${safe(x.status)}</span></td><td class="mono">${safe(x.tx_hash||'—')}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No withdrawals yet.</td></tr>';
+      $('assetLedgerRows').innerHTML=(l.entries||[]).map(x=>`<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${safe(x.kind)}</td><td>${safe(x.asset)}</td><td>${fmt(x.delta_available,8)}</td><td>${fmt(x.available_after,8)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No ledger entries yet.</td></tr>';
+    }catch(e){$('assetWalletStatus').textContent='Unavailable';rows.innerHTML=`<tr><td colspan="5" class="muted">${safe(e.message==='AUTH_REQUIRED'?'Sign in through Telegram to create and view your exchange wallet.':e.message)}</td></tr>`;$('assetDepositAddresses').textContent='Wallet unavailable.'}
+  }
+  async function withdraw(){const msg=$('withdrawMessage');msg.textContent='Submitting request…';try{const r=await apiRequest('/wallet/withdraw',{method:'POST',body:JSON.stringify({asset:$('withdrawAsset').value,amount:$('withdrawAmount').value,address:$('withdrawAddress').value.trim()})});msg.textContent=`Request #${r.withdrawalId} submitted. Status: ${r.status}.`;await loadAssets()}catch(e){msg.textContent=e.message==='INSUFFICIENT_BALANCE'?'Insufficient available balance.':e.message==='INVALID_ADDRESS'?'Destination address does not match the selected network.':e.message}}
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-page="assets"]'))setTimeout(loadAssets,100);
+    if(e.target.id==='assetsRefresh'||e.target.id==='assetsCreate')loadAssets();
+    if(e.target.id==='withdrawSubmit')withdraw();
+    const c=e.target.closest('[data-copy-wallet]');if(c){navigator.clipboard?.writeText(c.dataset.copyWallet).then(()=>{c.textContent='Copied'}).catch(()=>{c.textContent='Copy failed'})}
+  });
+  window.addEventListener('bt-auth',()=>{if($('page-assets')?.classList.contains('active'))loadAssets()});
+  let adminLoaded=false;
+  async function loadAdminWithdrawals(){const body=$('adWithdrawRows');if(!body)return;try{const d=await apiRequest('/admin/wallet/withdrawals');body.innerHTML=(d.withdrawals||[]).map(x=>`<tr><td>#${x.id}<div class="muted">${new Date(x.requested_at).toLocaleString()}</div></td><td>${safe(x.username?'@'+x.username:x.telegram_user_id)}</td><td>${safe(x.asset)}<div class="muted">${safe(x.chain)}</div></td><td class="mono">${safe(x.to_address)}</td><td>${fmt(x.amount,8)} + ${fmt(x.fee,8)}</td><td>${safe(x.status)}</td><td style="white-space:nowrap">${x.status==='pending'?`<button class="btn small primary" data-wd-action="approve" data-wd-id="${x.id}">Approve</button> <button class="btn small danger" data-wd-action="reject" data-wd-id="${x.id}">Reject</button>`:x.status==='approved'?`<button class="btn small" data-wd-action="sent" data-wd-id="${x.id}">Record TX</button> <button class="btn small danger" data-wd-action="fail" data-wd-id="${x.id}">Fail</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No withdrawal requests.</td></tr>';adminLoaded=true}catch(e){body.innerHTML=`<tr><td colspan="7" class="muted">${safe(e.message)}</td></tr>`}}
+  document.addEventListener('click',async e=>{
+    if(e.target.id==='adWithdrawRefresh')loadAdminWithdrawals();
+    const b=e.target.closest('[data-wd-action]');if(!b)return;
+    const action=b.dataset.wdAction,id=Number(b.dataset.wdId);let txHash='',reason='';
+    if(action==='sent'){txHash=prompt('Enter the broadcast transaction hash:')||'';if(!txHash)return}
+    if(action==='reject'||action==='fail')reason=prompt('Reason (optional):')||'';
+    b.disabled=true;try{await apiRequest('/admin/wallet/withdrawal',{method:'POST',body:JSON.stringify({id,action,txHash,reason})});await loadAdminWithdrawals()}catch(err){alert('Action failed: '+err.message);b.disabled=false}
+  });
+  const adminObserver=new MutationObserver(()=>{if($('page-admin')?.classList.contains('active')&&!adminLoaded)loadAdminWithdrawals()});
+  if($('page-admin'))adminObserver.observe($('page-admin'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
 </body></html>
