@@ -3175,25 +3175,32 @@ window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadL
 })();
 </script>
 <script src="/assets/points-ui.js" defer></script>
+<script src="/assets/pro-ui.js" defer></script>
 <script src="/assets/forcejoin-ui.js" defer></script>
 <script>
 (function(){
-  var loaded=false;
+  var loaded=false,saved={autoRefresh:false,alerts:false};
   function msg(t){var el=document.getElementById("smiSettingsMsg");if(el)el.textContent=t||""}
   function load(){
     if(loaded||!document.getElementById("smiAutoRefresh"))return;
     apiRequest("/smart-money/settings").then(function(d){
       loaded=true;
-      document.getElementById("smiAutoRefresh").checked=!!d.autoRefresh;
-      document.getElementById("smiAlerts").checked=!!d.alerts;
+      saved={autoRefresh:!!d.autoRefresh,alerts:!!d.alerts};
+      document.getElementById("smiAutoRefresh").checked=saved.autoRefresh;
+      document.getElementById("smiAlerts").checked=saved.alerts;
     }).catch(function(){});
   }
   function save(){
-    var body={autoRefresh:document.getElementById("smiAutoRefresh").checked,alerts:document.getElementById("smiAlerts").checked};
+    var auto=document.getElementById("smiAutoRefresh"),alerts=document.getElementById("smiAlerts");
+    var body={autoRefresh:auto.checked,alerts:alerts.checked},previous={...saved};
     msg("Saving…");
     apiRequest("/smart-money/settings",{method:"POST",body:JSON.stringify(body)}).then(function(){
       msg(body.alerts?"Saved. Signal alerts go to your Telegram bot chat (checked every ~5 min).":"Saved.");
-    }).catch(function(err){msg("Could not save: "+(err.message||"error"))});
+    }).catch(function(err){
+      auto.checked=previous.autoRefresh;alerts.checked=previous.alerts;
+      if(err.message==="PLAN_REQUIRED")msg("PLAN_REQUIRED: Start the free trial or upgrade to enable Smart Money alerts / auto-refresh.");
+      else msg("Could not save: "+(err.message||"error"));
+    });
   }
   document.addEventListener("change",function(e){if(e.target&&(e.target.id==="smiAutoRefresh"||e.target.id==="smiAlerts"))save()});
   document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest('[data-page="wallets"],#smartIntelRefresh'))load()});
