@@ -16,6 +16,7 @@ import { adminApi } from "../lib/admin.js";
 import { defiOverview } from "../lib/defi.js";
 import { txHistory } from "../lib/txhistory.js";
 import { pnlRoute } from "../lib/pnl.js";
+import { smartMoney } from "../lib/smart_money.js";
 import { multiChainOverview } from "../lib/multichain.js";
 import { telegramWebhook } from "../lib/bot.js";
 import { cronChannels } from "../lib/channels.js";
@@ -675,6 +676,7 @@ export default async function handler(req, res) {
     if (path === "/api/portfolio/balances") return await portfolioBalances(req, res);
     if (path === "/api/portfolio/history") return await portfolioHistory(req, res);
     if (path === "/api/pnl") return await pnlRoute(req, res);
+    if (path === "/api/smart-money") return await smartMoney(req, res);
 
     if (path === "/api/market/overview") return await marketOverview(req, res);
     if (path === "/api/market/whales") return await whaleFeed(req, res);
