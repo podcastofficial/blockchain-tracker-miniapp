@@ -1,12 +1,12 @@
 # Blockchain Tracker Mini App — Feature Roadmap (10 Parts)
 
 Saare 21 options 10 parts me baante gaye hain. Har part ek ke baad ek banega.
-**Part 1 BUILD HO CHUKA HAI (neeche "Part 1 — Build status" dekho).** Baaki parts ka sirf scope likha hai.
+**Part 1 aur Part 2 BUILD HO CHUKE HAIN (neeche "Build status" sections dekho).** Baaki parts ka sirf scope likha hai.
 
 | Part | Naam | Roadmap items |
 |------|------|---------------|
 | **1** | **PnL Tracker (EVM + Solana + Tron) — ✅ BUILT** | #4 |
-| 2 | Swap alerts: Solana / Tron / TON | #3 |
+| **2** | **Swap alerts: Solana / Tron / TON (beta) — ✅ BUILT** | #3 |
 | 3 | Smart Money / Copy-wallet alerts | #1 |
 | 4 | Safe / Risky score (rug-pull, honeypot) in alerts | #2 |
 | 5 | Onboarding tour, Templates, Wallet labels/notes/compare | #5, #8 |
@@ -263,9 +263,66 @@ TRONGRID_API_KEY=      # pehle se hai
 
 ---
 
-# Parts 2–10 (sirf scope, detail baad me)
+# PART 2 — Build status: Solana / Tron / TON swap alerts
 
-- **Part 2** — Helius (Solana), TronGrid, TONCenter se swap events. Contract BUY/SELL monitor ko EVM se aage badhana. `lib/newcoins.js` aur `lib/community_contracts.js` ke saath integrate.
+## Kya badla (files)
+
+| File | Status | Kaam |
+|------|--------|------|
+| `lib/swap_parsers.js` | new | Pure parsers: Solana (Helius), Tron (TronGrid), TON beta (TONCenter) -> BUY/SELL trades. Offline testable |
+| `lib/swap_nonevm.js` | new | Pool discovery (DexScreener) + scanner + alert formatter. Existing `token_trade` template use hota hai (admin panel se editable) |
+| `lib/onchain.js` | changed | `kind=contract` + non-EVM network => `swapScan()` |
+| `lib/onchain_alerts.js` | changed | Contract rule ke liye Solana/Tron (aur flag on ho to TON) allowed |
+| `index.html` | changed | Alert form me Solana/Tron network + "Token BUY / SELL" label |
+| `scripts/test-swaps.mjs`, `package.json` | new/changed | `npm run test:swaps` (10 tests) |
+| `README.md`, `READ.md` | changed | env + status |
+
+**Naya cron / naya DB table / migration nahi chahiye.** Alerts wahi `/api/cron/onchain` (GitHub Actions, har 5 min) se chalte hain, aur `onchain_alerts` me `kind=contract` hi use hota hai (CHECK constraint safe).
+
+## Kaise kaam karta hai
+
+1. User alert form me **Contract / Token** chunta hai, network **Solana** ya **Tron**, aur token ka mint/contract address deta hai.
+2. Worker DexScreener se token ka sabse liquid pool dhundhta hai (12 ghante me dobara check).
+3. Us pool ke swaps padhta hai: Solana = Helius `type=SWAP`, Tron = TronGrid TRC20 transfers.
+4. BUY / SELL, token amount, quote (SOL/USDC/USDT/TRX), USD value, trader, tx link ke saath Telegram alert. Pehli run sirf start-marker set karti hai (purani history ka spam nahi).
+5. Minimum USD: form "0.01" bhejta hai = har trade. API se bada number do to chhote trades filter ho jaate hain.
+
+## Safety rules
+
+- Liquidity add/remove aur plain transfer **trade nahi** ginte (Tron: token aur quote leg ka ulta direction hona zaroori).
+- Unknown quote token wale swaps skip hote hain, USD guess nahi hota.
+- Ek scan me max 10 alerts (bade USD wale pehle). Baaki app history me nahi, skip hote hain.
+- Daily Telegram quota wahi `contractNotifications` wala hai.
+
+## Env
+
+```
+HELIUS_API_KEY=      # Part 1 wali hi key (Solana ke liye zaroori)
+TRONGRID_API_KEY=    # optional, rate limit behtar
+TON_SWAP_BETA=1      # optional: TON enable (default OFF)
+TONCENTER_API_KEY=   # optional, TON ke liye
+```
+
+## Test status
+
+- ✅ `npm run test:swaps`: 10 parser tests pass (BUY/SELL, wSOL, USDC, WTRX, LP add/remove skip, fake/unknown quote skip, TON address forms).
+- ✅ Stubbed smoke test: Solana (first run = marker, second run = 2 alerts, min-USD filter), Tron BUY alert, TON default-off reject, API validation (Solana/Tron accept, TON/invalid reject).
+- ❌ **Live APIs se verify nahi hua** (network nahi tha). Pehli baar check karna: DexScreener ka `tron` pair milna, Helius `until` param, TronGrid pool transfers. Ek chalte hue token par alert bana ke explorer se match karo.
+- ❌ UI browser me nahi dekha (sirf script syntax check).
+
+## Limits / abhi nahi bana (honest)
+
+- **TON = BETA, default OFF.** Jetton transfers se sirf direction milti hai; USD = amount x current price (estimate), aur liquidity add/remove kabhi-kabhi trade jaisa dikh sakta hai. Form me TON option nahi diya. Flag on karke API se hi try karo.
+- **Telegram group/channel ka `/watchcontract`** abhi bhi sirf EVM hai (community watch tables alag hain). Ye Part 2 me nahi bana, user ke apne alerts (Mini App -> Telegram DM) me Solana/Tron chalta hai.
+- **Realtime nahi**: delay 5 min tak (GitHub cron). Webhooks Part 9 me.
+- Bahut busy token (5 min me 100+ swaps) ke saare swaps nahi aate, bade USD wale aate hain.
+- Naye pump.fun token jo abhi DexScreener par indexed nahi: "NO_LIQUIDITY_PAIR_FOUND" (rule ke `last_error` me dikhta hai), indexing ke baad apne aap chal padta hai.
+- Tron par sirf USDT/USDC/WTRX quote wale pools; baaki skip.
+
+---
+
+# Parts 3–10 (sirf scope, detail baad me)
+
 - **Part 3** — Famous wallets ki list + follow button, un wallets ke buy/sell par alert. Part 1 ka trade adapter reuse hoga.
 - **Part 4** — `lib/scanner.js` ko alerts me jodna. Score: Safe / Risky / Danger, reasons ke saath.
 - **Part 5** — 3-step onboarding (wallet add → alert set → channel join), wallet naam/tag/notes, wallet compare. `lib/templates.js` extend.

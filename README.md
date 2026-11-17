@@ -82,6 +82,7 @@ Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpa
 - Transaction hashes: EVM (`0x` + 64 hex) and Solana signatures are detected automatically; a bare 64-hex Tron hash only via `/track` or `/tx`.
 - Optional env for reliability: `RPC_ETHEREUM`, `RPC_BSC`, `RPC_POLYGON`, `RPC_ARBITRUM`, `RPC_BASE`, `RPC_SOLANA` (private RPCs), `TRONGRID_API_KEY`.
 - PnL tracker (Part 1): `ETHERSCAN_API_KEY` (EVM swaps) and `HELIUS_API_KEY` (Solana swaps, free key at helius.dev). See `READ.md`.
+- Solana/Tron token BUY/SELL alerts (Part 2): reuses `HELIUS_API_KEY` / `TRONGRID_API_KEY`. TON is off by default; set `TON_SWAP_BETA=1` to enable it (optional `TONCENTER_API_KEY`).
 - Tests: `node scripts/test-address.mjs` and `node scripts/test-community.mjs` (stubbed DB/Telegram/providers; run `npm install` first).
 
 ## Community Crypto Monitor — Phase 4 (Mini App screens + admin API)

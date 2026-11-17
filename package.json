@@ -14,6 +14,7 @@
   },
   "scripts": {
     "test:pnl": "node scripts/test-pnl.mjs",
+    "test:swaps": "node scripts/test-swaps.mjs",
     "webhook": "node scripts/set-webhook.mjs",
     "webhook:info": "node scripts/set-webhook.mjs --info",
     "launch:config": "node scripts/create-dbc-config.mjs"
