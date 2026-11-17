@@ -347,20 +347,8 @@ function infoHtml(){
 
 /* ---- buy / sell ---- */
 function tradeBox(){
-  const c=coin,o=ov,sym=esc((o&&o.base.symbol)||c.symbol||"");
-  if(c.mode==="dbc"||c.mode==="jup"){
-    return '<div class="seg"><button class="buy on" data-sd="buy">Buy</button><button class="sell" data-sd="sell">Sell</button></div>'+
-      '<div class="box"><small id="amtLbl">Amount in SOL</small><input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0"><div class="chips" id="quick"></div></div>'+
-      '<div id="qt" style="font-size:12px;color:var(--ink);margin:0 2px 10px">Enter an amount.</div><div id="bal" style="font-size:12px;color:var(--mut);margin:0 2px 10px"></div>'+
-      '<button class="main buy" id="go">Buy $'+sym+'</button>'+
-      '<div class="sub" style="text-align:center">'+(PL.mode()==="deeplink"?"Your wallet opens only in the Phantom app to approve, then you come straight back here.":"Approve in your wallet.")+'</div>';
-  }
-  if(c.mode==="lifi"){
-    const u=s=>"/swap.html?side="+s+"&chain="+o.trade.chainId+"&token="+encodeURIComponent(c.address)+"&sym="+encodeURIComponent((o&&o.base.symbol)||c.symbol||"");
-    return '<div class="seg"><button class="buy on" data-go="'+esc(u("buy"))+'">Buy</button><button class="sell on" data-go="'+esc(u("sell"))+'">Sell</button></div>'+
-      '<div class="sub" style="text-align:center">Trades on this network use WalletConnect: pick your wallet app, approve there, and you return here.</div>';
-  }
-  return '<div class="sub">In-app trading is not available for this network yet. Use the DexScreener or Explorer link above.</div>';
+  return '<div class="sub" style="line-height:1.6">Launchpad tokens are not currently listed in the internal custodial Spot Markets. External wallet-based buy and sell execution is disabled here.</div>'+
+    '<a class="main" href="/index.html?spot=1" style="display:block;text-align:center;text-decoration:none;margin-top:12px">Open Internal Spot Trade</a>';
 }
 function bindTrade(){
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{location.href=b.dataset.go});

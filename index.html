@@ -658,9 +658,49 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Balance ledger</div><div class="card-sub">Every credited deposit and withdrawal balance change.</div></div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Type</th><th>Asset</th><th>Available change</th><th>Balance after</th></tr></thead><tbody id="assetLedgerRows"><tr><td colspan="5" class="muted">No ledger entries loaded.</td></tr></tbody></table></div></div>
 </section>
 <section class="page" id="page-trade">
-  <div class="page-head"><div><div class="eyebrow">EXCHANGE / SPOT</div><h1 class="page-title">Spot Trading</h1><p class="page-desc">Internal order matching will use your exchange wallet. External DEX execution is not used for internal spot orders.</p></div></div>
-  <div class="notice">Spot matching engine is being added after wallet deposits, withdrawals and ledger controls are verified. No buy or sell order is accepted in this build yet; this prevents an order from being shown as executed before the matching engine is active.</div>
-  <div class="grid section-grid" style="margin-top:15px"><div class="card"><div class="card-title">Markets</div><div class="muted" style="margin-top:8px">USDT pairs will appear here once the exchange market registry and pricing feed are enabled.</div></div><div class="card"><div class="card-title">Order panel</div><div class="field" style="margin-top:10px"><label>Market</label><select class="control" disabled><option>USDT / BNB</option></select></div><div class="field" style="margin-top:10px"><label>Order type</label><select class="control" disabled><option>Market</option><option>Limit</option></select></div><div class="field" style="margin-top:10px"><label>Amount</label><input class="control" disabled placeholder="0.00"></div><button class="btn primary" disabled style="margin-top:10px">Trading not active yet</button></div></div>
+  <div class="page-head"><div><div class="eyebrow">EXCHANGE / SPOT</div><h1 class="page-title">Spot Trading</h1><p class="page-desc">Trade supported assets directly against USDT using your internal exchange balance.</p></div><div class="head-actions"><button class="btn" id="spotRefresh" type="button">↻ Refresh</button></div></div>
+  <div class="spot-layout">
+    <div class="card spot-markets-card">
+      <div class="card-head"><div><div class="card-title">Markets</div><div class="card-sub">Internal order-book markets</div></div></div>
+      <input class="control" id="spotMarketSearch" placeholder="Search market…" autocomplete="off">
+      <div class="spot-market-list" id="spotMarkets"><div class="muted">Loading markets…</div></div>
+    </div>
+    <div class="spot-main">
+      <div class="card spot-market-head">
+        <div><div class="eyebrow">SELECTED MARKET</div><div class="spot-pair" id="spotPair">—</div><div class="muted" id="spotChain">Choose a market</div></div>
+        <div class="spot-last"><small>Last internal trade</small><strong id="spotLastPrice">—</strong><small id="spotLastTime">No completed trades yet</small></div>
+      </div>
+      <div class="grid spot-columns">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Order book</div><div class="card-sub">Open internal limit orders</div></div></div>
+          <div class="spot-book-head"><span>Price (USDT)</span><span>Amount</span><span>Total</span></div>
+          <div id="spotAsks" class="spot-book-side"><div class="muted">No asks yet</div></div>
+          <div class="spot-book-mid" id="spotBookMid">—</div>
+          <div id="spotBids" class="spot-book-side"><div class="muted">No bids yet</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Place order</div><div class="card-sub">Uses your available Assets wallet balance</div></div></div>
+          <div class="spot-side-tabs"><button type="button" class="btn primary" id="spotBuyTab">Buy</button><button type="button" class="btn" id="spotSellTab">Sell</button></div>
+          <div class="field" style="margin-top:12px"><label>Order type</label><select class="control" id="spotOrderType"><option value="market">Market</option><option value="limit">Limit</option></select></div>
+          <div class="field" id="spotPriceField" style="margin-top:10px;display:none"><label>Limit price (USDT)</label><input class="control" id="spotPrice" inputmode="decimal" placeholder="0.00"></div>
+          <div class="field" style="margin-top:10px"><label>Amount (<span id="spotBaseLabel">asset</span>)</label><input class="control" id="spotQuantity" inputmode="decimal" placeholder="0.00"></div>
+          <div class="spot-balance-line"><span>Available</span><strong id="spotAvailable">Sign in to view</strong></div>
+          <div class="spot-order-summary" id="spotOrderSummary">Select a market and enter an amount.</div>
+          <button class="btn primary" id="spotSubmit" type="button" style="width:100%;margin-top:12px">Buy</button>
+          <div class="form-message" id="spotMessage" role="status"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:15px">
+        <div class="card-head"><div><div class="card-title">Open orders</div><div class="card-sub">Cancel an unfilled limit order to release reserved funds.</div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th>Type</th><th>Price</th><th>Amount</th><th>Filled</th><th>Status</th><th></th></tr></thead><tbody id="spotOrders"><tr><td colspan="9" class="muted">Sign in to view orders.</td></tr></tbody></table></div>
+      </div>
+      <div class="card" style="margin-top:15px">
+        <div class="card-head"><div><div class="card-title">Trade history</div><div class="card-sub">Completed internal matches</div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th>Price</th><th>Amount</th><th>Total (USDT)</th></tr></thead><tbody id="spotTrades"><tr><td colspan="6" class="muted">No trades loaded.</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="notice" style="margin-top:14px">Internal spot orders only match against other users’ open limit orders. Market orders execute immediately against available book liquidity; unfilled remainder is cancelled. A market with no matching liquidity will not execute. Supported assets only.</div>
 </section>
 <section class="page" id="page-subscription">
   <div class="page-head"><div><div class="eyebrow">ACCOUNT / BILLING</div><h1 class="page-title">Subscription & API</h1><p class="page-desc">Plans and account status are loaded from the live Blockchain Tracker backend. All paid plans are priced in USDT.</p></div><span class="tag yellow" id="authStatus">Checking account…</span></div>
@@ -1545,23 +1585,17 @@ function tradeRefresh(){
     const qty=amt/c.px,fee=amt*FEE/100;
     est.innerHTML=side==="buy"?`≈ <b>${price(qty*(1-FEE/100))} ${esc(c.sym)}</b> for $${price(amt)}<br>Price $${price(c.px)} · est. fee ~$${price(fee)} (${FEE}%)`:`Sell ≈ <b>${price(qty)} ${esc(c.sym)}</b><br>You get ≈ $${price(amt-fee)} · price $${price(c.px)} · est. fee ~$${price(fee)}`;
   }else est.textContent="Enter an amount to see the estimate.";
-  const b=[],cls=side;
-  if(c.swap)b.push(`<button type="button" class="cm-b ${cls}" data-exec="swap">💼 ${side==="buy"?"Buy":"Sell"} ${esc(c.swap.wrapped?"WBTC":c.sym)} in app · connect wallet</button>`);
-  if(c.ton)b.push(`<button type="button" class="cm-b" data-exec="ton">💎 ${side==="buy"?"Buy":"Sell"} on STON.fi (TON) ↗</button>`);
-  b.push(`<button type="button" class="cm-b ${cls}" data-exec="cex">${side==="buy"?"Buy":"Sell"} ${esc(c.sym)} on Binance ↗</button>`);
-  if(c.dex)b.push(`<button type="button" class="cm-b" data-exec="dex">${side==="buy"?"Buy":"Sell"} via DEX swap ↗</button>`);
+  const b=[];
+  b.push(`<button type="button" class="cm-b pri" data-exec="internal">Open Internal Spot Trade · ${esc(c.sym)}</button>`);
+  b.push(`<div class="cm-src">Only assets available in the internal Spot Markets can be traded. Unlisted tokens cannot be routed to external exchanges or wallets.</div>`);
   ex.innerHTML=b.join("");
 }
 function openExt(u){try{const t=window.Telegram&&window.Telegram.WebApp;if(t&&t.openLink){t.openLink(u);return}}catch(e){}window.open(u,"_blank","noopener,noreferrer")}
 function tradeExec(kind){
-  const c=cur.coin;if(!c)return;const sell=cur.side==="sell";
-  if(kind==="swap"&&c.swap){
-    if(c.swap.native){ // native coin: swap page uses its own native placeholder, so pass the stable "native" marker via token=native
-      location.href="/swap.html?"+new URLSearchParams({chain:c.swap.chain,token:"native",side:sell?"sell":"buy",sym:c.sym});return}
-    location.href="/swap.html?"+new URLSearchParams({chain:c.swap.chain,token:c.swap.token,side:sell?"sell":"buy",sym:c.swap.wrapped?"WBTC":c.sym});return}
-  if(kind==="ton"){openExt("https://app.ston.fi/swap");return}
-  if(kind==="dex"&&c.dex){const f=DEXURL[c.dex.chain];if(f)openExt(f(c.dex.addr,sell));return}
-  openExt("https://www.binance.com/en/trade/"+encodeURIComponent(c.sym)+"_USDT?type=spot");
+  const c=cur.coin;if(!c)return;
+  if(kind==="internal"){
+    location.href="/index.html?spot=1&symbol="+encodeURIComponent(c.sym||"");
+  }
 }
 function renderCoin(d){
   const md=d.market_data||{},u=o=>o&&o.usd,sym=String(d.symbol||"").toUpperCase();
@@ -1985,7 +2019,7 @@ async function loadHomeCoins(){
 }
 document.addEventListener("click",e=>{
   const tab=e.target.closest("[data-home-coins]");if(tab){homeCoinSource=tab.dataset.homeCoins;renderHomeCoins();return}
-  const trade=e.target.closest("[data-home-trade]");if(trade){const it=homeDexItems[Number(trade.dataset.homeTrade)];if(!it)return;const ids={ethereum:1,bsc:56,polygon:137,arbitrum:42161,base:8453,optimism:10,avalanche:43114,solana:1151111081099710};const cid=ids[String(it.chain||"").toLowerCase()];if(!cid){toast("In-app swap is not available for this chain yet.");return}location.href="/swap.html?"+new URLSearchParams({chain:String(cid),token:it.base.address,side:"buy",sym:it.base.symbol||"TOKEN"});return}
+  const trade=e.target.closest("[data-home-trade]");if(trade){const it=homeDexItems[Number(trade.dataset.homeTrade)];if(!it)return;location.href="/index.html?spot=1&symbol="+encodeURIComponent(it.base.symbol||"")+"&chain="+encodeURIComponent(String(it.chain||"").toLowerCase());return}
   const scan=e.target.closest("[data-home-scan]");if(scan){const [net,addr]=scan.dataset.homeScan.split("|");const nav=document.querySelector('[data-page="tokens"]');if(nav)nav.click();const sn=g("scanNetwork"),sa=g("scanAddress");if(sn){sn.value=net;sn.dispatchEvent(new Event("change"))}if(sa)sa.value=addr;setTimeout(()=>{const b=g("scanBtn");if(b&&!b.disabled)b.click()},350);return}
   if(e.target.closest('[data-page="dashboard"]')&&!homeDexItems.length)setTimeout(loadHomeCoins,100);
 });
@@ -2956,7 +2990,7 @@ function openModal(it){
   $("dxmBody").innerHTML=
   '<div class="cm-head"><span class="dx-ico" style="width:42px;height:42px">'+E(it.base.symbol.slice(0,3).toUpperCase())+(it.image?'<img src="'+E(it.image)+'" alt="" referrerpolicy="no-referrer">':"")+'</span><div class="cm-t"><h3>'+E(it.base.name||it.base.symbol)+"</h3><small>"+E(it.base.symbol)+"/"+E(it.quote.symbol)+" · "+E(chainName(it.chain))+" · "+E(it.dex)+"</small></div></div>"+
   '<div id="dxmLive">'+liveHtml(it)+"</div>"+
-  (addr?'<div class="cm-sec">Integrated trading</div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="cm-b pri" type="button" data-dx-trade="buy">🟢 Buy in App</button><button class="cm-b" type="button" data-dx-trade="sell">🔴 Sell in App</button></div><div class="cm-src">Wallet connection and final transaction approval happen in your wallet. Unsupported chains cannot be swapped in-app yet.</div>':'')+
+  (addr?'<div class="cm-sec">Internal spot trading</div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="cm-b pri" type="button" data-dx-trade="open">Open Spot Trade</button></div><div class="cm-src">Only assets listed in the internal Spot Markets can be traded with your exchange balance. Unlisted tokens are not routed to an external swap.</div>':'')+
   '<div class="cm-sec">Chart</div><div style="display:flex;gap:8px;margin-bottom:8px"><button class="cm-b pri" id="dxmTr" type="button">Chart + trades</button><a class="cm-b" href="'+E(dsUrl(it))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Open on DexScreener ↗</a></div>'+
   '<div class="cm-frame"><iframe id="dxmFrame" src="'+E(frameUrl(it,false))+'" title="Live chart" loading="lazy" referrerpolicy="no-referrer"></iframe></div>'+
   '<p class="cm-src">Chart not loading? Use "Open on DexScreener". "Chart + trades" shows every buy and sell inside DexScreener\'s own chart.</p>'+
@@ -2986,12 +3020,12 @@ document.addEventListener("click",async e=>{
   const cd=e.target.closest("[data-dx-i]");if(cd&&$("dxList").contains(cd)){openModal(st.view[Number(cd.dataset.dxI)]);return}
   const pl=e.target.closest("[data-dx-pool]");if(pl){openModal(st.pools[Number(pl.dataset.dxPool)]);return}
   const tr=e.target.closest("[data-dx-trade]");if(tr&&cur){
-    const ids={ethereum:1,bsc:56,polygon:137,arbitrum:42161,base:8453,optimism:10,avalanche:43114,solana:1151111081099710};
-    const cid=ids[String(cur.chain||"").toLowerCase()];
-    if(!cid){toast("In-app swap is not available for this chain yet.");return}
-    const token=cid===1151111081099710?cur.base.address:cur.base.address;
-    if(!token){toast("Token contract address is missing.");return}
-    location.href="/swap.html?"+new URLSearchParams({chain:String(cid),token,side:tr.dataset.dxTrade,sym:cur.base.symbol||"TOKEN"});return;
+    closeModal();
+    const nav=document.querySelector('[data-page="trade"]');if(nav)nav.click();
+    setTimeout(()=>{
+      if(window.BT_SPOT)window.BT_SPOT.selectForAsset(cur.base.symbol||"",String(cur.chain||"").toLowerCase());
+    },250);
+    return;
   }
   const cp=e.target.closest("[data-dx-copy]");if(cp){try{await navigator.clipboard.writeText(cp.dataset.dxCopy);toast("Contract copied")}catch(err){toast("Press and hold the address to copy it")}return}
   const sc=e.target.closest("[data-dx-scan]");if(sc){
@@ -3290,6 +3324,142 @@ window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadL
   });
   const adminObserver=new MutationObserver(()=>{if($('page-admin')?.classList.contains('active')&&!adminLoaded)loadAdminWithdrawals()});
   if($('page-admin'))adminObserver.observe($('page-admin'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const api=(p,o)=>window.BT.apiRequest(p,o);
+const fmt=(v,n=8)=>Number(v||0).toLocaleString("en-US",{maximumFractionDigits:n});
+const state={markets:[],market:null,side:"buy",balances:null,loading:false};
+function msg(s,ok=false){const e=$("spotMessage");if(e){e.textContent=s||"";e.className="form-message"+(ok?" success":"")}}
+function currentAssetCode(){return state.side==="buy"?state.market?.quote_code:state.market?.base_code}
+function renderMarkets(){
+ const box=$("spotMarkets");if(!box)return;
+ const q=String($("spotMarketSearch")?.value||"").toLowerCase();
+ const rows=state.markets.filter(m=>(m.symbol+" "+m.chain).toLowerCase().includes(q));
+ box.innerHTML=rows.map(m=>`<button type="button" class="spot-market-row${state.market?.id===m.id?" active":""}" data-spot-market="${m.id}">
+  <span><strong>${esc(m.base_symbol)}/${esc(m.quote_symbol)}</strong><small>${esc(m.chain)}</small></span>
+  <span class="spot-market-price">${Number(m.last_price)>0?fmt(m.last_price,8):"—"}<small>${Number(m.last_price)>0?"Last price":"No trades"}</small></span>
+ </button>`).join("")||'<div class="muted">No supported markets found.</div>';
+}
+function renderBalances(){
+ const m=state.market;if(!m)return;
+ const code=currentAssetCode();
+ const a=state.balances?.assets?.find(x=>x.code===code);
+ $("spotAvailable").textContent=a?`${fmt(a.available,8)} ${state.side==="buy"?m.quote_symbol:m.base_symbol}`:"Sign in to view";
+}
+async function loadBalances(){
+ try{const b=await api("/wallet/balances");state.balances=b;renderBalances()}
+ catch(e){state.balances=null;$("spotAvailable").textContent=e.message==="AUTH_REQUIRED"?"Sign in to trade":"Wallet unavailable"}
+}
+function renderBook(d){
+ const rows=(items,side)=>items.map(x=>{
+  const total=Number(x.price)*Number(x.quantity);
+  return `<div class="spot-book-row ${side}" data-spot-price="${esc(x.price)}"><span>${fmt(x.price,8)}</span><span>${fmt(x.quantity,8)}</span><span>${fmt(total,6)}</span></div>`;
+ }).join("");
+ $("spotAsks").innerHTML=rows(d.asks||[],"ask")||'<div class="muted" style="padding:8px 2px">No open sell orders</div>';
+ $("spotBids").innerHTML=rows(d.bids||[],"bid")||'<div class="muted" style="padding:8px 2px">No open buy orders</div>';
+ const last=d.lastTrade;
+ $("spotBookMid").textContent=last?`${fmt(last.price,8)} USDT`:"No completed trades";
+ $("spotLastPrice").textContent=last?`${fmt(last.price,8)} USDT`:"—";
+ $("spotLastTime").textContent=last?new Date(last.created_at).toLocaleString():"No completed trades yet";
+}
+async function loadBook(){
+ if(!state.market)return;
+ try{const d=await api(`/trading/orderbook?market=${state.market.id}`);renderBook(d)}
+ catch(e){$("spotAsks").textContent="Order book unavailable";$("spotBids").textContent=""}
+}
+function renderOrders(rows){
+ $("spotOrders").innerHTML=(rows||[]).map(o=>`<tr><td>${new Date(o.createdAt).toLocaleString()}</td><td>${esc(o.market)}</td><td>${esc(o.side)}</td><td>${esc(o.type)}</td><td>${o.price?fmt(o.price,8):"Market"}</td><td>${fmt(o.quantity)}</td><td>${fmt(o.filledQuantity)}</td><td>${esc(o.status)}</td><td>${["open","partially_filled"].includes(o.status)?`<button class="btn small" data-spot-cancel="${o.id}">Cancel</button>`:"—"}</td></tr>`).join("")||'<tr><td colspan="9" class="muted">No orders yet.</td></tr>';
+}
+function renderTrades(rows){
+ $("spotTrades").innerHTML=(rows||[]).map(t=>`<tr><td>${new Date(t.createdAt).toLocaleString()}</td><td>${esc(t.market)}</td><td>${esc(t.side)}</td><td>${fmt(t.price,8)}</td><td>${fmt(t.quantity)}</td><td>${fmt(t.quoteAmount,6)}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">No completed trades yet.</td></tr>';
+}
+async function loadHistory(){
+ try{const [o,t]=await Promise.all([api("/trading/orders?limit=50"),api("/trading/trades?limit=50")]);renderOrders(o.orders);renderTrades(t.trades)}
+ catch(e){$("spotOrders").innerHTML=`<tr><td colspan="9" class="muted">${esc(e.message==="AUTH_REQUIRED"?"Sign in to view orders.":e.message)}</td></tr>`}
+}
+function renderSide(){
+ $("spotBuyTab").classList.toggle("primary",state.side==="buy");$("spotSellTab").classList.toggle("primary",state.side==="sell");
+ $("spotSubmit").textContent=state.side==="buy"?"Buy "+(state.market?.base_symbol||""):"Sell "+(state.market?.base_symbol||"");
+ $("spotBaseLabel").textContent=state.market?.base_symbol||"asset";renderBalances();updateSummary();
+}
+function updateSummary(){
+ const qty=Number($("spotQuantity").value||0),type=$("spotOrderType").value,price=Number($("spotPrice").value||0);
+ if(!qty){$("spotOrderSummary").textContent="Enter an amount to preview your order.";return}
+ if(type==="limit"&&price>0)$("spotOrderSummary").textContent=`Estimated order value: ${fmt(qty*price,6)} USDT`;
+ else $("spotOrderSummary").textContent=type==="market"?"Market orders execute only against available internal order-book liquidity.":"Enter a valid limit price.";
+}
+async function selectMarket(id){
+ state.market=state.markets.find(m=>m.id===Number(id))||null;if(!state.market)return;
+ $("spotPair").textContent=`${state.market.base_symbol} / ${state.market.quote_symbol}`;
+ $("spotChain").textContent=state.market.chain+" · Internal spot market";
+ $("spotBaseLabel").textContent=state.market.base_symbol;
+ renderMarkets();renderSide();await Promise.all([loadBook(),loadHistory()]);
+}
+async function loadMarkets(){
+ $("spotMarkets").innerHTML='<div class="muted">Loading markets…</div>';
+ try{
+  const d=await api("/trading/markets");state.markets=d.markets||[];
+  renderMarkets();
+  if(state.markets.length){const id=state.market?.id||state.markets[0].id;await selectMarket(id)}
+  else $("spotMarkets").innerHTML='<div class="muted">No supported USDT markets are configured.</div>';
+ }catch(e){$("spotMarkets").textContent="Could not load internal markets."}
+}
+async function submitOrder(){
+ if(!state.market){msg("Choose a market first.");return}
+ const quantity=$("spotQuantity").value.trim(),type=$("spotOrderType").value,price=$("spotPrice").value.trim();
+ if(!(Number(quantity)>0)){msg("Enter a valid amount.");return}
+ if(type==="limit"&&!(Number(price)>0)){msg("Enter a valid limit price.");return}
+ const btn=$("spotSubmit");btn.disabled=true;msg("Submitting order…");
+ try{
+  const r=await api("/trading/order",{method:"POST",body:JSON.stringify({marketId:state.market.id,side:state.side,type,quantity,price:type==="limit"?price:undefined})});
+  const o=r.order;
+  msg(`Order #${o.id}: ${o.status}. Filled ${fmt(r.filledQuantity)} ${state.market.base_symbol}.`,true);
+  $("spotQuantity").value="";await Promise.all([loadBalances(),loadBook(),loadHistory()]);
+ }catch(e){
+  const messages={AUTH_REQUIRED:"Sign in to trade.",INSUFFICIENT_BALANCE:"Insufficient available balance.",NO_LIQUIDITY:"No matching liquidity.",INVALID_ORDER:"Check the order details.",MARKET_NOT_FOUND:"This market is not available."};
+  msg(messages[e.message]||e.message||"Order failed.");
+ }finally{btn.disabled=false;updateSummary()}
+}
+async function cancelOrder(id){
+ try{await api("/trading/cancel",{method:"POST",body:JSON.stringify({orderId:Number(id)})});msg("Order cancelled and unused funds released.",true);await Promise.all([loadHistory(),loadBook(),loadBalances()])}
+ catch(e){msg(e.message==="ORDER_NOT_OPEN"?"This order is no longer open.":e.message)}
+}
+document.addEventListener("click",e=>{
+ const m=e.target.closest("[data-spot-market]");if(m){selectMarket(m.dataset.spotMarket);return}
+ const p=e.target.closest("[data-spot-price]");if(p){$("spotOrderType").value="limit";$("spotPriceField").style.display="block";$("spotPrice").value=p.dataset.spotPrice;updateSummary();return}
+ const c=e.target.closest("[data-spot-cancel]");if(c){cancelOrder(c.dataset.spotCancel);return}
+ if(e.target.id==="spotBuyTab"){state.side="buy";renderSide()}
+ if(e.target.id==="spotSellTab"){state.side="sell";renderSide()}
+ if(e.target.id==="spotSubmit")submitOrder();
+ if(e.target.id==="spotRefresh"){loadMarkets();loadBalances()}
+ if(e.target.closest('[data-page="trade"]'))setTimeout(()=>{loadMarkets();loadBalances();loadHistory()},120);
+});
+$("spotOrderType").addEventListener("change",()=>{$("spotPriceField").style.display=$("spotOrderType").value==="limit"?"block":"none";updateSummary()});
+$("spotQuantity").addEventListener("input",updateSummary);$("spotPrice").addEventListener("input",updateSummary);
+$("spotMarketSearch").addEventListener("input",renderMarkets);
+window.BT_SPOT={async selectForAsset(symbol,chain){
+ if(!state.markets.length)await loadMarkets();
+ const m=state.markets.find(x=>String(x.base_symbol).toLowerCase()===String(symbol).toLowerCase()&&(!chain||String(x.chain).toLowerCase()===String(chain).toLowerCase()));
+ if(m){await selectMarket(m.id);msg("Selected listed internal market: "+m.base_symbol+"/USDT.",true)}
+ else msg("This token is not listed in internal Spot Markets yet. No external swap was started.");
+ }};
+const spotParams=new URLSearchParams(location.search);
+if(spotParams.get("spot")==="1"){
+ setTimeout(()=>{
+  const nav=document.querySelector('[data-page="trade"]');if(nav)nav.click();
+  const sym=spotParams.get("symbol"),chain=spotParams.get("chain");
+  if(sym)setTimeout(()=>window.BT_SPOT.selectForAsset(sym,chain||""),450);
+ },300);
+}
+window.addEventListener("bt-auth",()=>{if($("page-trade")?.classList.contains("active")){loadBalances();loadHistory()}});
+setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory()}},15000);
 })();
 </script>
 
