@@ -42,6 +42,7 @@ import { attachReservation } from "../lib/points.js";
 import { trialApi } from "../lib/trial.js";
 import { portfolioCombined, portfolioReport } from "../lib/portfolio_pro.js";
 import { digestApi, cronDigest } from "../lib/digest.js";
+import { ensureOpsSchema, logError, cronBeat } from "../lib/usage.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -663,8 +664,34 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
   const path = pathOf(req);
+  const startedAt = Date.now();
+  let cronRecorded = false;
+  res.once("finish", () => {
+    const status = Number(res.statusCode) || 200;
+    if (status >= 500) logError("api", path, status, `HTTP_${status}`);
+    if (path.startsWith("/api/cron/")) {
+      cronRecorded = true;
+      cronBeat(path.slice("/api/cron/".length) || "unknown", status, Date.now() - startedAt);
+    }
+  });
 
   try {
+    if (path === "/api/status") {
+      if (req.method !== "GET") return methodNotAllowed(res, ["GET"]);
+      let database = { ok: false };
+      try { await db().query("SELECT 1"); database = { ok: true }; } catch (e) { database = { ok: false, error: String(e.message || "DB_UNAVAILABLE").slice(0, 100) }; }
+      let ops = { providers: [], cron: [], errors24h: null };
+      try {
+        await ensureOpsSchema();
+        const [providers, cron, errors] = await Promise.all([
+          db().query(`SELECT provider,last_ok,last_fail,last_error,ok_count,fail_count FROM provider_health ORDER BY provider`),
+          db().query(`SELECT job,last_start,last_ok,last_status,last_ms,runs,failures FROM cron_runs ORDER BY last_start DESC LIMIT 30`),
+          db().query(`SELECT COUNT(*)::int AS n FROM error_logs WHERE at > NOW() - INTERVAL '24 hours'`)
+        ]);
+        ops = { providers: providers.rows, cron: cron.rows, errors24h: errors.rows[0]?.n ?? null };
+      } catch { /* diagnostics are best-effort when database/schema is unavailable */ }
+      return send(res, 200, { ok: database.ok, database, providers: ops.providers, cron: ops.cron, errors24h: ops.errors24h, now: new Date().toISOString() });
+    }
     if (path === "/api/forcejoin/status") return await forceJoinApi(req, res);
     if (await joinBlocked(req, res, path)) return;   // compulsory channel + group join (JOIN_REQUIRED)
 
