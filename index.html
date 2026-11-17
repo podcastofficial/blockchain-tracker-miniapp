@@ -3295,6 +3295,7 @@ window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadL
 <script>
 (function(){
   const $=id=>document.getElementById(id);
+  const api=(path,options={})=>window.BT.apiRequest(path,options);
   const fmt=(v,n=6)=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:n});
   const money=v=>'$'+Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -3305,10 +3306,10 @@ window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadL
       if(!window.BT?.backendUser && !window.BT?.user && !window.backendUser){
         // The API remains the source of truth; unauthenticated users receive AUTH_REQUIRED below.
       }
-      const w=await apiRequest('/wallet/create',{method:'POST',body:'{}'});
+      const w=await api('/wallet/create',{method:'POST',body:'{}'});
       $('assetWalletStatus').textContent='Active';
       const [b,d,wd,l]=await Promise.all([
-        apiRequest('/wallet/balances'),apiRequest('/wallet/deposits'),apiRequest('/wallet/withdrawals'),apiRequest('/wallet/ledger?limit=50')
+        api('/wallet/balances'),api('/wallet/deposits'),api('/wallet/withdrawals'),api('/wallet/ledger?limit=50')
       ]);
       $('assetTotalUsd').textContent=money(b.totalUsd);
       let avail=0,locked=0;
@@ -3320,25 +3321,33 @@ window.BT_COMMUNITY={renderStats,renderSettings,renderActivity,addrRows,st,loadL
       $('assetDepositRows').innerHTML=(d.deposits||[]).map(x=>`<tr><td>${new Date(x.detected_at).toLocaleString()}</td><td>${safe(x.chain.toUpperCase())}</td><td>${fmt(x.amount,8)} ${safe(x.symbol)}</td><td><span class="tag green">${safe(x.status)}</span></td><td class="mono">${safe(String(x.tx_hash).slice(0,12))}…</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No deposits yet.</td></tr>';
       $('assetWithdrawalRows').innerHTML=(wd.withdrawals||[]).map(x=>`<tr><td>${new Date(x.requested_at).toLocaleString()}</td><td>${safe(x.chain.toUpperCase())}</td><td>${fmt(x.amount,8)} ${safe(x.symbol)}</td><td><span class="tag">${safe(x.status)}</span></td><td class="mono">${safe(x.tx_hash||'—')}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No withdrawals yet.</td></tr>';
       $('assetLedgerRows').innerHTML=(l.entries||[]).map(x=>`<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${safe(x.kind)}</td><td>${safe(x.asset)}</td><td>${fmt(x.delta_available,8)}</td><td>${fmt(x.available_after,8)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No ledger entries yet.</td></tr>';
-    }catch(e){$('assetWalletStatus').textContent='Unavailable';rows.innerHTML=`<tr><td colspan="5" class="muted">${safe(e.message==='AUTH_REQUIRED'?'Sign in through Telegram to create and view your exchange wallet.':e.message)}</td></tr>`;$('assetDepositAddresses').textContent='Wallet unavailable.'}
+    }catch(e){
+      const code=e.message||'WALLET_FAILED';
+      const friendly=code==='AUTH_REQUIRED'?'Sign in through Telegram to create and view your exchange wallet.':code==='WALLET_NOT_AVAILABLE'?'Wallet service is not configured. Ask the administrator to check WALLET_MASTER_SEED.':code==='WALLET_SEED_MISMATCH'?'Wallet master seed changed. Restore the original WALLET_MASTER_SEED before continuing.':code==='ACCOUNT_BLOCKED'?'This account is blocked.':code==='WALLET_FAILED'?'Wallet creation failed on the server. Check the Vercel function logs.':code;
+      $('assetWalletStatus').textContent='Unavailable';rows.innerHTML=`<tr><td colspan="5" class="muted">${safe(friendly)}</td></tr>`;$('assetDepositAddresses').textContent=friendly;
+    }
   }
-  async function withdraw(){const msg=$('withdrawMessage');msg.textContent='Submitting request…';try{const r=await apiRequest('/wallet/withdraw',{method:'POST',body:JSON.stringify({asset:$('withdrawAsset').value,amount:$('withdrawAmount').value,address:$('withdrawAddress').value.trim()})});msg.textContent=`Request #${r.withdrawalId} submitted. Status: ${r.status}.`;await loadAssets()}catch(e){msg.textContent=e.message==='INSUFFICIENT_BALANCE'?'Insufficient available balance.':e.message==='INVALID_ADDRESS'?'Destination address does not match the selected network.':e.message}}
+  async function withdraw(){const msg=$('withdrawMessage');msg.textContent='Submitting request…';try{const r=await api('/wallet/withdraw',{method:'POST',body:JSON.stringify({asset:$('withdrawAsset').value,amount:$('withdrawAmount').value,address:$('withdrawAddress').value.trim()})});msg.textContent=`Request #${r.withdrawalId} submitted. Status: ${r.status}.`;await loadAssets()}catch(e){msg.textContent=e.message==='INSUFFICIENT_BALANCE'?'Insufficient available balance.':e.message==='INVALID_ADDRESS'?'Destination address does not match the selected network.':e.message}}
   document.addEventListener('click',e=>{
     if(e.target.closest('[data-page="assets"]'))setTimeout(loadAssets,100);
-    if(e.target.id==='assetsRefresh'||e.target.id==='assetsCreate')loadAssets();
+    if(e.target.id==='assetsRefresh'||e.target.id==='assetsCreate'){
+      const btn=e.target,wasCreate=btn.id==='assetsCreate';
+      if(wasCreate){btn.disabled=true;btn.textContent='Creating…'}
+      loadAssets().finally(()=>{if(wasCreate){btn.disabled=false;btn.textContent='Create wallet'}});
+    }
     if(e.target.id==='withdrawSubmit')withdraw();
     const c=e.target.closest('[data-copy-wallet]');if(c){navigator.clipboard?.writeText(c.dataset.copyWallet).then(()=>{c.textContent='Copied'}).catch(()=>{c.textContent='Copy failed'})}
   });
   window.addEventListener('bt-auth',()=>{if($('page-assets')?.classList.contains('active'))loadAssets()});
   let adminLoaded=false;
-  async function loadAdminWithdrawals(){const body=$('adWithdrawRows');if(!body)return;try{const d=await apiRequest('/admin/wallet/withdrawals');body.innerHTML=(d.withdrawals||[]).map(x=>`<tr><td>#${x.id}<div class="muted">${new Date(x.requested_at).toLocaleString()}</div></td><td>${safe(x.username?'@'+x.username:x.telegram_user_id)}</td><td>${safe(x.asset)}<div class="muted">${safe(x.chain)}</div></td><td class="mono">${safe(x.to_address)}</td><td>${fmt(x.amount,8)} + ${fmt(x.fee,8)}</td><td>${safe(x.status)}</td><td style="white-space:nowrap">${x.status==='pending'?`<button class="btn small primary" data-wd-action="approve" data-wd-id="${x.id}">Approve</button> <button class="btn small danger" data-wd-action="reject" data-wd-id="${x.id}">Reject</button>`:x.status==='approved'?`<button class="btn small" data-wd-action="sent" data-wd-id="${x.id}">Record TX</button> <button class="btn small danger" data-wd-action="fail" data-wd-id="${x.id}">Fail</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No withdrawal requests.</td></tr>';adminLoaded=true}catch(e){body.innerHTML=`<tr><td colspan="7" class="muted">${safe(e.message)}</td></tr>`}}
+  async function loadAdminWithdrawals(){const body=$('adWithdrawRows');if(!body)return;try{const d=await api('/admin/wallet/withdrawals');body.innerHTML=(d.withdrawals||[]).map(x=>`<tr><td>#${x.id}<div class="muted">${new Date(x.requested_at).toLocaleString()}</div></td><td>${safe(x.username?'@'+x.username:x.telegram_user_id)}</td><td>${safe(x.asset)}<div class="muted">${safe(x.chain)}</div></td><td class="mono">${safe(x.to_address)}</td><td>${fmt(x.amount,8)} + ${fmt(x.fee,8)}</td><td>${safe(x.status)}</td><td style="white-space:nowrap">${x.status==='pending'?`<button class="btn small primary" data-wd-action="approve" data-wd-id="${x.id}">Approve</button> <button class="btn small danger" data-wd-action="reject" data-wd-id="${x.id}">Reject</button>`:x.status==='approved'?`<button class="btn small" data-wd-action="sent" data-wd-id="${x.id}">Record TX</button> <button class="btn small danger" data-wd-action="fail" data-wd-id="${x.id}">Fail</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">No withdrawal requests.</td></tr>';adminLoaded=true}catch(e){body.innerHTML=`<tr><td colspan="7" class="muted">${safe(e.message)}</td></tr>`}}
   document.addEventListener('click',async e=>{
     if(e.target.id==='adWithdrawRefresh')loadAdminWithdrawals();
     const b=e.target.closest('[data-wd-action]');if(!b)return;
     const action=b.dataset.wdAction,id=Number(b.dataset.wdId);let txHash='',reason='';
     if(action==='sent'){txHash=prompt('Enter the broadcast transaction hash:')||'';if(!txHash)return}
     if(action==='reject'||action==='fail')reason=prompt('Reason (optional):')||'';
-    b.disabled=true;try{await apiRequest('/admin/wallet/withdrawal',{method:'POST',body:JSON.stringify({id,action,txHash,reason})});await loadAdminWithdrawals()}catch(err){alert('Action failed: '+err.message);b.disabled=false}
+    b.disabled=true;try{await api('/admin/wallet/withdrawal',{method:'POST',body:JSON.stringify({id,action,txHash,reason})});await loadAdminWithdrawals()}catch(err){alert('Action failed: '+err.message);b.disabled=false}
   });
   const adminObserver=new MutationObserver(()=>{if($('page-admin')?.classList.contains('active')&&!adminLoaded)loadAdminWithdrawals()});
   if($('page-admin'))adminObserver.observe($('page-admin'),{attributes:true,attributeFilter:['class']});
@@ -3358,8 +3367,12 @@ function msg(s,ok=false){const e=$("spotMessage");if(e){e.textContent=s||"";e.cl
 function currentAssetCode(){return state.side==="buy"?state.market?.quote_code:state.market?.base_code}
 function renderMarkets(){
  const box=$("spotMarkets");if(!box)return;
- const q=String($("spotMarketSearch")?.value||"").toLowerCase();
- const rows=state.markets.filter(m=>(m.symbol+" "+m.chain).toLowerCase().includes(q));
+ const q=String($("spotMarketSearch")?.value||"").trim().toLowerCase().replace(/\s+/g," ");
+ const rows=state.markets.filter(m=>{
+  const hay=[m.symbol,m.base_symbol,m.quote_symbol,m.chain,m.base_code,m.quote_code,`${m.base_symbol}/${m.quote_symbol}`,`${m.base_symbol} ${m.quote_symbol}`]
+    .filter(Boolean).join(" ").toLowerCase().replace(/[-_]/g," ");
+  return !q || hay.includes(q) || hay.replace(/\s+/g,"").includes(q.replace(/[\s/_-]/g,""));
+ });
  box.innerHTML=rows.map(m=>`<button type="button" class="spot-market-row${state.market?.id===m.id?" active":""}" data-spot-market="${m.id}">
   <span><strong>${esc(m.base_symbol)}/${esc(m.quote_symbol)}</strong><small>${esc(m.chain)}</small></span>
   <span class="spot-market-price">${Number(m.last_price)>0?fmt(m.last_price,8):"—"}<small>${Number(m.last_price)>0?"Last price":"No trades"}</small></span>
@@ -3431,7 +3444,23 @@ function drawChart(){
  const first=data[0],last=data[data.length-1];ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText(new Date(first.t*1000).toLocaleString([], {month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"}),left,h-12);ctx.textAlign="right";ctx.fillText(new Date(last.t*1000).toLocaleString([], {month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"}),w-right,h-12);ctx.textAlign="left";
  if(state.chartHover!=null){const idx=Math.max(0,Math.min(data.length-1,Math.floor((state.chartHover-left)/slot))),c=data[idx],x=left+idx*slot+slot/2;ctx.strokeStyle="rgba(240,185,11,.75)";ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+plotH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#eaecef";ctx.fillText(`O ${fmt(c.o,8)}  H ${fmt(c.h,8)}  L ${fmt(c.l,8)}  C ${fmt(c.c,8)}`,left,top+8);}
 }
-async function loadChart(){if(!state.market)return;try{const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);state.candles=d.candles||[];$ ("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed internal trades only`;drawChart()}catch(e){state.candles=[];drawChart();$("spotChartCaption").textContent="Internal chart data unavailable"}}
+async function loadChart(){
+ if(!state.market)return;
+ const empty=$("spotChartEmpty");
+ try{
+  const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);
+  state.candles=Array.isArray(d.candles)?d.candles:[];
+  $("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed internal trades only`;
+  if(empty)empty.textContent="No completed internal trades yet. Candles appear after orders match.";
+  drawChart();
+ }catch(e){
+  state.candles=[];state.chartHover=null;drawChart();
+  const reason=String(e.message||"API_REQUEST_FAILED").slice(0,100);
+  $("spotChartCaption").textContent="Chart API error: "+reason;
+  if(empty)empty.textContent="Chart data could not be loaded ("+reason+"). Check the trading API / database logs.";
+  console.warn("Spot candle request failed",e);
+ }
+}
 async function loadTicker(){if(!state.market)return;try{const d=await api(`/trading/ticker?market=${state.market.id}`),t=d.ticker||{};$("spotTickerChange").textContent=t.changePct==null?"—":`${Number(t.changePct)>=0?"+":""}${Number(t.changePct).toFixed(2)}%`;
  $("spotTickerChange").style.color=Number(t.changePct)>=0?"#0ecb81":"#f6465d";$("spotTickerHigh").textContent=t.high?fmt(t.high,8):"—";$("spotTickerLow").textContent=t.low?fmt(t.low,8):"—";$("spotTickerVolume").textContent=t.quoteVolume?fmt(t.quoteVolume,2)+" USDT":"—";$("spotTickerTrades").textContent=String(t.trades||0)}catch(e){}}
 async function loadRecentMarketTrades(){if(!state.market)return;try{const d=await api(`/trading/recent?market=${state.market.id}&limit=30`),rows=d.trades||[];$("spotRecentCount").textContent=rows.length+" trades";$("spotRecentTrades").innerHTML=rows.map(t=>`<tr><td>${new Date(t.createdAt).toLocaleTimeString()}</td><td class="${Number(t.price)>=0?"":""}">${fmt(t.price,8)}</td><td>${fmt(t.quantity)}</td><td>${fmt(t.quoteAmount,6)}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">No completed trades yet.</td></tr>'}catch(e){$("spotRecentTrades").innerHTML='<tr><td colspan="4" class="muted">Market trades unavailable.</td></tr>'}}
