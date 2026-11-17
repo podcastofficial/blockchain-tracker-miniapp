@@ -44,6 +44,9 @@ import { trialApi } from "../lib/trial.js";
 import { portfolioCombined, portfolioReport } from "../lib/portfolio_pro.js";
 import { digestApi, cronDigest } from "../lib/digest.js";
 import { swapConfig, swapQuote } from "../lib/swap.js";
+import { walletApi } from "../lib/wallet.js";
+import { walletWithdrawalsApi, adminWalletApi } from "../lib/wallet_ops.js";
+import { cronWalletDeposits } from "../lib/wallet_deposits.js";
 import { ensureOpsSchema, logError, cronBeat } from "../lib/usage.js";
 
 const RECEIVERS = {
@@ -761,6 +764,7 @@ export default async function handler(req, res) {
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
     if (path === "/api/cron/channels") return await cronChannels(req, res);
     if (path === "/api/cron/deposits") return await cronDeposits(req, res, { authorized: cronAuthorized, send });
+    if (path === "/api/cron/wallet-deposits") return await cronWalletDeposits(req, res, { authorized: cronAuthorized, send });
     if (path === "/api/cron/community-contracts") {
       if (!cronAuthorized(req)) return send(res,401,{ok:false,error:"UNAUTHORIZED"});
       return send(res,200,{ok:true,...await scanCommunityContracts()});
@@ -785,14 +789,17 @@ export default async function handler(req, res) {
     if (path.startsWith("/api/points")) return await pointsApi(req, res, path);
     if (path.startsWith("/api/scanner/")) return await scannerApi(req, res, path);
     if (path === "/api/watchlist") return await watchlist(req, res);
+    if (path.startsWith("/api/admin/wallet/")) return await adminWalletApi(req, res, path);
     if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
+    if (path === "/api/wallet/multichain") return await multiChainOverview(req, res);
+    if (path.startsWith("/api/wallet/withdraw") || path === "/api/wallet/deposits") return await walletWithdrawalsApi(req, res, path);
+    if (path.startsWith("/api/wallet/") || path === "/api/wallet") return await walletApi(req, res, path);
     if (path === "/api/defi/overview") return await defiOverview(req, res);
     if (path.startsWith("/api/dex/")) return await dexApi(req, res, path);
     if (path.startsWith("/api/launch/")) return await launchApi(req, res, path);
     if (path.startsWith("/api/token/")) return await tokenApi(req, res, path);
     if (path.startsWith("/api/phantom/")) return await phantomApi(req, res, path);
     if (path === "/api/tx/history") return await txHistory(req, res);
-    if (path === "/api/wallet/multichain") return await multiChainOverview(req, res);
     if (path === "/api/telegram/webhook") return await telegramWebhook(req, res);
 
     if (path === "/api/alerts") {
