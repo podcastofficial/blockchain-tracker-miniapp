@@ -364,7 +364,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <div class="ticker" id="ticker"><span class="tk-msg">Loading live prices…</span></div>
 <div class="content">
 <section class="page active" id="page-dashboard">
-  <div class="page-head"><div><div class="eyebrow">OVERVIEW / MULTI-CHAIN</div><h1 class="page-title">Market & Network Overview</h1><p class="page-desc">Your blockchain monitoring workspace at a glance.</p></div><div class="head-actions"><button class="btn" id="dashRefresh">↻ Refresh</button><button class="btn primary" data-open="wallet">＋ Add Wallet</button></div></div>
+  <div class="page-head"><div><div class="eyebrow">OVERVIEW / MULTI-CHAIN</div><h1 class="page-title">Market & Network Overview</h1><p class="page-desc">Your multi-chain market and portfolio overview.</p></div><div class="head-actions"><button class="btn" id="dashRefresh">↻ Refresh</button><button class="btn primary" data-open="wallet">＋ Add Wallet</button></div></div>
   <div class="grid stats-grid">
     <div class="stat-card"><div class="stat-top">Tracked Wallets <span class="stat-symbol">◈</span></div><div class="stat-value" id="dashWallets">0</div><div class="stat-foot">In your watchlist</div></div>
     <div class="stat-card"><div class="stat-top">Smart Contracts <span class="stat-symbol">⌘</span></div><div class="stat-value" id="dashContracts">0</div><div class="stat-foot">In your watchlist</div></div>
@@ -376,7 +376,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <div id="dashHistory" class="empty"><div class="empty-icon">⌁</div><strong>No history yet</strong>Open Portfolio and tap Sync balances. A point is saved each time you sync (max one per 30 min).</div>
       <div class="chart-legend"><span id="dashHistInfo"><i class="dot" style="background:var(--violet)"></i>Portfolio value</span><span id="dashHistRange" style="display:flex;gap:6px"><button class="btn small" data-hr="24">24H</button><button class="btn small" data-hr="168">7D</button><button class="btn small" data-hr="720">30D</button></span></div>
     </div>
-    <div class="card"><div class="card-head"><div><div class="card-title">Quick Actions</div><div class="card-sub">Jump into your tools</div></div></div><div class="grid quick-grid">
+    <div class="card"><div class="card-head"><div><div class="card-title">Quick Shortcuts</div><div class="card-sub">All secondary tools and pages in one place</div></div></div><div class="grid quick-grid">
       <button class="quick" data-open="wallet"><div class="q-icon">◈</div><strong>Add Wallet</strong><span>Track a public address</span></button>
       <button class="quick" data-open="contract"><div class="q-icon">⌘</div><strong>Add Contract</strong><span>Monitor contract activity</span></button>
       <button class="quick" data-page="tokens"><div class="q-icon">◉</div><strong>Scan Token</strong><span>Open token intelligence</span></button>
@@ -388,6 +388,9 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <button class="quick" data-page="community"><div class="q-icon">☷</div><strong>Community Monitor</strong><span>Groups &amp; channels, address alerts</span></button>
       <button class="quick" data-page="defi"><div class="q-icon">◫</div><strong>DeFi Analytics</strong><span>TVL and top DEX volume</span></button>
       <button class="quick" data-page="dex"><div class="q-icon">◎</div><strong>DEX Screener</strong><span>Trending, new pairs, buy/sell, charts</span></button>
+      <button class="quick" data-page="dex" data-dx-tab="new"><div class="q-icon">🆕</div><strong>New Coins</strong><span>Discover newly surfaced tokens</span></button>
+      <button class="quick" data-page="networks"><div class="q-icon">🌐</div><strong>Network Status</strong><span>Live health across supported chains</span></button>
+      <button class="quick" data-page="wallets"><div class="q-icon">🧠</div><strong>Smart Money</strong><span>Discovery, ranking and digest</span></button>
       <button class="quick" data-page="wallets"><div class="q-icon">◈</div><strong>Wallet Terminal</strong><span>Balances of tracked wallets</span></button>
       <button class="quick" data-page="portfolio"><div class="q-icon">◩</div><strong>Portfolio Analytics</strong><span>Sync balances and P&amp;L</span></button>
       <button class="quick" data-href="/launch.html"><div class="q-icon">🚀</div><strong>Launchpad</strong><span>New coins: Pump.fun, Pancake, Solana &amp; more</span></button>
@@ -399,22 +402,9 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     </div></div>
   </div>
   <div class="section-grid grid">
-    <div class="card" style="margin-bottom:15px"><div class="card-head"><div><div class="card-title">🆕 New Coins &amp; Quick Trade</div><div class="card-sub">Discover newly surfaced tokens and open an in-app swap</div></div><span class="tag green" id="newCoinsUpdated">LIVE</span></div>
-      <div class="dx-tabs" style="margin:0 0 12px"><button class="dx-tab on" data-home-coins="dex" type="button">DEX Screener</button><button class="dx-tab" data-home-coins="coingecko" type="button">CoinGecko</button></div>
-      <div id="homeNewCoins" class="dx-list"><div class="muted" style="font-size:12px">Loading new coins…</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn primary small" data-page="dex">Explore all tokens</button><button class="btn small" data-href="/swap.html">Open Swap</button></div>
-      <div class="notice" style="margin-top:12px">Token discovery data is informational. Buy/Sell opens the non-custodial swap flow where you connect your wallet and approve each transaction. Always verify the token contract and network before swapping.</div>
-    </div>
-    <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Live health check of each network (updates every 30 seconds)</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
     <div class="card"><div class="card-head"><div><div class="card-title">Recent Watchlist</div><div class="card-sub">Your locally saved wallets and contracts</div></div><button class="btn small" data-page="wallets">View all</button></div><div id="recentWatchlist"></div></div>
   </div>
-  <div class="section-grid grid" id="dashLive">
-    <div class="card"><div class="card-head"><div><div class="card-title">Latest Whale Transfers</div><div class="card-sub">Large USDT/USDC moves on Ethereum (last few minutes)</div></div><button class="btn small" data-page="whales">Open Whale Terminal</button></div>
-      <div id="dbWhaleList" class="muted" style="font-size:12px">Loading…</div></div>
-    <div class="card"><div class="card-head"><div><div class="card-title">DeFi Snapshot</div><div class="card-sub">TVL and DEX volume from DeFiLlama</div></div><button class="btn small" data-page="defi">Open DeFi</button></div>
-      <div id="dbDefi" class="muted" style="font-size:12px">Loading…</div></div>
-  </div>
-  <div class="notice">Prices in the top ticker come from CoinGecko and the sentiment index from alternative.me. Network status, gas, whale transfers and portfolio balances load live from the backend. Sign in through Telegram to sync balances and your watchlist across devices. Nothing here is financial advice.</div>
+  <div class="notice">Prices in the top ticker come from CoinGecko and the sentiment index from alternative.me. Gas, whale transfers and portfolio balances load live from the backend. Sign in through Telegram to sync balances and your watchlist across devices. Nothing here is financial advice.</div>
 </section>
 
 <section class="page" id="page-wallets">
@@ -484,6 +474,11 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="muted" id="dxInfo" style="font-size:10px;margin-bottom:8px"></div>
   <div id="dxList" class="dx-list"></div>
   <div class="notice" style="margin-top:14px">Data comes from DexScreener's public API and is cached for 30–60 seconds. "New coins" are tokens that recently published a profile or boost, shown newest pair first; DexScreener has no complete new-pair feed. The public API gives buy/sell <b>counts</b> per time window; open a coin and tap "Chart + trades" to see individual trades inside DexScreener's own chart. New tokens are risky, so scan before you buy. Nothing here is financial advice.</div>
+</section>
+
+<section class="page" id="page-networks">
+  <div class="page-head"><div><div class="eyebrow">NETWORK / HEALTH</div><h1 class="page-title">Network Status</h1><p class="page-desc">Live health checks for supported blockchain networks.</p></div><div class="head-actions"><button class="btn" id="networkRefresh" type="button" onclick="location.reload()">↻ Refresh</button></div></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Network Status</div><div class="card-sub">Live health check of each network (updates every 30 seconds)</div></div><span class="tag">10 NETWORKS</span></div><div class="grid network-grid" id="networkGrid"></div></div>
 </section>
 
 <section class="page" id="page-whales">

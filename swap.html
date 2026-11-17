@@ -50,7 +50,7 @@ select{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding
   <div class="info" id="info">Enter an amount to get a quote.</div>
   <button class="main" id="go" type="button" disabled>Enter amount</button>
   <div id="status"></div>
-  <p class="note">Non-custodial. You approve every transaction inside your own wallet; your keys and funds never pass through this app. Prices and routes come from LI.FI aggregator. Always check the amount and network in your wallet before you confirm.</p>
+  <p class="note">Non-custodial. You approve every transaction inside your own wallet; your keys and funds never pass through this app. Prices and routes are provided by the integrated swap service. Always check the amount and network in your wallet before you confirm.</p>
 </div>
 <div id="sheet"><div class="in"><h3>Connect wallet</h3><p>Choose your wallet. It opens, you tap <b>Connect</b>, then come back to Telegram.</p>
   <button class="w" data-w="metamask">🦊 MetaMask</button><button class="w" data-w="trust">🛡 Trust Wallet</button><button class="w" data-w="other">👛 Other wallet (WalletConnect)</button><button class="w" data-w="copy">📋 Copy link, paste in my wallet</button>
@@ -68,7 +68,7 @@ const tg = window.Telegram && Telegram.WebApp;
 try { if (tg) { tg.ready(); tg.expand(); tg.BackButton.show(); tg.BackButton.onClick(back); } } catch {}
 const fatal = html => { $("app").style.display = "none"; $("fatal").style.display = "block"; $("fatal").innerHTML = html + '<br><br><button class="btn" onclick="history.back()">← Back</button>'; };
 
-/* ---- Solana: use the LI.FI widget page (this screen is EVM) ---- */
+/* ---- Solana swap uses the dedicated widget page (this screen is EVM) ---- */
 if (chain === SOL) location.replace("/swap-widget.html" + location.search);
 
 /* ---- chain data ---- */
@@ -155,10 +155,10 @@ async function getQuote(forSend = false) {
   if (amount <= 0n) { state.quote = null; $("recv").textContent = "—"; $("info").textContent = "Enter an amount to get a quote."; render(); return null; }
   if (!cfg.tradingEnabled) {
     state.quote = null; $("recv").textContent = "—";
-    $("info").innerHTML = `<span class="warn">Trading setup pending. Admin must finish LI.FI Partner Portal setup before fee-enabled trading can start.</span>`;
+    $("info").innerHTML = `<span class="warn">Trading setup pending. Admin must finish complete the trading setup before swaps can start.</span>`;
     render(); return null;
   }
-  $("info").textContent = "Getting best route with 0.5% platform fee…"; render();
+  $("info").textContent = "Getting the best available route…"; render();
   const from = state.acct || "0x552008c0f6870c2f77e5cC1d2eb9bdff03e30Ea0"; // preview-only address; execution requotes with connected wallet
   try {
     const r = await fetch("/api/swap/quote", { method:"POST", headers:{"Content-Type":"application/json"}, credentials:"same-origin", body:JSON.stringify({fromChain:chain,toChain:chain,fromToken:payTok.addr,toToken:recvTok.addr,fromAmount:String(amount),fromAddress:from,slippage:state.slip}) });
@@ -170,7 +170,7 @@ async function getQuote(forSend = false) {
     const platformFeeUsd = inUsd > 0 ? inUsd * 0.005 : null;
     state.quote = { d, amount, payTok, recvTok, gas, impact, platformFeeUsd };
     $("recv").textContent = fromUnits(e.toAmount, recvTok.dec, 6) + " " + (buy ? coin.sym : c[0]);
-    $("info").innerHTML = `Min received: <b>${fromUnits(e.toAmountMin, recvTok.dec, 6)}</b> · Slippage ${state.slip * 100}%<br>Route: <b>${esc(d.toolDetails?.name || d.tool || "best")}</b> · Network fee ≈ <b>$${gas.toFixed(2)}</b><br>Platform fee: <b>0.5%${platformFeeUsd==null?"":` (≈ $${platformFeeUsd.toFixed(4)})`}</b>` +
+    $("info").innerHTML = `Min received: <b>${fromUnits(e.toAmountMin, recvTok.dec, 6)}</b> · Slippage ${state.slip * 100}%<br>Route: <b>${esc(d.toolDetails?.name || d.tool || "best")}</b> · Network fee ≈ <b>$${gas.toFixed(2)}</b><br>Platform charge included: <b>${platformFeeUsd==null?"shown in final wallet confirmation":"≈ $"+platformFeeUsd.toFixed(4)}</b>` +
       (inUsd ? `<br>Value: $${inUsd.toFixed(2)} → $${outUsd.toFixed(2)}` : "") + (impact > 3 ? `<br><span class="warn">⚠ High price impact (${impact.toFixed(1)}%). Check before swapping.</span>` : "");
     render(); return state.quote;
   } catch (err) {
@@ -231,7 +231,7 @@ async function waitTx(hash) {
   return null;
 }
 async function swap() {
-  if (!cfg.tradingEnabled) { setStatus('<span class="warn">Trading is paused until LI.FI Partner Portal fee collection is enabled.</span>'); return; }
+  if (!cfg.tradingEnabled) { setStatus('<span class="warn">Trading is temporarily unavailable. Please try again later.</span>'); return; }
   if (state.busy) return; state.busy = true; render();
   try {
     const p = await initProvider(); if (!state.acct) throw new Error("Connect your wallet first.");
@@ -286,7 +286,7 @@ $("sheet").onclick = e => { if (e.target === $("sheet")) $("sheet").classList.re
 (async () => {
   if (!CH || chain === SOL) return;
   try { cfg = await (await fetch("/api/swap-config", { cache: "no-store" })).json(); } catch {}
-  if (!cfg.tradingEnabled) setStatus('<span class="warn">0.5% fee integration is not active yet. The app will enable swaps after the LI.FI Partner Portal integration is verified and configured.</span>');
+  if (!cfg.tradingEnabled) setStatus('<span class="warn">Trading is temporarily unavailable. Please try again later.</span>');
   await loadCoin(); fillSelects(); render();
   try { if (cfg.walletConnectProjectId) { await initProvider(); render(); } } catch {}
 })();
