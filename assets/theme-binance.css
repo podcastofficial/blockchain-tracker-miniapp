@@ -75,3 +75,110 @@ a:hover{color:#f8d12f}
 ::-webkit-scrollbar-thumb{background:#474d57!important}::-webkit-scrollbar-track{background:#0b0e11!important}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #f0b90b!important;outline-offset:2px!important}
 @media(max-width:760px){.sidebar{background:#0b0e11!important}.topbar{background:#0b0e11!important}}
+
+/* Full-app Binance-inspired polish: every workspace page, modal, form and data surface. */
+:root{
+  --c:#f0b90b!important;--cg:#f0b90b18!important;
+  --line:#2b3139!important;--mut:#848e9c!important;
+  --up:#0ecb81!important;--dn:#f6465d!important;
+}
+/* Remove the legacy rainbow accents from dashboard and network tiles. */
+.stats-grid>.stat-card:nth-child(n),
+.network-grid>.network-card:nth-child(n){--c:#f0b90b!important;--cg:#f0b90b18!important}
+.stat-card::before{background:#f0b90b!important;height:3px!important}
+.stat-card,.network-card{
+  background:#181a20!important;border:1px solid #2b3139!important;
+  border-radius:14px!important;box-shadow:none!important;color:#eaecef!important
+}
+.network-card{border-top:3px solid #f0b90b!important}
+.stat-symbol{background:#2b3139!important;color:#f0b90b!important;box-shadow:none!important}
+.stat-top,.stat-foot,.network-card small,.network-card .muted{color:#848e9c!important}
+/* Shared page surfaces: wallet, explorer, scanner, DEX, whales, DeFi, portfolio, alerts, tools, community, profile and admin. */
+.page,.content{color:#eaecef!important}
+.card,.panel,.dx-card,.plan-card,.chart-wrap,.modal-box,.cm-box,.cm-trade,.pf-two>div,
+.section-grid>.card,.network-card,.quick{
+  background:#181a20!important;border-color:#2b3139!important;color:#eaecef!important;
+  box-shadow:none!important
+}
+.card-head,.card-title,.page-title,.crumb,.dx-t strong,.dx-p b,.modal-head,
+.field label,.kv strong,.pf-avatar+div strong{color:#eaecef!important}
+.card-sub,.page-desc,.muted,.stat-foot,.stat-top,.field small,.note,.calc-hint{color:#848e9c!important}
+.quick{border:1px solid #2b3139!important;border-radius:12px!important}
+.quick .q-icon{background:#2b3139!important;color:#f0b90b!important}
+.quick:hover,.dx-card:hover,.network-card:hover{border-color:#f0b90b!important;transform:none!important}
+/* Inputs and all form controls, including admin and modal forms. */
+input:not([type=checkbox]):not([type=radio]):not([type=range]),
+select,textarea,.control,.field input,.field select,.field textarea,
+.top-search input,.cm-trade input,.cm-trade select{
+  background:#1e2329!important;border:1px solid #3a414a!important;color:#eaecef!important;
+  border-radius:9px!important;box-shadow:none!important
+}
+input::placeholder,textarea::placeholder,.top-search input::placeholder{color:#848e9c!important;opacity:1}
+select option{background:#181a20!important;color:#eaecef!important}
+input[type=checkbox],input[type=radio],input[type=range]{accent-color:#f0b90b!important}
+.field label{color:#b7bdc6!important}
+/* Buttons and segmented controls. */
+.btn,.dx-tab,.tab,.chips button,.tabs button,.cm button{
+  border-color:#3a414a!important;background:#1e2329!important;color:#eaecef!important;
+  box-shadow:none!important
+}
+.btn.primary,.dx-tab.on,.tab.active,.chips button.on,.tabs button.on{
+  background:#f0b90b!important;border-color:#f0b90b!important;color:#0b0e11!important;
+  box-shadow:none!important
+}
+button:disabled{opacity:.48!important}
+.btn.danger{background:#f6465d!important;border-color:#f6465d!important;color:#fff!important}
+/* Tables, transaction lists, admin grids and history. */
+.table-wrap{border:1px solid #2b3139!important;border-radius:10px!important;background:#181a20!important}
+table{background:transparent!important;color:#eaecef!important;border-color:#2b3139!important}
+thead th,th{background:#1e2329!important;color:#f0b90b!important;border-color:#2b3139!important}
+td{background:transparent!important;color:#eaecef!important;border-color:#2b3139!important}
+tbody tr:hover,tbody tr:hover td{background:#222830!important}
+/* DEX, charts, tickers and calculator panels. */
+.ticker{background:#0b0e11!important;border-color:#2b3139!important}
+.tk-msg{color:#848e9c!important}
+.dx-grid div,.dx-grid>div{background:#1e2329!important;color:#eaecef!important;border:1px solid #2b3139!important}
+.dx-tabs{border-color:#2b3139!important}
+.dx-tab{background:#1e2329!important;color:#b7bdc6!important}
+.dx-tab.on{color:#0b0e11!important}
+.dx-card{background:#181a20!important}
+.dx-meter{background:#f6465d!important}.dx-meter i{background:#0ecb81!important}
+.chart-wrap,.chart-note,.calc-out{background:#181a20!important;border:1px solid #2b3139!important;color:#eaecef!important}
+.chart-wrap svg text,.chart-legend,.chart-note small{fill:#848e9c!important;color:#848e9c!important}
+.calc-out{background:#1e2329!important}
+/* Notices, empty states, tags and status indicators. */
+.empty{color:#848e9c!important}.empty strong{color:#eaecef!important}.empty-icon{color:#f0b90b!important}
+.notice,.info{background:#2b2411!important;border:1px solid #5c4810!important;color:#f0d77a!important}
+.tag,.badge,.pill,.bdg{background:#2b3139!important;color:#f0b90b!important;border:1px solid #3a414a!important}
+.tag.green,.status.ok,.positive,.up{color:#0ecb81!important}
+.tag.red,.status.bad,.negative,.dn{color:#f6465d!important}
+/* Profile, community, launch widgets, modal sheets and overlays. */
+.pf-avatar{background:#f0b90b!important;color:#0b0e11!important;box-shadow:none!important}
+.pf-code,.kv,.pf-check,.cm-box,.cm-trade{background:#1e2329!important;border-color:#2b3139!important;color:#eaecef!important}
+.modal,.modal-box{background:#181a20!important;border:1px solid #3a414a!important;color:#eaecef!important}
+.modal-box{border-top:3px solid #f0b90b!important;border-image:none!important}
+.modal-head{border-color:#2b3139!important}
+.close{background:#2b3139!important;color:#eaecef!important}
+.toast{background:#1e2329!important;color:#eaecef!important;border:1px solid #3a414a!important}
+/* Standalone launchpad and swap pages share the same visual system. */
+body:has(#bar){background:#0b0e11!important;color:#eaecef!important}
+#bar{background:#0b0e11!important;border-bottom:1px solid #2b3139!important;color:#eaecef!important}
+#bar .btn,button.main,.main-button{background:#f0b90b!important;border-color:#f0b90b!important;color:#0b0e11!important}
+.wrap{background:transparent!important;color:#eaecef!important}
+.wrap .box,.wrap .card,.wrap .info,.wrap .note,#sheet .in{background:#181a20!important;border:1px solid #2b3139!important;color:#eaecef!important}
+.wrap input,.wrap select,.wrap textarea{background:#1e2329!important;border:1px solid #3a414a!important;color:#eaecef!important}
+.wrap .chips button,.wrap button.w{background:#1e2329!important;border:1px solid #3a414a!important;color:#eaecef!important}
+.wrap .chips button.on,.wrap button.main,#sheet button.w:active{background:#f0b90b!important;color:#0b0e11!important;border-color:#f0b90b!important}
+.wrap .note{color:#848e9c!important}
+#sheet{background:#000b!important}
+/* Consistent responsive spacing and accessible focus across every page. */
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid #f0b90b!important;outline-offset:2px!important
+}
+@media(max-width:760px){
+  .content{padding-bottom:104px!important}
+  .page-head{gap:12px!important}
+  .card,.modal-box{border-radius:13px!important}
+  .mobile-nav{background:#0b0e11f5!important;border-top:1px solid #2b3139!important}
+  .mobile-nav button.active{color:#f0b90b!important}
+}
