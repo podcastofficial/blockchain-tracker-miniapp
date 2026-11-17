@@ -55,6 +55,7 @@ const fail = text => { msg.innerHTML = text + '<br><a href="javascript:history.b
 (async () => {
   if (!ALLOWED.includes(chain) || !/^[A-Za-z0-9]{1,64}$/.test(token)) return fail("This coin cannot be swapped in the app (unsupported network or token).");
   let cfg = {}; try { cfg = await (await fetch("/api/swap-config", { cache: "no-store" })).json(); } catch {}
+  if (!cfg.tradingEnabled) return fail("Trading is paused until the admin completes LI.FI Partner Portal setup and enables the 0.5% platform fee. No swap will be submitted before fee collection is verified.");
   if (!cfg.walletConnectProjectId) return fail("Wallet connect is not configured yet. The app admin must set <b>WALLETCONNECT_PROJECT_ID</b>.");
   const native = chain === 1151111081099710 ? "11111111111111111111111111111111" : "0x0000000000000000000000000000000000000000";
   try {
@@ -69,7 +70,8 @@ const fail = text => { msg.innerHTML = text + '<br><a href="javascript:history.b
       fromChain: chain, toChain: chain,
       // buying/selling the chain's own coin: only set that side, the user picks what to pay with / receive
       ...(token === "native" ? (buy ? { toToken: native } : { fromToken: native }) : { fromToken: buy ? native : token, toToken: buy ? token : native }),
-      integrator: cfg.integrator || "blockchain-tracker",
+      integrator: cfg.integrator,
+      fee: 0.005,
       walletConfig: { walletConnect: { projectId: cfg.walletConnectProjectId, metadata: { name: "Blockchain Tracker", description: "Swap tokens", url: location.origin, icons: [] } } }
     };
     msg.remove();

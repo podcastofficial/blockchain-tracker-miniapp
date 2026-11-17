@@ -153,18 +153,24 @@ async function getQuote(forSend = false) {
   const payTok = buy ? { addr: c[1], dec: c[2] } : coin, recvTok = buy ? coin : { addr: c[1], dec: c[2] };
   const amount = toUnits(amtStr, payTok.dec);
   if (amount <= 0n) { state.quote = null; $("recv").textContent = "—"; $("info").textContent = "Enter an amount to get a quote."; render(); return null; }
-  $("info").textContent = "Getting best route…"; render();
-  const from = state.acct || "0x552008c0f6870c2f77e5cC1d2eb9bdff03e30Ea0"; // placeholder address only for the price preview
-  const url = `https://li.quest/v1/quote?fromChain=${chain}&toChain=${chain}&fromToken=${payTok.addr}&toToken=${recvTok.addr}&fromAmount=${amount}&fromAddress=${from}&slippage=${state.slip}&integrator=${encodeURIComponent(cfg.integrator || "blockchain-tracker")}`;
+  if (!cfg.tradingEnabled) {
+    state.quote = null; $("recv").textContent = "—";
+    $("info").innerHTML = `<span class="warn">Trading setup pending. Admin must finish LI.FI Partner Portal setup before fee-enabled trading can start.</span>`;
+    render(); return null;
+  }
+  $("info").textContent = "Getting best route with 0.5% platform fee…"; render();
+  const from = state.acct || "0x552008c0f6870c2f77e5cC1d2eb9bdff03e30Ea0"; // preview-only address; execution requotes with connected wallet
   try {
-    const r = await fetch(url), d = await r.json();
+    const r = await fetch("/api/swap/quote", { method:"POST", headers:{"Content-Type":"application/json"}, credentials:"same-origin", body:JSON.stringify({fromChain:chain,toChain:chain,fromToken:payTok.addr,toToken:recvTok.addr,fromAmount:String(amount),fromAddress:from,slippage:state.slip}) });
+    const payload = await r.json(), d = payload.quote;
     if (my !== state.seq) return null;
-    if (!r.ok || !d.estimate) throw new Error(d.message || "No route found for this amount");
+    if (!r.ok || !d?.estimate) throw new Error(payload.message || payload.error || "No route found for this amount");
     const e = d.estimate, gas = (e.gasCosts || []).reduce((s, g) => s + Number(g.amountUSD || 0), 0);
     const inUsd = Number(e.fromAmountUSD || 0), outUsd = Number(e.toAmountUSD || 0), impact = inUsd > 0 ? (inUsd - outUsd) / inUsd * 100 : 0;
-    state.quote = { d, amount, payTok, recvTok, gas, impact };
+    const platformFeeUsd = inUsd > 0 ? inUsd * 0.005 : null;
+    state.quote = { d, amount, payTok, recvTok, gas, impact, platformFeeUsd };
     $("recv").textContent = fromUnits(e.toAmount, recvTok.dec, 6) + " " + (buy ? coin.sym : c[0]);
-    $("info").innerHTML = `Min received: <b>${fromUnits(e.toAmountMin, recvTok.dec, 6)}</b> · Slippage ${state.slip * 100}%<br>Route: <b>${esc(d.toolDetails?.name || d.tool || "best")}</b> · Network fee ≈ <b>$${gas.toFixed(2)}</b>` +
+    $("info").innerHTML = `Min received: <b>${fromUnits(e.toAmountMin, recvTok.dec, 6)}</b> · Slippage ${state.slip * 100}%<br>Route: <b>${esc(d.toolDetails?.name || d.tool || "best")}</b> · Network fee ≈ <b>$${gas.toFixed(2)}</b><br>Platform fee: <b>0.5%${platformFeeUsd==null?"":` (≈ $${platformFeeUsd.toFixed(4)})`}</b>` +
       (inUsd ? `<br>Value: $${inUsd.toFixed(2)} → $${outUsd.toFixed(2)}` : "") + (impact > 3 ? `<br><span class="warn">⚠ High price impact (${impact.toFixed(1)}%). Check before swapping.</span>` : "");
     render(); return state.quote;
   } catch (err) {
@@ -225,6 +231,7 @@ async function waitTx(hash) {
   return null;
 }
 async function swap() {
+  if (!cfg.tradingEnabled) { setStatus('<span class="warn">Trading is paused until LI.FI Partner Portal fee collection is enabled.</span>'); return; }
   if (state.busy) return; state.busy = true; render();
   try {
     const p = await initProvider(); if (!state.acct) throw new Error("Connect your wallet first.");
@@ -265,6 +272,7 @@ function render() {
   const go = $("go"), has = parseFloat($("amt").value) > 0; go.className = "main " + (state.quote && state.acct ? side : "");
   if (state.busy) { go.disabled = true; go.textContent = "Waiting for wallet…"; return; }
   if (!has) { go.disabled = true; go.textContent = "Enter amount"; return; }
+  if (!cfg.tradingEnabled) { go.disabled = true; go.textContent = "Trading setup pending"; return; }
   if (!state.quote) { go.disabled = true; go.textContent = "Getting quote…"; return; }
   go.disabled = false; go.textContent = state.acct ? (side === "buy" ? "Buy " : "Sell ") + coin.sym : "Connect wallet to swap";
 }
@@ -278,6 +286,7 @@ $("sheet").onclick = e => { if (e.target === $("sheet")) $("sheet").classList.re
 (async () => {
   if (!CH || chain === SOL) return;
   try { cfg = await (await fetch("/api/swap-config", { cache: "no-store" })).json(); } catch {}
+  if (!cfg.tradingEnabled) setStatus('<span class="warn">0.5% fee integration is not active yet. The app will enable swaps after the LI.FI Partner Portal integration is verified and configured.</span>');
   await loadCoin(); fillSelects(); render();
   try { if (cfg.walletConnectProjectId) { await initProvider(); render(); } } catch {}
 })();
