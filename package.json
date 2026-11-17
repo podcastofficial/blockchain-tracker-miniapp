@@ -18,7 +18,8 @@
     "webhook": "node scripts/set-webhook.mjs",
     "webhook:info": "node scripts/set-webhook.mjs --info",
     "launch:config": "node scripts/create-dbc-config.mjs",
-    "test:smart-money": "node scripts/test-smart-money.mjs"
+    "test:smart-money": "node scripts/test-smart-money.mjs",
+    "test:contract-intelligence": "node scripts/test-contract-intelligence.mjs"
   },
   "overrides": {
     "rpc-websockets": {
