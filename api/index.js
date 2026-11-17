@@ -39,6 +39,7 @@ import { pointsApi } from "../lib/points_api.js";
 import { forceJoinApi, joinBlocked } from "../lib/forcejoin.js";
 import { scannerApi } from "../lib/scanner.js";
 import { attachReservation } from "../lib/points.js";
+import { trialApi } from "../lib/trial.js";
 
 const RECEIVERS = {
   BEP20: () => process.env.USDT_BEP20_RECEIVE_ADDRESS,
@@ -679,6 +680,8 @@ export default async function handler(req, res) {
     // Smart Money modules are loaded lazily: a missing/outdated file here can only break Smart Money, never the whole API.
     if (path === "/api/smart-money") return await (await import("../lib/smart_money.js")).smartMoney(req, res);
     if (path === "/api/smart-money/wallet") return await (await import("../lib/smart_money.js")).smartMoneyWallet(req, res);
+    if (path === "/api/smart-money/discover" || path === "/api/smart-money/discover/analyze") return await (await import("../lib/smart_discovery.js")).discoverApi(req, res, path);
+    if (path.startsWith("/api/trial/")) return await trialApi(req, res, path);
     if (path === "/api/smart-money/settings") return await (await import("../lib/smart_money.js")).smartMoneySettings(req, res);
     if (path === "/api/cron/smart-money") return await (await import("../lib/smart_money_worker.js")).cronSmartMoney(req, res);
     if (path === "/api/contract/intelligence") return await contractIntelligence(req, res);
