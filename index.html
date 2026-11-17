@@ -490,6 +490,10 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="page-head"><div><div class="eyebrow">ASSET MANAGEMENT</div><h1 class="page-title">Portfolio Analytics</h1><p class="page-desc">Live balances (native coins + USDT/USDC) for your saved wallets, allocation and value history.</p></div><div class="head-actions"><button class="btn" id="pfSync">↻ Sync balances</button><button class="btn" id="portfolioExport">Export report</button></div></div>
   <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Total Value <span class="stat-symbol">＄</span></div><div class="stat-value" id="pfTotal">—</div><div class="stat-foot" id="pfUpdated">Tap “Sync balances”</div></div><div class="stat-card"><div class="stat-top">24H Change <span class="stat-symbol">↗</span></div><div class="stat-value" id="pfChange">—</div><div class="stat-foot">Native coin price moves only</div></div><div class="stat-card"><div class="stat-top">Unrealized P&amp;L <span class="stat-symbol">◩</span></div><div class="stat-value" id="pfPnl">—</div><div class="stat-foot" id="pfPnlFoot">Enter your invested amount below</div></div><div class="stat-card"><div class="stat-top">Assets <span class="stat-symbol">◉</span></div><div class="stat-value" id="pfAssets">—</div><div class="stat-foot">Native + USDT/USDC</div></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Invested Capital</div><div class="card-sub">Total USD you put into these wallets, used to estimate profit or loss</div></div><span class="tag">P&amp;L</span></div><div class="toolbar" style="margin-bottom:0"><input class="control" id="pfInvested" type="number" min="0" step="any" inputmode="decimal" placeholder="e.g. 5000" style="flex:1;min-width:160px"><button class="btn primary" id="pfInvSave" type="button">Save</button></div><div class="muted" id="pfInvMsg" style="font-size:10px;margin-top:8px;min-height:14px"></div><div class="calc-hint">Unrealized P&amp;L = current wallet value − invested amount. It does not track individual trades, withdrawals or per-token cost basis, so treat it as a rough overview.</div></div>
+  <div class="card" id="pnlCard" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Trading PnL</div><div class="card-sub">Real swap-based profit &amp; loss (FIFO) for your saved EVM, Solana and Tron wallets</div></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn" data-pnl-days="1" type="button">24H</button><button class="btn primary" data-pnl-days="7" type="button">7D</button><button class="btn" data-pnl-days="30" type="button" id="pnl30">30D</button><button class="btn" id="pnlRefresh" type="button">↻</button></div></div>
+    <div class="grid stats-grid"><div class="stat-card"><div class="stat-top">Realized PnL</div><div class="stat-value" id="pnlReal">—</div><div class="stat-foot" id="pnlRealFoot">Closed trades in window</div></div><div class="stat-card"><div class="stat-top">Unrealized PnL</div><div class="stat-value" id="pnlUnreal">—</div><div class="stat-foot">Open holdings</div></div><div class="stat-card"><div class="stat-top">Win rate</div><div class="stat-value" id="pnlWin">—</div><div class="stat-foot" id="pnlWinFoot">—</div></div><div class="stat-card"><div class="stat-top">Best / Worst trade</div><div class="stat-value" id="pnlBW" style="font-size:15px">—</div><div class="stat-foot" id="pnlBWFoot">—</div></div></div>
+    <div id="pnlWarn" class="muted" style="font-size:10px;margin:10px 0 0;line-height:1.5"></div>
+    <div id="pnlBody"><div class="empty" id="pnlEmpty"><strong>Sign in via Telegram to see PnL</strong>PnL is built from swaps in your saved wallets.</div></div></div>
   <div class="grid section-grid"><div class="card"><div class="card-head"><div class="card-title">Portfolio Value History</div><span class="tag" id="pfHistTag">30 DAYS</span></div><div id="pfHistory" class="empty"><div class="empty-icon">⌁</div><strong>No history yet</strong>Each sync saves a snapshot. The chart builds up over time.</div></div><div class="card"><div class="card-head"><div class="card-title">Asset Allocation</div></div><div id="pfAlloc" class="empty"><strong>No asset allocation yet</strong>Add a wallet, then sync balances.</div></div></div>
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Wallet Balances</div><div class="card-sub">Login via Telegram required · up to 10 wallets per sync</div></div></div><div style="overflow-x:auto"><table><thead><tr><th>Wallet</th><th>Network</th><th>Native</th><th>Stablecoins</th><th>Value (USD)</th></tr></thead><tbody id="pfRows"><tr><td colspan="5" class="muted">Nothing synced yet.</td></tr></tbody></table></div></div>
 </section>
@@ -1635,6 +1639,48 @@ async function sync(manual){
 }
 g("pfSync").addEventListener("click",()=>sync(true));
 document.addEventListener("click",e=>{if(e.target.closest('[data-page="portfolio"]')&&Date.now()-last>60000)setTimeout(()=>sync(false),150)});
+})();
+</script>
+<script>
+(function(){
+const g=id=>document.getElementById(id),E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const sg=n=>(n>=0?"+$":"-$")+fmt(Math.abs(n)),col=n=>n>=0?"var(--green)":"var(--red)";
+let days=7,busy=false,last=0,locked=false;
+function setChips(){document.querySelectorAll("[data-pnl-days]").forEach(b=>b.className="btn"+(Number(b.dataset.pnlDays)===days?" primary":""))}
+function big(id,n){const el=g(id);el.textContent=sg(n);el.style.color=col(n);el.style.fontSize="20px"}
+function draw(d){
+  const s=d.summary;
+  big("pnlReal",s.realizedUsd);big("pnlUnreal",s.unrealizedUsd);
+  g("pnlRealFoot").textContent=s.closedTrades+" closed trade"+(s.closedTrades===1?"":"s")+" · "+d.days+"d";
+  g("pnlWin").textContent=s.winRate==null?"—":(s.winRate*100).toFixed(0)+"%";g("pnlWin").style.fontSize="20px";
+  g("pnlWinFoot").textContent=s.trades+" swaps in window";
+  g("pnlBW").innerHTML=s.best?`<span style="color:var(--green)">${E(sg(s.best.pnlUsd))}</span> / <span style="color:var(--red)">${E(sg(s.worst.pnlUsd))}</span>`:"—";
+  g("pnlBWFoot").textContent=s.best?E(s.best.token)+" / "+E(s.worst.token):"No closed trades yet";
+  g("pnlWarn").innerHTML=(d.warnings||[]).map(w=>"⚠ "+E(w)).join("<br>");
+  locked=!!d.locked;g("pnl30").textContent=locked?"30D 🔒":"30D";
+  if(!d.trades.length&&!d.byToken.length){g("pnlBody").innerHTML='<div class="empty"><strong>No swaps found</strong>No buy/sell swaps in this window for your saved wallets.</div>';return}
+  const tk=d.byToken.length?`<div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Token</th><th>Realized</th><th>Unrealized</th><th>Holding</th></tr></thead><tbody>${d.byToken.slice(0,15).map(t=>`<tr><td><strong>${E(t.token)}</strong>${t.unknownCost?' <span class="tag" title="Sold without a visible buy: cost unknown, excluded from realized PnL">cost?</span>':""}</td><td style="color:${col(t.realizedUsd)}">${E(sg(t.realizedUsd))}</td><td style="color:${col(t.unrealizedUsd)}">${E(sg(t.unrealizedUsd))}${t.markSource==="last_trade"?' <span class="muted" title="Valued at last trade price">~</span>':""}</td><td>${t.holding>0?E(Number(t.holding).toLocaleString("en-US",{maximumFractionDigits:4})):"—"}</td></tr>`).join("")}</tbody></table></div>`:"";
+  const tr=`<div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>Time</th><th>Side</th><th>Token</th><th>Value</th><th>PnL</th></tr></thead><tbody>${d.trades.slice(0,20).map(t=>`<tr><td>${E(new Date(t.ts).toLocaleString())}<div class="muted" style="font-size:9px">${E(t.network)}</div></td><td style="color:${t.side==="buy"?"var(--green)":"var(--red)"}">${E(t.side.toUpperCase())}</td><td>${E(t.token)}</td><td>$${fmt(t.usdValue)}</td><td style="color:${t.pnlUsd==null?"inherit":col(t.pnlUsd)}">${t.pnlUsd==null?"—":E(sg(t.pnlUsd))}</td></tr>`).join("")}</tbody></table></div>`;
+  g("pnlBody").innerHTML=tk+tr;
+}
+async function load(manual){
+  if(busy||!window.BT)return;
+  if(!BT.backendUser){if(manual)BT.toast("Open via Telegram and sign in to see PnL");return}
+  busy=true;const r=g("pnlRefresh");r.disabled=true;r.textContent="…";
+  g("pnlBody").style.opacity=".6";
+  try{draw(await BT.apiRequest("/pnl?days="+days));last=Date.now();if(days===30&&locked){days=7;setChips();BT.toast("30-day PnL needs Advanced Analytics. Showing 7 days.")}}
+  catch(e){const m={NO_WALLETS:"Add a wallet to your watchlist first",RATE_LIMITED:"Too many requests, wait a minute",UNAUTHENTICATED:"Sign in via Telegram first"}[e.message];
+    if(manual||m)BT.toast(m||"Could not load PnL");
+    if(e.message==="NO_WALLETS")g("pnlBody").innerHTML='<div class="empty"><strong>No wallets yet</strong>Add a wallet in the watchlist, then refresh.</div>'}
+  busy=false;r.disabled=false;r.textContent="↻";g("pnlBody").style.opacity="";
+}
+document.addEventListener("click",e=>{
+  const c=e.target.closest("[data-pnl-days]");
+  if(c){days=Number(c.dataset.pnlDays);setChips();load(true);return}
+  if(e.target.closest("#pnlRefresh")){load(true);return}
+  if(e.target.closest('[data-page="portfolio"]')&&Date.now()-last>60000)setTimeout(()=>load(false),400);
+});
 })();
 </script>
 <script>

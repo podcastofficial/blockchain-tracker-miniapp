@@ -81,6 +81,7 @@ Page: `launch.html` (Explore · Create coin · Buy/Sell). Backend: `lib/launchpa
 - `lib/community_notify.js`: templates (wallet, contract, token, transaction), plus a durable queue: dedupe key per community, hourly reply limit, send-now then retry by the 5-minute maintenance worker (backoff 30 s → 10 min, 5 attempts, then `dead`), `SKIP LOCKED` claiming, stuck-row recovery, 429 `retry_after`, permanent errors disable posting for that community.
 - Transaction hashes: EVM (`0x` + 64 hex) and Solana signatures are detected automatically; a bare 64-hex Tron hash only via `/track` or `/tx`.
 - Optional env for reliability: `RPC_ETHEREUM`, `RPC_BSC`, `RPC_POLYGON`, `RPC_ARBITRUM`, `RPC_BASE`, `RPC_SOLANA` (private RPCs), `TRONGRID_API_KEY`.
+- PnL tracker (Part 1): `ETHERSCAN_API_KEY` (EVM swaps) and `HELIUS_API_KEY` (Solana swaps, free key at helius.dev). See `READ.md`.
 - Tests: `node scripts/test-address.mjs` and `node scripts/test-community.mjs` (stubbed DB/Telegram/providers; run `npm install` first).
 
 ## Community Crypto Monitor — Phase 4 (Mini App screens + admin API)
