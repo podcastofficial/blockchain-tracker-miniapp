@@ -18,7 +18,6 @@ import { txHistory } from "../lib/txhistory.js";
 import { pnlRoute } from "../lib/pnl.js";
 import { contractIntelligence } from "../lib/contract_intelligence.js";
 import { multiChainOverview } from "../lib/multichain.js";
-import { walletApi } from "../lib/wallet.js";
 import { telegramWebhook } from "../lib/bot.js";
 import { cronChannels } from "../lib/channels.js";
 import { dexApi } from "../lib/dex.js";
@@ -31,6 +30,7 @@ import { referral, attachReferral } from "../lib/referral.js";
 import { alertHistory } from "../lib/history.js";
 import { exportApi } from "../lib/export.js";
 import { confirmPayment } from "../lib/payments.js";
+import { scanDepositFor, cronDeposits } from "../lib/deposits.js";
 import { renderKey, loadTemplates } from "../lib/templates.js";
 import { runMaintenance } from "../lib/maintenance.js";
 import { communityApi } from "../lib/community_api.js";
@@ -422,7 +422,7 @@ async function createPayment(req, res) {
           status: "pending",
           expiresAt: row.expires_at,
           instructions:
-            "Send the exact invoice amount using USDT on the selected network. Do not send the base plan price; the invoice amount includes a unique micro-amount suffix. After sending, paste the transaction hash to verify."
+            "Send the exact invoice amount using USDT on the selected network. Do not send the base plan price; the invoice amount includes a unique micro-amount suffix. Your deposit is detected automatically; no need to paste the transaction hash (you can still verify manually)."
         }
       });
     } finally {
@@ -549,6 +549,31 @@ async function verifyPayment(req, res) {
       ok: false,
       error: "PAYMENT_VERIFICATION_FAILED"
     });
+  }
+}
+
+// Auto-detect poll: the app calls this every few seconds while the invoice is open. It triggers a (throttled) deposit scan
+// for this one invoice and reports the status, so the user never has to paste a transaction hash.
+async function paymentStatus(req, res) {
+  if (!requireMethod(req, res, "GET")) return;
+  const session = readSession(req);
+  if (!session) return send(res, 401, { ok: false, error: "UNAUTHENTICATED" });
+  if (rateLimited(req, res, "pay-status", session.id, 40)) return;
+  const paymentId = String(new URL(req.url || "/", "https://internal.invalid").searchParams.get("id") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(paymentId)) return send(res, 400, { ok: false, error: "INVALID_PAYMENT_ID" });
+  const read = () => db().query(
+    `SELECT chain, status, confirmations, expires_at, failure_reason, plan_code FROM subscription_payments WHERE id=$1 AND user_id=$2`,
+    [paymentId, session.id]);
+  try {
+    let r = await read();
+    if (!r.rowCount) return send(res, 404, { ok: false, error: "PAYMENT_NOT_FOUND" });
+    if (["pending", "expired"].includes(r.rows[0].status)) {
+      try { await scanDepositFor(paymentId, session.id, r.rows[0].chain); r = await read(); } catch { /* keep the stored status */ }
+    }
+    const p = r.rows[0];
+    return send(res, 200, { ok: true, status: p.status, confirmations: p.confirmations || 0, expiresAt: p.expires_at, reason: p.failure_reason || null });
+  } catch {
+    return send(res, 500, { ok: false, error: "PAYMENT_STATUS_FAILED" });
   }
 }
 
@@ -735,6 +760,7 @@ export default async function handler(req, res) {
     if (path === "/api/contract/activity") return await contractActivity(req, res);
     if (path === "/api/cron/onchain") return await cronOnchain(req, res);
     if (path === "/api/cron/channels") return await cronChannels(req, res);
+    if (path === "/api/cron/deposits") return await cronDeposits(req, res, { authorized: cronAuthorized, send });
     if (path === "/api/cron/community-contracts") {
       if (!cronAuthorized(req)) return send(res,401,{ok:false,error:"UNAUTHORIZED"});
       return send(res,200,{ok:true,...await scanCommunityContracts()});
@@ -767,7 +793,6 @@ export default async function handler(req, res) {
     if (path.startsWith("/api/phantom/")) return await phantomApi(req, res, path);
     if (path === "/api/tx/history") return await txHistory(req, res);
     if (path === "/api/wallet/multichain") return await multiChainOverview(req, res);
-    if (path === "/api/wallet" || path.startsWith("/api/wallet/")) return await walletApi(req, res, path);
     if (path === "/api/telegram/webhook") return await telegramWebhook(req, res);
 
     if (path === "/api/alerts") {
@@ -792,6 +817,10 @@ export default async function handler(req, res) {
 
     if (path === "/api/subscription/verify-payment") {
       return await verifyPayment(req, res);
+    }
+
+    if (path === "/api/subscription/payment-status") {
+      return await paymentStatus(req, res);
     }
 
     return send(res, 404, {
