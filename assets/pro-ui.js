@@ -16,6 +16,11 @@
     root.insertBefore(node, kids[Math.min(index,kids.length)] || null);
   }
   function mount() {
+    insert("page-dashboard", card("btMarketRadar", "Market Terminal · Auto Discovery", "No manual wallet or token address needed for market discovery. Live market movers and DEX-trending pairs.", `
+      <div class="toolbar" style="gap:7px;flex-wrap:wrap;align-items:center"><span class="tag green">AUTO SCAN</span><span class="muted" id="btMarketUpdated" style="font-size:10px">Loading market data…</span>${btn("Refresh market",'id="btMarketRefresh"')}</div>
+      <div class="grid section-grid" style="margin-top:10px"><div><div class="card-title">🔥 DEX Trending Coins</div><div id="btMarketTrending" class="muted" style="font-size:11px;margin-top:7px">Loading…</div></div><div><div class="card-title">🚀 Top Gainers · 24h</div><div id="btMarketGainers" class="muted" style="font-size:11px;margin-top:7px">Loading…</div></div><div><div class="card-title">📉 Top Losers · 24h</div><div id="btMarketLosers" class="muted" style="font-size:11px;margin-top:7px">Loading…</div></div></div>
+      <div class="card-title" style="margin-top:14px">Smart Money Wallet Performance</div><div class="card-sub">Followed-wallet PnL plus optional holder scan from the top trending DEX token. Results are limited to the scanned candidate set, not every wallet in the market.</div><div class="toolbar" style="margin-top:8px;gap:8px;flex-wrap:wrap">${btn("Auto-scan top trending token holders",'id="btAutoWalletScan"',"btn primary small")}<span id="btAutoWalletMsg" class="muted" style="font-size:10px">One discovery run; free daily discovery limit applies.</span></div><div class="grid section-grid" style="margin-top:8px"><div><strong style="font-size:11px">Top profitable</strong><div id="btMarketWalletWins" class="muted" style="font-size:11px;margin-top:6px">Sign in to load tracked wallet PnL.</div></div><div><strong style="font-size:11px">Top losing</strong><div id="btMarketWalletLoss" class="muted" style="font-size:11px;margin-top:6px">Sign in to load tracked wallet PnL.</div></div></div><div id="btAutoWalletRows" style="margin-top:8px"></div>
+      <div class="notice" style="margin-top:12px"><strong>In-app trading · 0.5% platform fee</strong><div id="btTradeFeeStatus" style="margin-top:4px">Checking fee integration…</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${btn("Open Buy / Sell terminal",'id="btOpenTrade"',"btn primary small")}<a class="btn small" href="https://portal.li.fi/" target="_blank" rel="noopener">LI.FI Partner Portal ↗</a></div></div>`), "btMarketRadar", 4);
     insert("page-wallets", card("btDiscover", "Wallet Terminal · Smart Discovery", "Find holders or early buyers for a token. Nothing is followed automatically.", `
       <div class="form-grid"><div class="field"><label>Network</label><select class="control" id="btDiscNet"><option value="ethereum">Ethereum</option><option value="bsc">BNB Smart Chain</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option><option value="base">Base</option><option value="optimism">Optimism</option><option value="avalanche">Avalanche</option><option value="solana">Solana</option><option value="tron">TRON</option><option value="ton">TON</option></select></div><div class="field"><label>Token address</label><input class="control" id="btDiscAddr" placeholder="Token contract / mint address" autocomplete="off"></div></div>
       <div class="toolbar" style="margin-top:8px;gap:8px;flex-wrap:wrap"><select class="control" id="btDiscMode"><option value="holders">Holders</option><option value="early">Early buyers</option></select>${btn("Discover",'id="btDiscGo"',"btn primary") }<span class="muted" id="btDiscMsg" style="font-size:11px"></span></div><div id="btDiscRows" style="margin-top:10px"></div>`), "btDiscover", 1);
@@ -85,6 +90,48 @@
     list.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),type:"wallet",name:(w.label||"Discovered wallet").slice(0,60),network:w.network,address:w.address,category:"Smart Money",notes:"Discovered from token holder / early buyer data. Verify activity independently.",tags:[],createdAt:new Date().toISOString()});
     BT.setWatchlist(list); window.BT.toast?.("Added to Smart Money watchlist.");
   }
+  const tradeChain={ethereum:1,bsc:56,polygon:137,arbitrum:42161,base:8453,optimism:10,avalanche:43114,solana:1151111081099710};
+  function walletRows(rows){return rows.length?rows.slice(0,5).map(w=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>${esc(w.name||String(w.address||"").slice(0,8)+"…")}<small class="muted"> · ${esc(w.network)} · ${Number(w.closedTrades||0)} closed</small></span><b style="white-space:nowrap;color:${(Number(w.realizedUsd||0)+Number(w.unrealizedUsd||0))>=0?"var(--green,#16a34a)":"var(--red,#ef4444)"}">${money(Number(w.realizedUsd||0)+Number(w.unrealizedUsd||0))}</b></div>`).join(""):'<div class="muted">No scored followed wallets yet. Use Smart Discovery to follow candidates first.</div>';}
+  async function autoWalletScan(){
+    const pairs=window.__btMarketPairs||[], first=pairs.find(x=>tradeChain[String(x.chain||"").toLowerCase()]&&x.base?.address);
+    if(!first){msg("btAutoWalletMsg","No supported trending token is available to scan.");return;}
+    const network=String(first.chain).toLowerCase(), address=first.base.address;
+    msg("btAutoWalletMsg",`Discovering holders of ${first.base.symbol||"trending token"} on ${network}…`);$("btAutoWalletRows").innerHTML="";
+    try{
+      const d=await api(`/smart-money/discover?network=${encodeURIComponent(network)}&address=${encodeURIComponent(address)}&mode=holders`);
+      const candidates=(d.candidates||[]).slice(0,5);
+      if(!candidates.length){msg("btAutoWalletMsg","No wallet candidates returned by the provider.");return;}
+      msg("btAutoWalletMsg",`Found ${candidates.length} holder candidates · analyzing real indexed swap history…`);
+      const analyzed=await Promise.all(candidates.map(async c=>{try{return {...c,...await api(`/smart-money/discover/analyze?network=${encodeURIComponent(network)}&address=${encodeURIComponent(c.address)}`),network};}catch(e){return {...c,network,status:e.message||"analysis_unavailable"};}}));
+      window.__btAutoWalletResults=analyzed;
+      const scored=analyzed.filter(x=>x.status==="scored"&&x.realizedUsd!=null).map(x=>({...x,name:x.label||x.address.slice(0,7)+"…"+x.address.slice(-5),closedTrades:x.closedTrades||0,unrealizedUsd:x.unrealizedUsd||0}));
+      const total=x=>Number(x.realizedUsd||0)+Number(x.unrealizedUsd||0);
+      const row=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span><code>${esc(x.address.slice(0,8)+"…"+x.address.slice(-6))}</code><small class="muted"> · ${esc(network)} · ${Number(x.closedTrades||0)} closed trades</small></span><b style="white-space:nowrap;color:${total(x)>=0?"var(--green,#16a34a)":"var(--red,#ef4444)"}">${money(total(x))}</b></div>`;
+      const wins=scored.filter(x=>total(x)>0).sort((a,b)=>total(b)-total(a));
+      const losses=scored.filter(x=>total(x)<0).sort((a,b)=>total(a)-total(b));
+      $("btMarketWalletWins").innerHTML=wins.length?wins.slice(0,5).map(row).join(""):'<div class="muted">No profitable wallet with sufficient indexed history in this candidate sample.</div>';
+      $("btMarketWalletLoss").innerHTML=losses.length?losses.slice(0,5).map(row).join(""):'<div class="muted">No losing wallet with sufficient indexed history in this candidate sample.</div>';
+      const unknown=analyzed.filter(x=>x.status!=="scored");
+      $("btAutoWalletRows").innerHTML=unknown.length?`<div class="muted" style="font-size:10px">${unknown.length} candidate(s) had insufficient or unavailable swap history; they are not ranked.</div>`:"";
+      msg("btAutoWalletMsg",`Analyzed ${analyzed.length} candidates from ${first.base.symbol||"the top trending token"}. PnL is only ranked when history is sufficient.`);
+    }catch(e){msg("btAutoWalletMsg",e.message==="PLAN_REQUIRED"?"Daily free discovery limit reached. Try again tomorrow or use paid / trial access.":e.message==="AUTH_REQUIRED"?"Sign in through Telegram to discover and analyze wallets.":e.message||"Wallet discovery unavailable.");}
+  }
+  async function loadMarketRadar(){
+    msg("btMarketUpdated","Refreshing live market data…");
+    const [dex,movers,sm,cfg]=await Promise.allSettled([api("/dex/trending?source=top"),api("/market/overview"),api("/smart-money"),api("/swap-config")]);
+    const pairs=dex.status==="fulfilled"?(dex.value.items||[]):[];window.__btMarketPairs=pairs;
+    $("btMarketTrending").innerHTML=pairs.length?pairs.slice(0,7).map(x=>{const c=tradeChain[String(x.chain||"").toLowerCase()],link=c?`/swap.html?${new URLSearchParams({chain:String(c),token:x.base.address,side:"buy",sym:x.base.symbol||"TOKEN"})}`:null;return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)"><span><b>${esc(x.base.symbol||"TOKEN")}</b><small class="muted"> · ${esc(x.chain)} · $${Number(x.priceUsd||0).toPrecision(4)} · Vol $${Number(x.volume?.h24||0).toLocaleString()}</small></span>${link?`<a class="btn small" href="${link}">Buy ↗</a>`:`<span class="muted">View only</span>`}</div>`}).join(""):'<div class="muted">Trending DEX pairs unavailable right now.</div>';
+    const m=movers.status==="fulfilled"?movers.value:{};
+    const renderMover=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span><b>${esc(x.symbol||"")}</b><small class="muted"> · ${esc(x.name||"")}</small></span><b style="color:${Number(x.change)>=0?"var(--green,#16a34a)":"var(--red,#ef4444)"}">${Number(x.change)>=0?"+":""}${Number(x.change||0).toFixed(2)}%</b></div>`;
+    $("btMarketGainers").innerHTML=(m.gainers||[]).slice(0,6).map(renderMover).join("")||'<div class="muted">Gainers unavailable.</div>';
+    $("btMarketLosers").innerHTML=(m.losers||[]).slice(0,6).map(renderMover).join("")||'<div class="muted">Losers unavailable.</div>';
+    const wallets=sm.status==="fulfilled"?(sm.value.wallets||[]):[];
+    const scored=wallets.filter(w=>w.status==="scored"&&w.realizedUsd!=null).sort((a,b)=>(Number(b.realizedUsd||0)+Number(b.unrealizedUsd||0))-(Number(a.realizedUsd||0)+Number(a.unrealizedUsd||0)));
+    $("btMarketWalletWins").innerHTML=walletRows(scored.filter(w=>(Number(w.realizedUsd||0)+Number(w.unrealizedUsd||0))>0));
+    $("btMarketWalletLoss").innerHTML=walletRows(scored.filter(w=>(Number(w.realizedUsd||0)+Number(w.unrealizedUsd||0))<0).reverse());
+    if(cfg.status==="fulfilled"){$("btTradeFeeStatus").textContent=cfg.value.tradingEnabled?"Fee-enabled routing is active · 0.5% per completed trade.":"Not active yet. Create LI.FI Partner Portal integration, configure fee wallet, then add LIFI_INTEGRATOR, LIFI_API_KEY and LIFI_FEE_ENABLED=1 to Vercel.";}
+    msg("btMarketUpdated",`Updated ${new Date().toLocaleTimeString()} · ${pairs.length} DEX pairs`);
+  }
   async function loadDigest(){try{const d=await api("/digest/settings");$("btDigestEnabled").checked=!!d.enabled;$("btDigestHour").value=String(d.hourUtc??8);msg("btDigestMsg",d.premium?"Paid / trial access active.":"Digest requires paid plan or active free trial.");}catch(e){msg("btDigestMsg",e.message||"Sign in to configure digest.");}}
   async function trialStatus(){try{const d=await api("/trial/status"); const info=$("btTrialInfo"), b=$("btTrialStart"); if(d.active){info.textContent=`Your Pro trial is active until ${new Date(d.expiresAt).toLocaleString()}.`;b.disabled=true;b.textContent="Trial active";}else if(d.paid){info.textContent="You already have an active paid subscription.";b.disabled=true;}else if(d.used){info.textContent="Your one-time free trial has already been used.";b.disabled=true;}else{info.textContent=`Start ${d.days}-day Pro trial. One trial per account.`;b.disabled=false;}}catch(e){$("btTrialInfo").textContent=e.message||"Sign in through Telegram to check trial eligibility.";$("btTrialStart").disabled=true;}}
   async function approvals(){const net=$("btApprovalNet").value, addr=$("btApprovalAddr").value.trim(); if(!addr){msg("btApprovalMsg","Enter a wallet address.");return;} msg("btApprovalMsg","Checking provider…"); $("btApprovalRows").innerHTML="";
@@ -99,6 +146,9 @@
   function bind() {
     document.addEventListener("click", async e=>{
       const t=e.target.closest("button"); if(!t)return;
+      if(t.id==="btMarketRefresh")return loadMarketRadar();
+      if(t.id==="btAutoWalletScan")return autoWalletScan();
+      if(t.id==="btOpenTrade"){location.href="/swap.html";return;}
       if(t.id==="btDiscGo")return discover();
       if(t.dataset.btAnalyze!=null)return analyzeCandidate(Number(t.dataset.btAnalyze),t);
       if(t.dataset.btFollow!=null)return followCandidate(Number(t.dataset.btFollow));
@@ -112,7 +162,7 @@
       if(t.id==="btAdminErrors")return adminErrors();
       if(t.dataset.btExport)return doExport(t.dataset.btExport,t.dataset.format||"csv",t.dataset.deliver||"file");
     });
-    document.addEventListener("click",e=>{if(e.target.closest('[data-page="wallets"]')){setTimeout(loadDigest,200);}if(e.target.closest('[data-page="portfolio"]')){setTimeout(loadCombined,250);setTimeout(loadTax,350);}if(e.target.closest('[data-page="admin"]')){setTimeout(adminUsage,400);setTimeout(adminErrors,500);}if(e.target.closest('[data-page="subscription"]'))setTimeout(trialStatus,250);});
+    document.addEventListener("click",e=>{if(e.target.closest('[data-page="dashboard"]'))setTimeout(loadMarketRadar,200);if(e.target.closest('[data-page="wallets"]')){setTimeout(loadDigest,200);}if(e.target.closest('[data-page="portfolio"]')){setTimeout(loadCombined,250);setTimeout(loadTax,350);}if(e.target.closest('[data-page="admin"]')){setTimeout(adminUsage,400);setTimeout(adminErrors,500);}if(e.target.closest('[data-page="subscription"]'))setTimeout(trialStatus,250);});
     window.addEventListener("bt-auth",()=>{loadDigest();trialStatus();if($("page-admin")?.classList.contains("active")){adminUsage();adminErrors();}});
     // Wrap the existing scanner call once: keep its current rendering intact and add the new risk panel.
     const wrapApi=()=>{if(!window.BT?.apiRequest||window.BT.apiRequest.__proWrapped)return;const original=window.BT.apiRequest.bind(window.BT);const wrapped=async function(path,opts){const out=await original(path,opts);if(String(path).startsWith("/scanner/scan"))renderRisk(out.risk);return out;};wrapped.__proWrapped=true;window.BT.apiRequest=wrapped;};
@@ -121,7 +171,7 @@
     const originalRequest=window.BT?.apiRequest;
     if(originalRequest&&!originalRequest.__deepWrapped){const base=window.BT.apiRequest.bind(window.BT);const deep=async function(path,opts){if(String(path).startsWith("/pnl?")&&$("btDeepToggle")?.checked)path+=(String(path).includes("?")?"&":"?")+"deep=1";return base(path,opts);};deep.__deepWrapped=true;window.BT.apiRequest=deep;}
   }
-  function start(){mount();bind();if($("page-wallets")?.classList.contains("active"))loadDigest();}
+  function start(){mount();bind();if($("page-wallets")?.classList.contains("active"))loadDigest();setTimeout(loadMarketRadar,800);}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
   setTimeout(mount,500);
 })();
