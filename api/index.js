@@ -43,9 +43,9 @@ import { attachReservation } from "../lib/points.js";
 import { trialApi } from "../lib/trial.js";
 import { portfolioCombined, portfolioReport } from "../lib/portfolio_pro.js";
 import { digestApi, cronDigest } from "../lib/digest.js";
-import { swapConfig, swapQuote } from "../lib/swap.js";
 import { walletApi } from "../lib/wallet.js";
 import { walletWithdrawalsApi, adminWalletApi } from "../lib/wallet_ops.js";
+import { tradingApi } from "../lib/trading.js";
 import { cronWalletDeposits } from "../lib/wallet_deposits.js";
 import { ensureOpsSchema, logError, cronBeat } from "../lib/usage.js";
 
@@ -753,11 +753,7 @@ export default async function handler(req, res) {
     if (path === "/api/market/whales") return await whaleFeed(req, res);
     if (path === "/api/market/coin") return await coinProxy(req, res);
     if (path === "/api/market/new-coins") return await newCoinsFeed(req, res);
-    if (path === "/api/swap-config") { // public, non-secret fee readiness and wallet settings
-      res.setHeader("Cache-Control", "no-store");
-      return res.status(200).json(swapConfig());
-    }
-    if (path === "/api/swap/quote") return await swapQuote(req, res);
+    if (path.startsWith("/api/trading/")) return await tradingApi(req, res, path);
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/contract/activity") return await contractActivity(req, res);
