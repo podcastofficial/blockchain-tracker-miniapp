@@ -968,8 +968,14 @@ const smartIntel=e.target.closest("#smartIntelRefresh");if(smartIntel){
   (async()=>{
     const refreshWarnings=[];
     try{
-      const p=await apiRequest("/pnl?days=30&category="+encodeURIComponent("Smart Money"));
-      (p.warnings||[]).forEach(w=>refreshWarnings.push(w));
+      let p=null;
+      for(let round=0;round<5;round++){
+        smartIntel.textContent=round?`Indexing… (${round+1}/5)`:"Refreshing PnL…";
+        p=await apiRequest("/pnl?days=30&category="+encodeURIComponent("Smart Money"));
+        (p.warnings||[]).forEach(w=>refreshWarnings.push(w));
+        if(!p.pending)break;
+        await new Promise(r=>setTimeout(r,1500));
+      }
       if(p.locked)refreshWarnings.push("Your plan has a limited PnL history window.");
       if(!p.wallets)refreshWarnings.push("No eligible Smart Money wallets were refreshed.");
     }catch(err){
@@ -991,7 +997,7 @@ const smartIntel=e.target.closest("#smartIntelRefresh");if(smartIntel){
     const money=v=>v==null?"—":(v<0?"−":"")+"$"+Math.abs(Number(v)).toLocaleString("en-US",{maximumFractionDigits:2});
     const ws=$("smiWallets"),ss=$("smiSignalsList");
 
-    if(ws)ws.innerHTML=d.wallets?.length?'<div class="table-wrap"><table><thead><tr><th>Wallet</th><th>Score</th><th>Realized PnL</th><th>Win rate</th><th>Trades</th></tr></thead><tbody>'+d.wallets.map(w=>`<tr><td><strong>${esc(w.name)}</strong><div class="muted">${esc(w.network)} · ${esc(String(w.address).slice(0,8))}…</div></td><td>${w.score==null?'—':w.score+'/100'}<div class="muted">${esc(w.scoreConfidence)}</div></td><td>${money(w.realizedUsd)}</td><td>${w.winRate==null?'—':(w.winRate*100).toFixed(1)+'%'}</td><td>${Number(w.closedTrades||0)} closed</td></tr>`).join('')+'</tbody></table></div>':'<div class="empty">No followed Smart Money wallets found. Add wallets using the Smart Money category.</div>';
+    if(ws)ws.innerHTML=d.wallets?.length?'<div class="table-wrap"><table><thead><tr><th>Wallet</th><th>Score</th><th>Realized PnL</th><th>Win rate</th><th>Trades</th></tr></thead><tbody>'+d.wallets.map(w=>`<tr><td><strong>${esc(w.name)}</strong><div class="muted">${esc(w.network)} · ${esc(String(w.address).slice(0,8))}…</div></td><td>${w.score==null?'—':w.score+'/100'}<div class="muted">${esc(({not_indexed:"Not indexed yet – tap Analyze again",no_swaps:"No swaps found in indexed history",few_closed_trades:"Needs 3+ closed trades ("+Number(w.tradesTotal||0)+" swaps found)"})[w.status]||w.scoreConfidence)}</div></td><td>${money(w.realizedUsd)}</td><td>${w.winRate==null?'—':(w.winRate*100).toFixed(1)+'%'}</td><td>${Number(w.closedTrades||0)} closed</td></tr>`).join('')+'</tbody></table></div>':'<div class="empty">No followed Smart Money wallets found. Add wallets using the Smart Money category.</div>';
 
     if(ss)ss.innerHTML=d.signals?.length?d.signals.map(x=>`<div style="padding:9px 0;border-bottom:1px solid var(--line)"><strong>${x.type==='MULTI_WALLET_ACCUMULATION'?'🟢 Accumulation':'🔴 Distribution'} · ${esc(x.token)}</strong><div class="muted">${esc(x.network)} · ${x.wallets} wallets · ${money(x.observedVolumeUsd)} observed volume</div><small>${new Date(x.latestAt).toLocaleString()}</small></div>`).join(''):'<div class="empty">No multi-wallet accumulation or distribution signals in the last 24 hours.</div>';
 
