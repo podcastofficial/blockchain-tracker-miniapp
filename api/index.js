@@ -18,6 +18,7 @@ import { txHistory } from "../lib/txhistory.js";
 import { pnlRoute } from "../lib/pnl.js";
 import { contractIntelligence } from "../lib/contract_intelligence.js";
 import { multiChainOverview } from "../lib/multichain.js";
+import { walletApi } from "../lib/wallet.js";
 import { telegramWebhook } from "../lib/bot.js";
 import { cronChannels } from "../lib/channels.js";
 import { dexApi } from "../lib/dex.js";
@@ -766,6 +767,7 @@ export default async function handler(req, res) {
     if (path.startsWith("/api/phantom/")) return await phantomApi(req, res, path);
     if (path === "/api/tx/history") return await txHistory(req, res);
     if (path === "/api/wallet/multichain") return await multiChainOverview(req, res);
+    if (path === "/api/wallet" || path.startsWith("/api/wallet/")) return await walletApi(req, res, path);
     if (path === "/api/telegram/webhook") return await telegramWebhook(req, res);
 
     if (path === "/api/alerts") {
