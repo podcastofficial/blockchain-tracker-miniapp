@@ -1,0 +1,77 @@
+/* Binance-inspired dark theme for Multi Blockchain Tracker.
+   Original brand assets are retained; this is a visual theme, not Binance branding. */
+:root{
+  color-scheme:dark!important;
+  --bg:#0b0e11!important;--panel:#181a20!important;--panel2:#1e2329!important;--panel3:#2b3139!important;
+  --border:#2b3139!important;--text:#eaecef!important;--muted:#848e9c!important;
+  --yellow:#f0b90b!important;--green:#0ecb81!important;--red:#f6465d!important;
+  --blue:#f0b90b!important;--cyan:#f0b90b!important;--violet:#f0b90b!important;--pink:#f0b90b!important;--orange:#f0b90b!important;
+  --grad:linear-gradient(135deg,#f8d12f 0%,#f0b90b 100%)!important;
+  --grad-hot:linear-gradient(135deg,#f8d12f 0%,#f0b90b 100%)!important;
+  --shadow:0 8px 24px #0008!important;
+}
+html,body{background:#0b0e11!important;color:#eaecef!important;color-scheme:dark!important}
+body{background:#0b0e11!important}
+body::before,body::after,#fx3d{display:none!important}
+.app-shell{background:#0b0e11!important}
+.sidebar{background:#0b0e11!important;border-right:1px solid #2b3139!important;box-shadow:none!important}
+.brand-mark,.brand-logo,.profile{box-shadow:none!important}
+.brand-name,.brand-sub,.nav-label{color:#eaecef!important;-webkit-text-fill-color:#eaecef!important}
+.brand-name em{background:#f0b90b!important;color:#0b0e11!important;-webkit-text-fill-color:#0b0e11!important;box-shadow:none!important}
+.brand-name em::before,.brand-name em::after{display:none!important}
+.nav button{color:#b7bdc6!important;background:transparent!important;box-shadow:none!important}
+.nav button:hover{background:#1e2329!important;transform:none!important}
+.nav button.active{background:#2b3139!important;color:#f0b90b!important;border-left:3px solid #f0b90b!important;box-shadow:none!important;transform:none!important}
+.nav-icon{background:#2b3139!important;color:#f0b90b!important;box-shadow:none!important}
+.nav button.active .nav-icon{background:#f0b90b!important;color:#0b0e11!important}
+.network-pill{background:#181a20!important;border:1px solid #2b3139!important;color:#848e9c!important;box-shadow:none!important}
+.network-pill strong{color:#eaecef!important}
+.main{background:#0b0e11!important}
+.topbar{background:#0b0e11ee!important;border-bottom:1px solid #2b3139!important;box-shadow:none!important}
+.topbar::after{height:1px!important;background:#2b3139!important}
+.crumb,.page-title,.card-title,.stat-value{color:#eaecef!important}
+.page-desc,.muted,.stat-top,.card-sub,.brand-sub{color:#848e9c!important}
+.eyebrow{background:#2b3139!important;color:#f0b90b!important;box-shadow:none!important}
+.eyebrow::before{background:#f0b90b!important}
+.top-search input,.control,.field input,.field select,.field textarea,.top-search input:focus{
+  background:#1e2329!important;border:1px solid #2b3139!important;color:#eaecef!important;box-shadow:none!important
+}
+.top-search input::placeholder,.field input::placeholder{color:#848e9c!important}
+.search-icon{color:#f0b90b!important}
+.icon-btn{background:#1e2329!important;color:#f0b90b!important;border:1px solid #2b3139!important;box-shadow:none!important}
+.icon-btn:hover{background:#2b3139!important;color:#f8d12f!important}
+.btn{background:#1e2329!important;border:1px solid #474d57!important;color:#eaecef!important;box-shadow:none!important}
+.btn:hover{background:#2b3139!important;border-color:#f0b90b!important;transform:none!important}
+.btn.primary{background:#f0b90b!important;border-color:#f0b90b!important;color:#0b0e11!important;box-shadow:none!important}
+.btn.primary:hover{background:#f8d12f!important}
+.btn.danger{background:#f6465d!important;border-color:#f6465d!important;color:#fff!important;box-shadow:none!important}
+.card,.stat-card,.network-card,.dx-card,.plan-card,.modal,.panel,.chart-wrap{
+  background:#181a20!important;border:1px solid #2b3139!important;color:#eaecef!important;box-shadow:none!important
+}
+.card::before,.card::after,.stat-card::before,.stat-card::after{box-shadow:none!important;background-image:none!important}
+.stat-card{background:#181a20!important}
+.stat-symbol,.quick .q-icon{background:#2b3139!important;color:#f0b90b!important;box-shadow:none!important}
+.quick{background:#181a20!important;border:1px solid #2b3139!important;color:#eaecef!important;box-shadow:none!important}
+.quick strong,.quick span{color:#eaecef!important}
+.quick:hover,.card:hover,.stat-card:hover,.dx-card:hover{border-color:#f0b90b!important;box-shadow:none!important;transform:none!important}
+.tag,.badge,.pill{background:#2b3139!important;color:#f0b90b!important;box-shadow:none!important}
+th{background:#2b3139!important;color:#f0b90b!important;box-shadow:none!important}
+td{border-bottom:1px solid #2b3139!important;color:#eaecef!important}
+tbody tr:hover{background:#2b313966!important}
+table{border-color:#2b3139!important}
+.chart-wrap{background:#181a20!important;border-color:#2b3139!important}
+.chart-note{background:#1e2329!important;border-color:#2b3139!important;color:#eaecef!important;box-shadow:none!important}
+.chart-wrap svg text{fill:#848e9c!important}
+.address,a{color:#f0b90b}
+a:hover{color:#f8d12f}
+.positive,.status.ok{color:#0ecb81!important}.negative,.status.bad{color:#f6465d!important}
+.notice{background:#2b2411!important;border-color:#5c4810!important;color:#f0d77a!important}
+.close{background:#2b3139!important;color:#eaecef!important}
+.tab{color:#848e9c!important}.tab.active{color:#f0b90b!important;border-color:#f0b90b!important}
+.mobile-nav{background:#0b0e11f5!important;border-top:1px solid #2b3139!important;box-shadow:0 -8px 24px #0008!important}
+.mobile-nav button{color:#848e9c!important}.mobile-nav button.active{color:#f0b90b!important}
+.mobile-nav button.active span:first-child{background:#f0b90b!important;color:#0b0e11!important;box-shadow:none!important}
+#themeBtn{display:none!important}
+::-webkit-scrollbar-thumb{background:#474d57!important}::-webkit-scrollbar-track{background:#0b0e11!important}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #f0b90b!important;outline-offset:2px!important}
+@media(max-width:760px){.sidebar{background:#0b0e11!important}.topbar{background:#0b0e11!important}}

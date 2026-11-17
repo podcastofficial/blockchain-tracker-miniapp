@@ -1,9 +1,9 @@
-/* Light <-> Dark theme switch. Default = Light. Choice is saved in localStorage ("mbc_theme"). */
+/* Binance-inspired dark theme is the default. */
 (function(){
   "use strict";
   var KEY="mbc_theme";
   var tg=window.Telegram&&window.Telegram.WebApp;
-  function isDark(){try{return localStorage.getItem(KEY)==="dark"}catch(e){return false}}
+  function isDark(){return true}
   function apply(dark,save){
     window.MBC_DARK=dark;
     if(save){try{localStorage.setItem(KEY,dark?"dark":"light")}catch(e){}}

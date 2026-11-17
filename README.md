@@ -119,3 +119,8 @@ Run `db/community_contracts.sql` in Neon after the existing Community Monitor mi
 - `/unwatchcontract WATCH_ID`
 
 The scheduled GitHub Actions worker calls `/api/cron/community-contracts` every five minutes using the existing `APP_URL` and `CRON_SECRET` repository secrets. The initial implementation decodes EVM DEX swap logs on Ethereum, BNB Chain, Polygon, Arbitrum, Base, Optimism and Avalanche, and discovers the most liquid DEX Screener pair. The first scan establishes a starting block to avoid replaying old trades. It currently does not parse Solana/Tron/TON swaps, and does not calculate USD trade value. A token must have a discoverable DEX liquidity pair and the bot must have posting permission in the community.
+
+
+## Binance-inspired dark interface
+
+The app includes an optional visual skin in `assets/theme-binance.css`, using a near-black surface palette and yellow accents inspired by common exchange-terminal patterns. The project retains its own name, logo, and product identity; it is not affiliated with Binance. The theme is loaded by `index.html` and does not change backend behavior or market-data sources.
