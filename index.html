@@ -1034,7 +1034,7 @@ function pollPayment(id){
       else msg.textContent="🔎 Waiting for your deposit… it is detected automatically.";
     }catch(e){}finally{busy=false}
   };
-  payPoll=setInterval(tick,8000);setTimeout(tick,3000);
+  payPoll=setInterval(()=>{if(!document.hidden)tick()},15000);setTimeout(tick,4000);
 }
 const VERIFY_MSG={TX_ALREADY_USED:"This transaction was already used.",NO_MATCHING_USDT_TRANSFER:"No matching USDT transfer (check exact amount, network and address).",TX_FAILED:"Transaction failed on-chain.",PAYMENT_EXPIRED:"Invoice expired. Create a new one.",TX_BEFORE_INVOICE:"Transaction is older than the invoice.",INVALID_TRANSACTION_HASH:"Invalid transaction hash.",CHAIN_PROVIDER_UNAVAILABLE:"Chain provider busy, try again in a minute."};
 document.addEventListener("click",async e=>{
@@ -1268,7 +1268,7 @@ async function loadTicker(){
     requestAnimationFrame(()=>{const t=$("tkTrack");if(t){const w=t.scrollWidth/4;t.style.setProperty("--dur",Math.max(20,Math.round(w/45))+"s")}});
   }catch(e){box.innerHTML='<span class="tk-msg">Live prices unavailable right now. Retrying in 60 seconds.</span>'}
 }
-loadTicker();setInterval(loadTicker,60000);
+loadTicker();setInterval(()=>{if(!document.hidden)loadTicker()},120000);
 /* ---------- TradingView chart ---------- */
 let tvReady=false;
 function drawChart(){
@@ -1977,7 +1977,7 @@ async function loadAct(kind){
 }
 g("caRefresh")&&g("caRefresh").addEventListener("click",()=>loadAct("contract"));
 g("waRefresh")&&g("waRefresh").addEventListener("click",()=>loadAct("wallet"));
-setInterval(()=>{if(document.getElementById("page-contracts")?.classList.contains("active"))loadAct("contract");if(document.getElementById("page-wallets")?.classList.contains("active"))loadAct("wallet")},60000);
+setInterval(()=>{if(document.hidden)return;if(document.getElementById("page-contracts")?.classList.contains("active"))loadAct("contract");if(document.getElementById("page-wallets")?.classList.contains("active"))loadAct("wallet")},120000);
 document.addEventListener("click",e=>{if(e.target.closest('[data-page="contracts"]'))setTimeout(()=>loadAct("contract"),250);if(e.target.closest('[data-page="wallets"]'))setTimeout(()=>loadAct("wallet"),250)});
 if(BT.backendUser){load(false);loadAct("contract");loadAct("wallet")}
 fillNets();fillSaved();
@@ -1998,7 +1998,7 @@ async function run(){
     el.title=on?"Latest block "+Number(st.block).toLocaleString():"Provider not responding";
   });
 }
-run();setInterval(()=>{if(!document.hidden)run()},60000);
+run();setInterval(()=>{if(!document.hidden)run()},120000);
 })();
 </script>
 <script>
@@ -2041,7 +2041,7 @@ document.addEventListener("click",e=>{
   const scan=e.target.closest("[data-home-scan]");if(scan){const [net,addr]=scan.dataset.homeScan.split("|");const nav=document.querySelector('[data-page="tokens"]');if(nav)nav.click();const sn=g("scanNetwork"),sa=g("scanAddress");if(sn){sn.value=net;sn.dispatchEvent(new Event("change"))}if(sa)sa.value=addr;setTimeout(()=>{const b=g("scanBtn");if(b&&!b.disabled)b.click()},350);return}
   if(e.target.closest('[data-page="dashboard"]')&&!homeDexItems.length)setTimeout(loadHomeCoins,100);
 });
-loadHomeCoins();setInterval(()=>{if(!document.hidden)loadHomeCoins()},90000);
+loadHomeCoins();setInterval(()=>{if(!document.hidden)loadHomeCoins()},180000);
 /* ---- Whale feed ---- */
 let wbusy=false,wlast=0;
 async function loadWhales(){
@@ -2746,7 +2746,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest('[data-page="dashboard"]'))setTimeout(()=>loadAll(false),150);
   if(e.target.closest("#dashRefresh,#refreshBtn"))setTimeout(()=>loadAll(true),150);
 });
-setInterval(()=>{if(!document.hidden)loadAll(false)},300000);
+setInterval(()=>{if(!document.hidden)loadAll(false)},600000);
 loadAll(true);
 })();
 </script>
@@ -3062,7 +3062,7 @@ $("dxAge").addEventListener("change",render);
 $("dxRefresh").addEventListener("click",()=>{if(st.tab==="search")doSearch();else{load(false);if(st.tab==="trending"){st.metasAt=0;loadMetas()}}});
 $("dxQBtn").addEventListener("click",doSearch);
 $("dxQ").addEventListener("keydown",e=>{if(e.key==="Enter")doSearch()});
-setInterval(()=>{const pg=$("page-dex");if(!document.hidden&&pg&&pg.classList.contains("active")&&!$("dxModal").classList.contains("open")&&st.tab!=="search")load(true)},60000);
+setInterval(()=>{const pg=$("page-dex");if(!document.hidden&&pg&&pg.classList.contains("active")&&!$("dxModal").classList.contains("open")&&st.tab!=="search")load(true)},120000);
 showControls();
 })();
 </script>
@@ -3552,7 +3552,7 @@ if(spotParams.get("spot")==="1"){
  },300);
 }
 window.addEventListener("bt-auth",()=>{if($("page-trade")?.classList.contains("active")){loadBalances();loadHistory()}});
-setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory();loadChart();loadTicker();loadRecentMarketTrades()}},30000);
+setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory();loadChart();loadTicker();loadRecentMarketTrades()}},60000);
 })();
 </script>
 

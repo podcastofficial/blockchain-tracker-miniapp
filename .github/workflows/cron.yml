@@ -28,7 +28,8 @@ jobs:
         if: always()
         run: |
           curl -fsS --retry 2 --retry-delay 3 -m 90 -H "Authorization: Bearer $CRON_SECRET" "${APP_URL%/}/api/cron/onchain"
-      - name: Smart Money background refresh + signal alerts
+      - name: Smart Money background refresh + signal alerts (once per hour only - heavy job)
         if: always()
         run: |
+          [ "$(date -u +%M)" -lt 15 ] || { echo "skip: runs once per hour"; exit 0; }
           curl -fsS --retry 2 --retry-delay 3 -m 90 -H "Authorization: Bearer $CRON_SECRET" "${APP_URL%/}/api/cron/smart-money"

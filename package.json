@@ -13,15 +13,9 @@
     "pg": "^8.13.1"
   },
   "scripts": {
-    "test:wallet": "node scripts/test-wallet.mjs",
-    "test:pnl": "node scripts/test-pnl.mjs",
-    "test:deposits": "node scripts/test-deposits.mjs",
-    "test:swaps": "node scripts/test-swaps.mjs",
     "webhook": "node scripts/set-webhook.mjs",
     "webhook:info": "node scripts/set-webhook.mjs --info",
-    "launch:config": "node scripts/create-dbc-config.mjs",
-    "test:smart-money": "node scripts/test-smart-money.mjs",
-    "test:contract-intelligence": "node scripts/test-contract-intelligence.mjs"
+    "launch:config": "node scripts/create-dbc-config.mjs"
   },
   "overrides": {
     "rpc-websockets": {
