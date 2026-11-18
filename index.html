@@ -1977,7 +1977,7 @@ async function loadAct(kind){
 }
 g("caRefresh")&&g("caRefresh").addEventListener("click",()=>loadAct("contract"));
 g("waRefresh")&&g("waRefresh").addEventListener("click",()=>loadAct("wallet"));
-setInterval(()=>{if(document.getElementById("page-contracts")?.classList.contains("active"))loadAct("contract");if(document.getElementById("page-wallets")?.classList.contains("active"))loadAct("wallet")},30000);
+setInterval(()=>{if(document.getElementById("page-contracts")?.classList.contains("active"))loadAct("contract");if(document.getElementById("page-wallets")?.classList.contains("active"))loadAct("wallet")},60000);
 document.addEventListener("click",e=>{if(e.target.closest('[data-page="contracts"]'))setTimeout(()=>loadAct("contract"),250);if(e.target.closest('[data-page="wallets"]'))setTimeout(()=>loadAct("wallet"),250)});
 if(BT.backendUser){load(false);loadAct("contract");loadAct("wallet")}
 fillNets();fillSaved();
@@ -1998,7 +1998,7 @@ async function run(){
     el.title=on?"Latest block "+Number(st.block).toLocaleString():"Provider not responding";
   });
 }
-run();setInterval(()=>{if(!document.hidden)run()},30000);
+run();setInterval(()=>{if(!document.hidden)run()},60000);
 })();
 </script>
 <script>
@@ -3552,7 +3552,7 @@ if(spotParams.get("spot")==="1"){
  },300);
 }
 window.addEventListener("bt-auth",()=>{if($("page-trade")?.classList.contains("active")){loadBalances();loadHistory()}});
-setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory();loadChart();loadTicker();loadRecentMarketTrades()}},15000);
+setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory();loadChart();loadTicker();loadRecentMarketTrades()}},30000);
 })();
 </script>
 

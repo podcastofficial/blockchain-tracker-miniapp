@@ -12,7 +12,6 @@ import { marketOverview, whaleFeed, coinProxy, newCoinsFeed } from "../lib/marke
 import { rateLimited, clientKey } from "../lib/ratelimit.js";
 import { limitsFor } from "../lib/plans.js";
 import { watchlist } from "../lib/watchlist.js";
-import { adminApi } from "../lib/admin.js";
 import { defiOverview } from "../lib/defi.js";
 import { txHistory } from "../lib/txhistory.js";
 import { pnlRoute } from "../lib/pnl.js";
@@ -20,32 +19,23 @@ import { contractIntelligence } from "../lib/contract_intelligence.js";
 import { multiChainOverview } from "../lib/multichain.js";
 import { telegramWebhook } from "../lib/bot.js";
 import { cronChannels } from "../lib/channels.js";
-import { dexApi } from "../lib/dex.js";
-import { launchApi } from "../lib/launchpad.js";
-import { tokenApi } from "../lib/tokenview.js";
-import { phantomApi } from "../lib/phantom.js";
 import { profile } from "../lib/profile.js";
 import { codeLogin, logout } from "../lib/loginCode.js";
 import { referral, attachReferral } from "../lib/referral.js";
 import { alertHistory } from "../lib/history.js";
-import { exportApi } from "../lib/export.js";
 import { confirmPayment } from "../lib/payments.js";
 import { scanDepositFor, cronDeposits } from "../lib/deposits.js";
 import { renderKey, loadTemplates } from "../lib/templates.js";
 import { runMaintenance } from "../lib/maintenance.js";
-import { communityApi } from "../lib/community_api.js";
 import { scanCommunityContracts } from "../lib/community_contracts.js";
 import { scanChatWatches } from "../lib/chat_watch.js";
-import { pointsApi } from "../lib/points_api.js";
 import { forceJoinApi, joinBlocked } from "../lib/forcejoin.js";
-import { scannerApi } from "../lib/scanner.js";
 import { attachReservation } from "../lib/points.js";
 import { trialApi } from "../lib/trial.js";
 import { portfolioCombined, portfolioReport } from "../lib/portfolio_pro.js";
 import { digestApi, cronDigest } from "../lib/digest.js";
 import { walletApi } from "../lib/wallet.js";
 import { walletWithdrawalsApi, adminWalletApi } from "../lib/wallet_ops.js";
-import { tradingApi } from "../lib/trading.js";
 import { cronWalletDeposits } from "../lib/wallet_deposits.js";
 import { ensureOpsSchema, logError, cronBeat } from "../lib/usage.js";
 
@@ -753,7 +743,7 @@ export default async function handler(req, res) {
     if (path === "/api/market/whales") return await whaleFeed(req, res);
     if (path === "/api/market/coin") return await coinProxy(req, res);
     if (path === "/api/market/new-coins") return await newCoinsFeed(req, res);
-    if (path.startsWith("/api/trading/")) return await tradingApi(req, res, path);
+    if (path.startsWith("/api/trading/")) return await (await import("../lib/trading.js")).tradingApi(req, res, path);
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/contract/activity") return await contractActivity(req, res);
@@ -775,26 +765,26 @@ export default async function handler(req, res) {
     if (path === "/api/profile") return await profile(req, res);
     if (path === "/api/referral") return await referral(req, res);
     if (path === "/api/alerts/history") return await alertHistory(req, res);
-    if (path === "/api/export") return await exportApi(req, res);
+    if (path === "/api/export") return await (await import("../lib/export.js")).exportApi(req, res);
     if (path === "/api/cron/maintenance") {
       if (!cronAuthorized(req)) return send(res, 401, { ok: false, error: "UNAUTHORIZED" });
       return send(res, 200, { ok: true, maintenance: await runMaintenance() });
     }
 
-    if (path.startsWith("/api/community")) return await communityApi(req, res, path);
-    if (path.startsWith("/api/points")) return await pointsApi(req, res, path);
-    if (path.startsWith("/api/scanner/")) return await scannerApi(req, res, path);
+    if (path.startsWith("/api/community")) return await (await import("../lib/community_api.js")).communityApi(req, res, path);
+    if (path.startsWith("/api/points")) return await (await import("../lib/points_api.js")).pointsApi(req, res, path);
+    if (path.startsWith("/api/scanner/")) return await (await import("../lib/scanner.js")).scannerApi(req, res, path);
     if (path === "/api/watchlist") return await watchlist(req, res);
     if (path.startsWith("/api/admin/wallet/")) return await adminWalletApi(req, res, path);
-    if (path.startsWith("/api/admin/")) return await adminApi(req, res, path);
+    if (path.startsWith("/api/admin/")) return await (await import("../lib/admin.js")).adminApi(req, res, path);
     if (path === "/api/wallet/multichain") return await multiChainOverview(req, res);
     if (path.startsWith("/api/wallet/withdraw") || path === "/api/wallet/deposits") return await walletWithdrawalsApi(req, res, path);
     if (path.startsWith("/api/wallet/") || path === "/api/wallet") return await walletApi(req, res, path);
     if (path === "/api/defi/overview") return await defiOverview(req, res);
-    if (path.startsWith("/api/dex/")) return await dexApi(req, res, path);
-    if (path.startsWith("/api/launch/")) return await launchApi(req, res, path);
-    if (path.startsWith("/api/token/")) return await tokenApi(req, res, path);
-    if (path.startsWith("/api/phantom/")) return await phantomApi(req, res, path);
+    if (path.startsWith("/api/dex/")) return await (await import("../lib/dex.js")).dexApi(req, res, path);
+    if (path.startsWith("/api/launch/")) return await (await import("../lib/launchpad.js")).launchApi(req, res, path);
+    if (path.startsWith("/api/token/")) return await (await import("../lib/tokenview.js")).tokenApi(req, res, path);
+    if (path.startsWith("/api/phantom/")) return await (await import("../lib/phantom.js")).phantomApi(req, res, path);
     if (path === "/api/tx/history") return await txHistory(req, res);
     if (path === "/api/telegram/webhook") return await telegramWebhook(req, res);
 

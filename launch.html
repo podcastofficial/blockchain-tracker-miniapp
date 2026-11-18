@@ -167,7 +167,7 @@ function renderExplore(){
   document.querySelectorAll(".chips.src button").forEach(b=>b.onclick=()=>{src=b.dataset.s;renderExplore()});
   loadList();
 }
-setInterval(()=>{if(view==="explore"&&!document.hidden)loadList()},45000);
+setInterval(()=>{if(view==="explore"&&!document.hidden)loadList()},60000);
 
 /* ---- create coin ---- */
 function renderCreate(){
@@ -383,7 +383,7 @@ function txDone(sig){
   setStatus('Sent ✔ <a data-u="'+esc(expUrl("solana","tx",sig))+'" style="color:#6d9bff;font-weight:700;cursor:pointer">View transaction</a>');bindLinks($("status"));
   setTimeout(()=>{loadBal();if(tab==="trades"||tab==="chart")loadTab()},6000);
 }
-setInterval(()=>{if(view==="token"&&!document.hidden&&(tab==="trades"||tab==="chart"))loadTab()},20000);
+setInterval(()=>{if(view==="token"&&!document.hidden&&(tab==="trades"||tab==="chart"))loadTab()},30000);
 
 function render(){view==="create"?renderCreate():view==="token"&&coin?openDetail(coin):renderExplore()}
 $("back").onclick=()=>{if(view==="token"){view="explore";coin=null;render()}else if(history.length>1)history.back();else location.href="/"};
