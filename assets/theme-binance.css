@@ -519,3 +519,119 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .spot-ticker-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:11px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}.spot-ticker-strip>div{display:grid;gap:4px;min-width:0}.spot-ticker-strip small{font-size:9px;color:var(--muted)}.spot-ticker-strip strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.spot-chart-wrap{height:320px;position:relative;margin-top:8px}.spot-chart-wrap canvas{width:100%;height:100%;display:block}.spot-chart-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:12px;pointer-events:none;padding:20px}.spot-chart-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:9px;color:var(--muted);padding:8px 0 0}.spot-chart-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}.spot-chart-legend .up{background:#0ecb81}.spot-chart-legend .down{background:#f6465d}
 .spot-admin-stats{margin-top:8px}.spot-admin-card .stat-card{padding:12px}.spot-admin-card .stat-value{font-size:20px}
 @media(max-width:680px){.spot-ticker-strip{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:12px}.spot-chart-wrap{height:260px}.spot-timeframes button{padding:6px 8px}}
+
+/* ===== Binance-style spot terminal (bn-*) ===== */
+.bn{--bn-g:var(--green,#0ecb81);--bn-r:var(--red,#f6465d);--bn-y:var(--yellow,#f0b90b)}
+.bn .card{margin:0}
+.bn-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px}
+.bn-pairbtn{display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--text);cursor:pointer;padding:0;text-align:left}
+.bn-pairbtn .bn-pair{font-size:20px;font-weight:800;letter-spacing:.2px}
+.bn-pairbtn small{color:var(--muted);font-size:10px;border:1px solid var(--border);border-radius:5px;padding:2px 6px}
+.bn-pairbtn i{font-style:normal;color:var(--muted);font-size:12px}
+.bn-last{display:grid;gap:2px}.bn-last strong{font-size:20px;font-weight:800}.bn-last small{font-size:10px;color:var(--muted)}
+.bn-stats{display:flex;gap:22px;flex-wrap:wrap;flex:1;min-width:0}
+.bn-stats>div{display:grid;gap:3px;min-width:0}.bn-stats small{font-size:10px;color:var(--muted)}.bn-stats b{font-size:12px;font-weight:600;white-space:nowrap}
+.bn-head-btns{display:flex;gap:6px;margin-left:auto}
+.bn-only-mobile{display:none}
+.up{color:var(--bn-g)!important}.down{color:var(--bn-r)!important}
+
+.bn-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px 270px;gap:12px;align-items:start}
+.bn-left,.bn-mid{display:grid;gap:12px;min-width:0}
+.bn-chart{padding:10px 12px;overflow:hidden}
+.bn-chart-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.bn .spot-chart-wrap{height:340px;margin-top:4px}
+.bn-cap{font-size:10px;margin-top:6px}
+
+.bn-form{padding:12px;container-type:inline-size}
+.bn-ordertabs{display:flex;gap:18px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.bn-ordertabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:700;padding:6px 0 9px;cursor:pointer}
+.bn-ordertabs button.active{color:var(--bn-y);border-bottom-color:var(--bn-y)}
+.bn-sidetoggle{display:none;grid-template-columns:1fr 1fr;background:var(--panel2);border-radius:8px;padding:3px;margin-bottom:12px;gap:3px}
+.bn-sidetoggle button{border:0;border-radius:6px;padding:9px;font-weight:800;font-size:13px;color:var(--muted);background:transparent;cursor:pointer}
+.bn-sidetoggle button.buy.active{background:var(--bn-g);color:#0b0e11}.bn-sidetoggle button.sell.active{background:var(--bn-r);color:#fff}
+.bn-panels{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bn-panel{display:grid;gap:10px;align-content:start;min-width:0}
+.bn-avail{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted)}.bn-avail b{color:var(--text);font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis}
+.bn-field{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--panel2);border-radius:8px;padding:0 10px;height:42px;cursor:text}
+.bn-field:focus-within{border-color:var(--bn-y)}
+.bn-field span{font-size:12px;color:var(--muted);min-width:42px}
+.bn .bn-field input.bn-in:not([type=checkbox]):not([type=radio]):not([type=range]){flex:1;min-width:0;width:auto!important;height:auto!important;min-height:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0;color:var(--text)!important;font-size:14px;text-align:right;font-family:inherit;padding:0!important;margin:0}
+.bn .bn-field input.bn-in:disabled{color:var(--muted)!important;opacity:1}
+.bn-field em{font-style:normal;font-size:11px;color:var(--text);min-width:34px;text-align:right}
+.bn-slide{padding:2px 4px 0}
+.bn .bn-slide input[type=range]{width:100%!important;padding:0!important;border:0!important;background:transparent!important;accent-color:var(--bn-y);height:18px;margin:0}
+.bn-pcts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
+.bn-pcts button{background:var(--panel2);border:0;border-radius:5px;color:var(--muted);font-size:10px;padding:5px 0;cursor:pointer}.bn-pcts button:hover{color:var(--text)}
+.bn-est{min-height:14px;font-size:10px;color:var(--muted);text-align:right}
+.bn-submit{height:44px;border:0;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;color:#fff}
+.bn-submit.buy{background:var(--bn-g);color:#0b0e11}.bn-submit.sell{background:var(--bn-r)}
+.bn-submit:disabled{opacity:.5;cursor:wait}
+.bn-form .form-message{margin-top:10px;font-size:12px}
+.bn-form .form-message.success{color:var(--bn-g)}
+.bn-form[data-type="market"] #bnB_tf,.bn-form[data-type="market"] #bnS_tf{display:none}
+
+.bn-card-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;margin-bottom:8px}
+.bn-book,.bn-trades{padding:12px}
+.bn-book-head{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:6px;font-size:10px;color:var(--muted);padding:2px 0 5px}
+.bn-book-head span:nth-child(2),.bn-book-head span:nth-child(3){text-align:right}
+.bn-book-head b{font-weight:600}
+.bn-row{position:relative;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:6px;font-size:11px;padding:2px 0;cursor:pointer;font-variant-numeric:tabular-nums}
+.bn-row span{position:relative;z-index:1}.bn-row span:nth-child(2),.bn-row span:nth-child(3){text-align:right}
+.bn-row::before{content:"";position:absolute;right:0;top:0;bottom:0;width:var(--d,0%);z-index:0}
+.bn-row.ask::before{background:rgba(246,70,93,.14)}.bn-row.bid::before{background:rgba(14,203,129,.14)}
+.bn-row.ask span:first-child{color:var(--bn-r)}.bn-row.bid span:first-child{color:var(--bn-g)}
+.bn-row:hover{background:var(--panel2)}
+.bn-book-side{display:flex;flex-direction:column;min-height:60px}
+.bn-book-side.asks{justify-content:flex-end}
+.bn-book-mid{display:flex;align-items:center;gap:8px;padding:8px 0;margin:4px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:17px;font-weight:800}
+.bn-empty{font-size:11px;padding:8px 0;text-align:center}
+.bn-trade-list{max-height:330px;overflow:auto}
+.bn-trade-row{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:6px;font-size:11px;padding:2px 0;font-variant-numeric:tabular-nums}
+.bn-trade-row span:nth-child(2),.bn-trade-row span:nth-child(3){text-align:right}.bn-trade-row span:nth-child(3){color:var(--muted)}
+
+.bn-markets{padding:12px}
+.bn-markets .control{width:100%;box-sizing:border-box}
+.bn-chips{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 6px}
+.bn-chips button{background:var(--panel2);border:1px solid transparent;color:var(--muted);border-radius:5px;font-size:10px;padding:4px 8px;cursor:pointer;text-transform:capitalize}
+.bn-chips button.active{color:var(--bn-y);border-color:var(--bn-y)}
+.bn-mk-head,.bn-mk-row{display:grid;grid-template-columns:1.25fr 1fr .8fr;gap:6px;align-items:center;font-size:11px}
+.bn-mk-head{color:var(--muted);font-size:10px;padding:4px 6px}.bn-mk-head span:nth-child(n+2){text-align:right}
+.bn-mk-list{max-height:640px;overflow:auto;display:flex;flex-direction:column}
+.bn-mk-row{width:100%;background:none;border:0;border-radius:6px;color:var(--text);padding:8px 6px;text-align:left;cursor:pointer}
+.bn-mk-row:hover,.bn-mk-row.active{background:var(--panel2)}
+.bn-mk-row strong{font-size:12px}.bn-mk-row small{display:block;font-size:9px;color:var(--muted);margin-top:2px;text-transform:capitalize}
+.bn-mk-row span:nth-child(n+2){text-align:right;font-variant-numeric:tabular-nums}
+
+.bn-orders{margin-top:12px;padding:12px}
+.bn-otabs{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:8px}
+.bn-otabs>div:first-child{display:flex;gap:18px;flex-wrap:wrap}
+.bn-otabs button[data-bn-otab]{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:700;padding:6px 0 9px;cursor:pointer}
+.bn-otabs button[data-bn-otab].active{color:var(--bn-y);border-bottom-color:var(--bn-y)}
+.bn-otools{display:flex;align-items:center;gap:10px;padding-bottom:6px}.bn-hide{font-size:11px;color:var(--muted);display:flex;gap:5px;align-items:center}
+.bn-orders table td,.bn-orders table th{white-space:nowrap;font-size:11px}
+
+@media(max-width:1560px){
+  .bn-grid{grid-template-columns:minmax(0,1fr) 300px}
+  .bn-markets{display:none;grid-column:1/-1;order:-1}
+  .bn.mk-open .bn-markets{display:block}
+  .bn-mk-list{max-height:260px}
+}
+@media(max-width:900px){
+  .bn-grid{display:flex;flex-direction:column;align-items:stretch}
+  .bn-grid>*,.bn-mid>*{min-width:0;width:100%;box-sizing:border-box}
+  .bn-left{display:contents}
+  .bn-form{order:1}.bn-mid{order:2}.bn-chart{order:0}.bn-markets{order:-1}
+  .bn:not(.chart-open) .bn-chart{display:none}
+  .bn-only-mobile{display:inline-flex}
+  .bn .spot-chart-wrap{height:260px}
+  .bn-stats{gap:14px}
+  .bn-stats>div:nth-child(n+3){display:none}
+}
+@media(max-width:520px){.bn-head{gap:10px}.bn-pairbtn .bn-pair{font-size:17px}.bn-last strong{font-size:17px}.bn-stats>div:nth-child(2){display:none}}
+
+@container (max-width:560px){
+  .bn-panels{grid-template-columns:1fr}
+  .bn-sidetoggle{display:grid}
+  .bn-form[data-side="buy"] .bn-panel.sell{display:none}
+  .bn-form[data-side="sell"] .bn-panel.buy{display:none}
+}
