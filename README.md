@@ -139,3 +139,13 @@ activates the plan with the same `confirmPayment()` used by manual verify (refer
 - Env (all optional): `DEPOSIT_AUTODETECT=0` turns it off, `BSC_LOGS_CHUNK` (default 3000 blocks per `eth_getLogs`),
   `BEP20_SCAN_MAX_BLOCKS` (default 120000), `BSC_RPC_URL`, `TRONGRID_API_KEY` (recommended: more requests/min).
 - No DB migration needed. Test: `npm run test:deposits`.
+
+## Futures trading (USDT-M perpetual, isolated margin)
+Page: **Futures Trade** (sidebar, plus a Spot/Futures switch on both trade pages). Backend: `lib/futures.js` -> `/api/futures/*`. Tables are created automatically on first use (no SQL to run).
+- Flow: **Transfer** USDT from the Spot wallet to the Futures account, open Long/Short (Market or Limit, 1x up to `FUTURES_MAX_LEVERAGE`), close from the Positions table. Limit orders reserve margin; a limit order on the opposite side of an open position is a reduce/take-profit order.
+- Pricing: Binance USDT-M mark price (fallbacks: OKX swap, Binance spot). Market orders add `FUTURES_SLIPPAGE_BPS`. Orders/liquidations are refused when no price newer than 10 s is available.
+- Liquidation: isolated; when mark reaches the liquidation price the position is closed and its margin is lost (loss never exceeds position margin). No funding rate in this version.
+- **The platform is the counterparty** (no order book), so it carries the trading risk. Start with the default caps and keep the kill switch in mind.
+- Env (all optional): `FUTURES_ENABLED` (`0` = kill switch), `FUTURES_MAX_LEVERAGE` (20), `FUTURES_MAINT_MARGIN_BPS` (50), `FUTURES_TAKER_FEE_BPS` (5), `FUTURES_SLIPPAGE_BPS` (5), `FUTURES_MAX_POSITION_USDT` (5000 per position).
+- Worker: `GET /api/cron/futures` (Bearer `CRON_SECRET`) fills resting limit orders and liquidates; added to `.github/workflows/cron.yml` (every 15 min). The API also sweeps opportunistically while users are on the page, but for real money call it **every minute** from cron-job.org.
+- Markets: BTC ETH BNB SOL XRP DOGE TRX ADA AVAX LINK (`SEED` in `lib/futures.js`).

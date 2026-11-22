@@ -323,7 +323,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .dx-pool small{color:var(--muted);font-size:10px;display:block}
 </style>
 <script>(function(){var d=true;window.MBC_DARK=d;document.documentElement.setAttribute("data-theme",d?"dark":"light");var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d?"#0b0e11":"#f4f8ff";var c=document.querySelector('meta[name="color-scheme"]');if(c)c.content=d?"dark":"light";document.write('<link rel="stylesheet" id="themeCss" href="/assets/theme'+(d?'-dark':'')+'.css">')})();</script>
-<link rel="stylesheet" href="/assets/theme-binance.css?v=20261122b">
+<link rel="stylesheet" href="/assets/theme-binance.css?v=20261122c">
 <script defer src="/assets/fx3d.js"></script><script defer src="/assets/theme-switch.js"></script>
 </head>
 <body>
@@ -345,6 +345,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
     <button data-page="defi"><span class="nav-icon">◫</span>DeFi Analytics</button>
     <button data-page="assets"><span class="nav-icon">＄</span>Assets</button>
     <button data-page="trade"><span class="nav-icon">⇄</span>Spot Trade</button>
+    <button data-page="futures"><span class="nav-icon">⚡</span>Futures Trade</button>
     <button data-page="portfolio"><span class="nav-icon">◩</span>Portfolio Analytics</button>
     <button data-page="alerts"><span class="nav-icon">♧</span>Alert Center</button>
     <button data-page="tools"><span class="nav-icon">⚖</span>Trading Tools</button>
@@ -660,6 +661,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 <section class="page" id="page-trade">
   <div class="bn" id="bnRoot">
     <div class="card bn-head">
+      <div class="ft-switch" role="tablist" aria-label="Trading mode"><button type="button" class="active" data-page="trade">Spot</button><button type="button" data-page="futures">Futures</button></div>
       <button class="bn-pairbtn" id="bnPairToggle" type="button" aria-label="Choose market"><span class="bn-pair" id="spotPair">—</span><small id="spotChain">Choose a market</small><i>▾</i></button>
       <div class="bn-last"><strong id="spotLastPrice">—</strong><small id="spotLastTime">No completed trades yet</small></div>
       <div class="bn-stats">
@@ -740,6 +742,73 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       <div class="table-wrap"><table><thead id="bnOrdersHead"></thead><tbody id="spotOrders"><tr><td class="muted">Sign in to view orders.</td></tr></tbody></table></div>
     </div>
     <div class="notice" style="margin-top:14px">Order book, market trades and 24h stats show live Binance prices for reference. Spot orders match only against other users’ open limit orders on this exchange. A market order fills against the available book and any unfilled remainder is cancelled; if the book is empty it is rejected. Limit orders reserve your balance until filled or cancelled.</div>
+  </div>
+</section>
+<section class="page" id="page-futures">
+  <div class="bn ft" id="ftRoot">
+    <div class="card bn-head">
+      <div class="ft-switch" role="tablist" aria-label="Trading mode"><button type="button" data-page="trade">Spot</button><button type="button" class="active" data-page="futures">Futures</button></div>
+      <label class="ft-sym"><select class="control" id="ftSymbol" aria-label="Futures market"><option>BTCUSDT</option></select><small>USDT-M Perpetual</small></label>
+      <div class="bn-last"><strong id="ftMark">—</strong><small id="ftSrc">Mark price</small></div>
+      <div class="bn-stats">
+        <div><small>24h Change</small><b id="ftChg">—</b></div>
+        <div><small>24h High</small><b id="ftHigh">—</b></div>
+        <div><small>24h Low</small><b id="ftLow">—</b></div>
+        <div><small>24h Vol (USDT)</small><b id="ftVol">—</b></div>
+      </div>
+      <div class="bn-head-btns"><button class="btn small" id="ftRefresh" type="button">↻</button></div>
+    </div>
+    <div class="ft-banner" id="ftBanner" hidden></div>
+    <div class="ft-grid">
+      <div class="ft-left">
+        <div class="card bn-chart">
+          <div class="bn-chart-head">
+            <div class="spot-timeframes" id="ftTimeframes"><button type="button" data-ft-tf="1m">1m</button><button type="button" data-ft-tf="5m">5m</button><button type="button" class="active" data-ft-tf="15m">15m</button><button type="button" data-ft-tf="1h">1H</button><button type="button" data-ft-tf="4h">4H</button><button type="button" data-ft-tf="1d">1D</button></div>
+            <div class="spot-timeframes"><button type="button" data-ft-zoom="in" aria-label="Zoom in">＋</button><button type="button" data-ft-zoom="out" aria-label="Zoom out">－</button></div>
+          </div>
+          <div class="spot-chart-wrap"><canvas id="ftChart" aria-label="Futures candlestick chart"></canvas><div id="ftChartEmpty" class="spot-chart-empty">Loading chart…</div></div>
+          <div class="muted bn-cap" id="ftChartCaption">Binance USDT-M futures candles. Dashed lines show your entry and liquidation price.</div>
+        </div>
+      </div>
+      <div class="ft-right">
+        <div class="card ft-acct">
+          <div class="bn-card-title">Futures account <span class="tag">USDT</span></div>
+          <div class="ft-kv"><span>Equity</span><b id="ftEquity">—</b></div>
+          <div class="ft-kv"><span>Balance</span><b id="ftBalance">—</b></div>
+          <div class="ft-kv"><span>Available</span><b id="ftAvail">—</b></div>
+          <div class="ft-kv"><span>In positions</span><b id="ftMargin">—</b></div>
+          <div class="ft-kv"><span>In open orders</span><b id="ftOrderMargin">—</b></div>
+          <div class="ft-kv"><span>Unrealized PnL</span><b id="ftUpnl">—</b></div>
+          <button class="btn small primary" id="ftTransferToggle" type="button" style="margin-top:8px;width:100%">⇄ Transfer</button>
+          <div class="ft-transfer" id="ftTransfer" hidden>
+            <div class="ft-seg"><button type="button" class="active" data-ft-dir="in">Spot → Futures</button><button type="button" data-ft-dir="out">Futures → Spot</button></div>
+            <label class="bn-field"><span>Asset</span><select class="bn-in" id="ftAsset" style="flex:1;background:transparent;border:0;color:inherit;text-align:right"></select></label>
+            <label class="bn-field"><span>Amount</span><input class="bn-in" id="ftAmount" inputmode="decimal" autocomplete="off" placeholder="0.00"><em>USDT</em></label>
+            <div class="bn-pcts"><button type="button" id="ftMax">Max</button></div>
+            <button class="bn-submit buy" id="ftTransferGo" type="button" style="width:100%">Confirm transfer</button>
+            <div class="form-message" id="ftTransferMsg" role="status"></div>
+          </div>
+        </div>
+        <div class="card bn-form ft-form">
+          <div class="bn-ordertabs"><button type="button" data-ft-type="market" class="active">Market</button><button type="button" data-ft-type="limit">Limit</button><span class="ft-iso">Isolated</span></div>
+          <div class="ft-lev"><div class="ft-levrow"><span>Leverage</span><b id="ftLevVal">10x</b></div><input type="range" id="ftLev" min="1" max="20" step="1" value="10"><div class="ft-levnote muted" id="ftLevNote"></div></div>
+          <div class="bn-avail"><span>Avbl</span><b id="ftFormAvail">—</b></div>
+          <label class="bn-field" id="ftPriceF" hidden><span>Price</span><input class="bn-in" id="ftPrice" inputmode="decimal" autocomplete="off" placeholder="0.00"><em>USDT</em></label>
+          <label class="bn-field"><span>Size</span><input class="bn-in" id="ftQty" inputmode="decimal" autocomplete="off" placeholder="0.00"><em id="ftBase">BTC</em></label>
+          <div class="bn-slide"><input type="range" id="ftSlider" min="0" max="100" step="1" value="0"><div class="bn-pcts"><button type="button" data-ft-pct="25">25%</button><button type="button" data-ft-pct="50">50%</button><button type="button" data-ft-pct="75">75%</button><button type="button" data-ft-pct="100">100%</button></div></div>
+          <div class="ft-est" id="ftEst"></div>
+          <div class="ft-btns"><button class="bn-submit buy" id="ftLong" type="button">Buy / Long</button><button class="bn-submit sell" id="ftShort" type="button">Sell / Short</button></div>
+          <div class="form-message" id="ftMsg" role="status"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card bn-orders">
+      <div class="bn-otabs">
+        <div><button type="button" class="active" data-ft-tab="positions">Positions <span class="tag" id="ftPosCount">0</span></button><button type="button" data-ft-tab="open">Open Orders</button><button type="button" data-ft-tab="history">Order History</button><button type="button" data-ft-tab="trades">Trade History</button></div>
+      </div>
+      <div class="table-wrap"><table><thead id="ftHead"></thead><tbody id="ftRows"><tr><td class="muted">Sign in to trade futures.</td></tr></tbody></table></div>
+    </div>
+    <div class="notice" style="margin-top:14px">Futures are leveraged and can lose your entire position margin quickly. Positions are isolated margin, in USDT, and are priced from the Binance USDT-M mark price; market orders include a small slippage. If the mark price reaches your liquidation price the position is closed and its margin is lost. There is no funding rate in this version. Move USDT from your Spot wallet with Transfer before trading. Not financial advice.</div>
   </div>
 </section>
 <section class="page" id="page-subscription">
@@ -1031,7 +1100,7 @@ $("alertList").className=alerts.length?"":"empty";
 $("alertList").innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><div><strong style="font-size:11px">${esc(a.type)}</strong><div class="muted" style="font-size:9px;margin-top:5px">${esc(netName(a.network))} · ${a.threshold?`Threshold $${esc(a.threshold)}`:"No threshold"} · Draft only</div></div><button class="btn danger small" data-alert-remove="${esc(a.id)}">Delete</button></div>`).join(""):'<div class="empty"><strong>No alert rules created</strong>Create a draft rule; actual monitoring and Telegram delivery require backend workers.</div>';
 }
 window.addEventListener("bt-oc-rules",()=>{try{render()}catch(e){}});
-function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",assets:"Assets",trade:"Spot Trading",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",dex:"DEX Screener",contracts:"Smart Contracts",community:"Community Monitor",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
+function go(page){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const labels={dashboard:"Home Dashboard",assets:"Assets",trade:"Spot Trading",futures:"Futures Trading",wallets:"Wallet Terminal",transactions:"Transaction Explorer",tokens:"Token Intelligence",whales:"Whale Terminal",dex:"DEX Screener",contracts:"Smart Contracts",community:"Community Monitor",defi:"DeFi Analytics",portfolio:"Portfolio Analytics",alerts:"Alert Center",tools:"Trading Tools",subscription:"Subscription & API",profile:"My Profile",admin:"Admin Panel"};$("breadcrumb").textContent=labels[page]||"Dashboard";window.scrollTo({top:0,behavior:"smooth"})}
 function openItem(type,editId){$("itemForm").reset();$("itemType").value=type;$("itemEditId").value=editId||"";const existing=editId?watchlist.find(i=>i.id===editId):null;if(existing){$("itemName").value=existing.name||"";$("network").value=existing.network;$("network").disabled=true;$("address").value=existing.address;$("category").value=existing.category||"Custom";$("itemNotes").value=existing.notes||"";$("address").readOnly=true;$("modalTitle").textContent="Edit Wallet Details";$("saveItem").textContent="Save Changes"}else{$("network").disabled=false;$("address").readOnly=false;$("modalTitle").textContent=type==="wallet"?"Add Wallet":"Add Smart Contract";$("saveItem").textContent=type==="wallet"?"Save Wallet":"Save Contract"}$("formMessage").textContent="";$("itemModal").classList.add("open");$("itemName").focus()}
 function closeModal(id){$(id).classList.remove("open")}
 let selectedPaymentPlan=null;
@@ -3877,6 +3946,284 @@ setInterval(()=>{
   if(state.tick%3===0){loadHistory();loadBalances()}
   if(state.tick%5===0){loadChart();loadMarkets(true)}
 },4000);
+})();
+</script>
+
+<script>
+/* ---------- Futures trading page (USDT-M perpetual, isolated margin). Backend: /api/futures/* ---------- */
+(function(){
+const $=id=>document.getElementById(id);
+if(!$("page-futures"))return;
+const api=(p,o)=>window.BT.apiRequest(p,o);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const st={markets:[],sym:"BTCUSDT",limits:{maxLeverage:20,feeBps:5,maintenanceBps:50,minOrderUsdt:"5",maxPositionUsdt:"5000"},acct:null,authed:null,
+  type:"market",lev:10,tf:"15m",candles:[],view:{n:90},tab:"positions",rows:[],tick:0,busy:false,dir:"in",spotUsdt:[],feedErr:"",disabled:false,priceSrc:""};
+const mkt=()=>st.markets.find(m=>m.symbol===st.sym);
+const dpFor=p=>{p=Math.abs(Number(p));return p>=1000?2:p>=100?3:p>=1?4:p>=0.1?5:6};
+const num=(v,d=2)=>{v=Number(v);return isFinite(v)?v.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}):"—"};
+const px=v=>v==null||v===""?"—":num(v,dpFor(v));
+const sgn=(v,d=2)=>{v=Number(v);return isFinite(v)?(v>0?"+":"")+num(v,d):"—"};
+const cls=v=>Number(v)>0?"up":Number(v)<0?"down":"";
+const pageOn=()=>$("page-futures").classList.contains("active");
+const ERR={AUTH_REQUIRED:"Sign in with Telegram to trade futures.",INSUFFICIENT_MARGIN:"Not enough available margin. Transfer more USDT or use lower leverage / size.",
+  INSUFFICIENT_BALANCE:"Not enough USDT in the selected spot balance.",INVALID_LEVERAGE:"Leverage is not allowed.",INVALID_ORDER:"Check size and price.",
+  INVALID_ORDER_PRECISION:"Too many decimals for this market.",ORDER_TOO_SMALL:"Order value is below the minimum.",MAX_POSITION_EXCEEDED:"Position would exceed the maximum size.",
+  REDUCE_EXCEEDS_POSITION:"Size is larger than your open position. Close it first, then open the opposite side.",PRICE_UNAVAILABLE:"Live price is unavailable right now. Try again in a moment.",
+  PRICE_OUT_OF_RANGE:"Limit price is too far from the market price.",NO_POSITION_TO_REDUCE:"No open position to close.",POSITION_CONFLICT:"You hold the opposite position in this market.",
+  ACCOUNT_BLOCKED:"Your account is blocked.",FUTURES_DISABLED:"Futures trading is currently disabled.",RATE_LIMITED:"Too many requests. Slow down.",
+  TRANSFER_TOO_SMALL:"Minimum transfer is 1 USDT.",INVALID_TRANSFER:"Check asset and amount (max 6 decimals).",MARKET_NOT_FOUND:"Market not available."};
+const errText=e=>ERR[e?.message]||("Request failed ("+(e?.message||"error")+")");
+function msg(id,t,ok){const e=$(id);if(e){e.textContent=t||"";e.className="form-message"+(ok?" success":"")}}
+function banner(t){const b=$("ftBanner");b.hidden=!t;b.textContent=t||""}
+
+/* ---- markets & prices ---- */
+async function loadMarkets(){
+  try{
+    const d=await api("/futures/markets");
+    st.disabled=false;st.markets=d.markets||[];st.limits=d.limits||st.limits;st.priceSrc=d.priceSource||"";st.feedErr=d.priceSource?"":"Live prices unavailable";
+    const sel=$("ftSymbol");
+    if(sel.options.length!==st.markets.length||!sel.dataset.ready){sel.innerHTML=st.markets.map(m=>`<option value="${esc(m.symbol)}">${esc(m.base)}USDT</option>`).join("");sel.dataset.ready="1"}
+    sel.value=st.sym;
+    const lv=$("ftLev");lv.max=st.limits.maxLeverage;if(st.lev>st.limits.maxLeverage)st.lev=st.limits.maxLeverage;
+    banner(st.feedErr?"Live prices are temporarily unavailable. Trading is paused until they return.":"");
+  }catch(e){
+    if(e.message==="FUTURES_DISABLED"){st.disabled=true;banner("Futures trading is currently disabled by the administrator.")}
+    else banner("Could not load futures markets ("+e.message+"). Retrying…");
+  }
+  renderHead();renderForm();
+}
+function renderHead(){
+  const m=mkt(),p=m?.markPrice;
+  $("ftMark").textContent=p?px(p):"—";
+  $("ftSrc").textContent=p?"Mark price"+(st.priceSrc&&st.priceSrc!=="binance-futures"?" · backup feed":""):"Price unavailable";
+  $("ftBase").textContent=m?.base||"";
+}
+let tk={sym:"",t:0};
+async function loadTicker(){
+  const sym=st.sym;if(tk.sym===sym&&Date.now()-tk.t<15000)return;tk={sym,t:Date.now()};
+  const urls=[`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${sym}`,`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${sym}`];
+  for(const u of urls){
+    try{const r=await fetch(u,{cache:"no-store"});if(!r.ok)continue;const b=await r.json();if(sym!==st.sym)return;
+      const c=$("ftChg");c.textContent=(Number(b.priceChangePercent)>=0?"+":"")+Number(b.priceChangePercent).toFixed(2)+"%";c.className=cls(b.priceChangePercent);
+      $("ftHigh").textContent=px(b.highPrice);$("ftLow").textContent=px(b.lowPrice);$("ftVol").textContent=num(b.quoteVolume,0);return}catch(e){}
+  }
+  ["ftChg","ftHigh","ftLow","ftVol"].forEach(i=>$(i).textContent="—");
+}
+
+/* ---- account ---- */
+async function loadAccount(){
+  try{
+    st.acct=await api("/futures/account");st.authed=true;st.limits=st.acct.limits||st.limits;
+  }catch(e){st.acct=null;st.authed=e.message==="AUTH_REQUIRED"?false:st.authed;if(e.message==="FUTURES_DISABLED")st.disabled=true}
+  renderAccount();renderForm();renderRows();drawChart();
+}
+function renderAccount(){
+  const a=st.acct,set=(id,v,c)=>{const e=$(id);e.textContent=v;e.className=c||""};
+  if(!a){["ftEquity","ftBalance","ftAvail","ftMargin","ftOrderMargin","ftUpnl"].forEach(i=>set(i,"—"));return}
+  set("ftEquity",num(a.equity)+" USDT");set("ftBalance",num(a.balance)+" USDT");set("ftAvail",num(a.available)+" USDT");
+  set("ftMargin",num(a.positionMargin)+" USDT");set("ftOrderMargin",num(a.orderMargin)+" USDT");set("ftUpnl",sgn(a.unrealizedPnl)+" USDT",cls(a.unrealizedPnl));
+}
+const myPos=()=>st.acct?.positions?.find(p=>p.symbol===st.sym)||null;
+
+/* ---- order form ---- */
+function maxLev(){return Number(st.limits.maxLeverage)||20}
+function refPrice(){const l=Number($("ftPrice").value);return st.type==="limit"&&l>0?l:Number(mkt()?.markPrice)||0}
+function qtyDp(){return Number(mkt()?.qtyDecimals??3)}
+function renderForm(){
+  const pos=myPos(),lv=pos?pos.leverage:st.lev;
+  $("ftLev").value=lv;$("ftLev").disabled=!!pos;$("ftLevVal").textContent=lv+"x";
+  $("ftLevNote").textContent=pos?"Leverage is locked while you hold a "+pos.side+" position in this market.":(lv>=10?"High leverage: liquidation is close to your entry price.":"");
+  $("ftPriceF").hidden=st.type!=="limit";
+  document.querySelectorAll("[data-ft-type]").forEach(b=>b.classList.toggle("active",b.dataset.ftType===st.type));
+  $("ftFormAvail").textContent=st.acct?num(st.acct.available)+" USDT":(st.authed===false?"Sign in to trade":"—");
+  renderEst();
+}
+function estimate(){
+  const q=Number($("ftQty").value)||0,p=refPrice(),lv=myPos()?myPos().leverage:st.lev,f=(Number(st.limits.feeBps)||0)/10000,mm=(Number(st.limits.maintenanceBps)||0)/10000;
+  if(!(q>0&&p>0))return null;
+  const notional=q*p,margin=notional/lv,fee=notional*f;
+  return{q,p,lv,notional,margin,fee,liqL:Math.max(0,(notional-margin)/(q*(1-mm))),liqS:(notional+margin)/(q*(1+mm))};
+}
+function renderEst(){
+  const e=estimate(),el=$("ftEst");
+  if(!e){el.innerHTML="Enter a size to see margin, fee and liquidation price.";return}
+  const pos=myPos(),dp=dpFor(e.p);
+  el.innerHTML=`Value <b>${num(e.notional)}</b> USDT · Margin <b>${num(e.margin)}</b> · Fee ≈ <b>${num(e.fee,4)}</b><br>`+
+    (pos?`Opposite side reduces/closes your ${esc(pos.side)} position.`:`Est. liq. price: Long <b>${num(e.liqL,dp)}</b> · Short <b>${num(e.liqS,dp)}</b>`);
+}
+function setPct(p){
+  const a=st.acct;if(!a)return;
+  const pr=refPrice(),lv=myPos()?myPos().leverage:st.lev,f=(Number(st.limits.feeBps)||0)/10000;if(!(pr>0))return;
+  const m=Math.pow(10,qtyDp());
+  let q=Number(a.available)*lv*(p/100)/(pr*(1+f*lv+0.002))*1; q=Math.floor(q*m+1e-9)/m;
+  $("ftQty").value=q>0?q.toFixed(qtyDp()).replace(/\.?0+$/,""):"";$("ftSlider").value=p;renderEst();
+}
+function cleanQty(){
+  let v=$("ftQty").value.replace(/,/g,".").replace(/[^0-9.]/g,"");const i=v.indexOf(".");
+  if(i>=0)v=v.slice(0,i).slice(0,12)+(qtyDp()>0?"."+v.slice(i+1).replace(/\./g,"").slice(0,qtyDp()):"");else v=v.slice(0,12);
+  if(v!==$("ftQty").value)$("ftQty").value=v;
+}
+async function submit(side){
+  if(st.busy)return;
+  if(st.authed===false){msg("ftMsg",ERR.AUTH_REQUIRED);return}
+  const qty=$("ftQty").value.trim(),body={symbol:st.sym,side,type:st.type,quantity:qty,leverage:myPos()?myPos().leverage:st.lev};
+  if(!(Number(qty)>0)){msg("ftMsg","Enter a size.");return}
+  if(st.type==="limit"){if(!(Number($("ftPrice").value)>0)){msg("ftMsg","Enter a limit price.");return}body.price=$("ftPrice").value.trim()}
+  const long=side==="buy",btn=$(long?"ftLong":"ftShort");
+  st.busy=true;btn.disabled=true;msg("ftMsg","Sending order…");
+  try{
+    const r=await api("/futures/order",{method:"POST",body:JSON.stringify(body)});
+    msg("ftMsg",r.order.status==="filled"?`${long?"Bought":"Sold"} ${r.filledQuantity} ${mkt()?.base||""} at ${px(r.price)}`:"Limit order placed.",true);
+    $("ftQty").value="";$("ftSlider").value=0;
+    await Promise.all([loadAccount(),loadRows()]);
+  }catch(e){msg("ftMsg",errText(e))}
+  finally{st.busy=false;btn.disabled=false}
+}
+
+/* ---- positions / orders tables ---- */
+const HEADS={
+  positions:["Market","Size","Entry","Mark","Liq. price","Margin","PnL (ROE)",""],
+  open:["Time","Market","Side","Type","Size","Price","Reserved",""],
+  history:["Time","Market","Side","Type","Size","Price","Status"],
+  trades:["Time","Market","Side","Action","Size","Price","Fee","Realized PnL"]
+};
+const when=v=>{const d=new Date(v);return d.toLocaleString([],{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false})};
+const sideTag=(s,a)=>`<span class="${s==="buy"||s==="long"?"up":"down"}">${esc(a||s)}</span>`;
+async function loadRows(){
+  if(st.authed===false){st.rows=[];renderRows();return}
+  try{
+    if(st.tab==="open")st.rows=(await api("/futures/orders?status=open")).orders||[];
+    else if(st.tab==="history")st.rows=(await api("/futures/orders?status=history")).orders||[];
+    else if(st.tab==="trades")st.rows=(await api("/futures/trades")).trades||[];
+  }catch(e){st.rows=[]}
+  renderRows();
+}
+function renderRows(){
+  const head=$("ftHead"),body=$("ftRows"),tab=st.tab;
+  head.innerHTML="<tr>"+HEADS[tab].map(h=>`<th>${h}</th>`).join("")+"</tr>";
+  $("ftPosCount").textContent=String(st.acct?.positions?.length||0);
+  const cols=HEADS[tab].length,empty=t=>`<tr><td colspan="${cols}" class="muted">${t}</td></tr>`;
+  if(st.authed===false){body.innerHTML=empty("Sign in with Telegram to trade futures.");return}
+  if(tab==="positions"){
+    const ps=st.acct?.positions||[];
+    body.innerHTML=ps.length?ps.map(p=>{const m=Number(p.margin),pnl=p.unrealizedPnl;
+      return `<tr><td><strong>${esc(p.base)}USDT</strong><div class="ft-pos-side ${esc(p.side)}">${p.side==="long"?"Long":"Short"} ${p.leverage}x</div></td><td>${esc(p.quantity.replace(/\.?0+$/,""))}</td><td>${px(p.entryPrice)}</td><td>${px(p.markPrice)}</td><td class="down">${px(p.liqPrice)}</td><td>${num(m)}</td><td class="${cls(pnl)}">${pnl==null?"—":sgn(pnl)+" ("+sgn(p.roePct)+"%)"}</td><td><button class="btn small danger" type="button" data-ft-close="${esc(p.symbol)}">Close</button></td></tr>`}).join(""):empty("No open positions.");
+    return;
+  }
+  if(tab==="open"||tab==="history"){
+    body.innerHTML=st.rows.length?st.rows.map(o=>`<tr><td>${when(o.createdAt)}</td><td>${esc(o.symbol)}</td><td>${sideTag(o.side,o.side==="buy"?"Buy":"Sell")}</td><td style="text-transform:capitalize">${esc(o.type)}${o.kind==="reduce"?" · reduce":""}</td><td>${esc(String(o.quantity).replace(/\.?0+$/,""))}</td><td>${o.fillPrice?px(o.fillPrice):o.price?px(o.price):"Market"}</td>`+
+      (tab==="open"?`<td>${num(o.reserved,4)}</td><td><button class="btn small danger" type="button" data-ft-cancel="${o.id}">Cancel</button></td>`:`<td style="text-transform:capitalize">${esc(o.status)}${o.note?` <span class="muted">(${esc(o.note)})</span>`:""}</td>`)+"</tr>").join(""):empty(tab==="open"?"No open orders.":"No order history.");
+    return;
+  }
+  body.innerHTML=st.rows.length?st.rows.map(t=>`<tr><td>${when(t.createdAt)}</td><td>${esc(t.symbol)}</td><td>${sideTag(t.side,t.side==="buy"?"Buy":"Sell")}</td><td style="text-transform:capitalize">${esc(t.kind)}</td><td>${esc(String(t.quantity).replace(/\.?0+$/,""))}</td><td>${px(t.price)}</td><td>${num(t.fee,4)}</td><td class="${cls(t.realizedPnl)}">${t.kind==="open"?"—":sgn(t.realizedPnl,4)}</td></tr>`).join(""):empty("No trades yet.");
+}
+
+/* ---- candlestick chart (Binance futures klines, display only) ---- */
+const KL=["https://fapi.binance.com/fapi/v1/klines","https://data-api.binance.vision/api/v3/klines"];
+async function loadChart(){
+  const sym=st.sym,tf=st.tf;let ok=false;
+  for(const base of KL){
+    try{const r=await fetch(`${base}?symbol=${sym}&interval=${tf}&limit=300`,{cache:"no-store"});if(!r.ok)continue;const k=await r.json();if(sym!==st.sym||tf!==st.tf)return;
+      st.candles=k.map(x=>({t:Math.floor(x[0]/1000),o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));ok=true;
+      $("ftChartCaption").textContent=`${tf.toUpperCase()} · ${st.candles.length} candles · Binance${base.includes("fapi")?" futures":" spot (backup)"}. Dashed lines: your entry and liquidation price.`;break}catch(e){}
+  }
+  if(!ok&&!st.candles.length)$("ftChartEmpty").textContent="Chart data could not be loaded.";
+  drawChart();
+}
+function drawChart(){
+  const cv=$("ftChart"),empty=$("ftChartEmpty");if(!cv)return;
+  const rect=cv.getBoundingClientRect();if(!rect.width)return;
+  const dpr=Math.max(1,window.devicePixelRatio||1),w=Math.max(280,rect.width),h=Math.max(200,rect.height);
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+  const ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  const all=st.candles;if(!all.length){empty.style.display="grid";return}empty.style.display="none";
+  const mk=Number(mkt()?.markPrice)||0;
+  const data=all.slice(-Math.max(10,Math.round(st.view.n))).map(x=>({...x}));
+  if(mk>0){const l=data[data.length-1];l.c=mk;l.h=Math.max(l.h,mk);l.l=Math.min(l.l,mk)}
+  const pos=myPos(),lines=[];
+  if(pos){lines.push([Number(pos.entryPrice),"#f0b90b","Entry"],[Number(pos.liqPrice),"#f6465d","Liq"])}
+  const left=8,right=72,top=14,bottom=22,plotW=w-left-right,plotH=h-top-bottom;
+  let hi=Math.max(...data.map(x=>x.h)),lo=Math.min(...data.map(x=>x.l));
+  lines.forEach(l=>{if(l[0]>0&&l[0]<hi*1.25&&l[0]>lo*0.75){hi=Math.max(hi,l[0]);lo=Math.min(lo,l[0])}});
+  const pad=(hi-lo||hi*.02||1)*.08,min=lo-pad,max=hi+pad,range=max-min||1,y=v=>top+(max-v)/range*plotH;
+  const slot=plotW/Math.max(data.length,10),cw=Math.max(2,Math.min(22,slot*.62)),dp=dpFor(data[data.length-1].c);
+  ctx.font="10px Arial";ctx.textBaseline="middle";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const yy=top+plotH*i/4;ctx.strokeStyle="rgba(132,142,156,.16)";ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText((max-range*i/4).toFixed(dp),w-right+5,yy)}
+  data.forEach((c,i)=>{const x=left+i*slot+slot/2,up=c.c>=c.o,col=up?"#0ecb81":"#f6465d";ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke();const yo=y(Math.max(c.o,c.c)),yc=y(Math.min(c.o,c.c));ctx.fillRect(x-cw/2,yo,cw,Math.max(1,yc-yo))});
+  lines.forEach(([v,col,label])=>{if(!(v>min&&v<max))return;const yy=y(v);ctx.setLineDash([5,4]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=col;ctx.fillRect(w-right+1,yy-8,right-2,16);ctx.fillStyle="#0b0e11";ctx.textAlign="left";ctx.fillText(label+" "+v.toFixed(dp),w-right+3,yy)});
+  const last=data[data.length-1],ly=y(last.c),lc=last.c>=last.o?"#0ecb81":"#f6465d";
+  ctx.setLineDash([3,3]);ctx.strokeStyle=lc;ctx.beginPath();ctx.moveTo(left,ly);ctx.lineTo(w-right,ly);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=lc;ctx.fillRect(w-right+1,ly-8,right-2,16);ctx.fillStyle="#0b0e11";ctx.textAlign="left";ctx.fillText(last.c.toFixed(dp),w-right+4,ly);
+  const tf=t=>new Date(t*1000).toLocaleString([],{month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
+  ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText(tf(data[0].t),left,h-8);ctx.textAlign="right";ctx.fillText(tf(last.t),w-right,h-8);
+}
+
+/* ---- transfer ---- */
+async function openTransfer(){
+  const box=$("ftTransfer");box.hidden=!box.hidden;if(box.hidden)return;
+  if(st.authed===false){msg("ftTransferMsg",ERR.AUTH_REQUIRED);return}
+  try{const b=await api("/wallet/balances");st.spotUsdt=(b.assets||[]).filter(a=>a.symbol==="USDT"&&a.depositEnabled!==false);}catch(e){st.spotUsdt=[]}
+  renderTransferAssets();
+}
+function renderTransferAssets(){
+  const sel=$("ftAsset"),cur=sel.value;
+  sel.innerHTML=st.spotUsdt.map(a=>`<option value="${esc(a.code)}">${esc(a.chain.toUpperCase())} · ${num(a.available,2)}</option>`).join("")||"<option value=''>No USDT wallet</option>";
+  if(cur&&st.spotUsdt.some(a=>a.code===cur))sel.value=cur;
+}
+async function doTransfer(){
+  const amt=$("ftAmount").value.trim(),asset=$("ftAsset").value;
+  if(!(Number(amt)>0)||!asset){msg("ftTransferMsg","Choose an asset and amount.");return}
+  const b=$("ftTransferGo");b.disabled=true;msg("ftTransferMsg","Transferring…");
+  try{
+    await api("/futures/transfer",{method:"POST",body:JSON.stringify({direction:st.dir,asset,amount:amt})});
+    msg("ftTransferMsg","Transferred "+amt+" USDT.",true);$("ftAmount").value="";
+    try{const bb=await api("/wallet/balances");st.spotUsdt=(bb.assets||[]).filter(a=>a.symbol==="USDT");renderTransferAssets()}catch(e){}
+    await loadAccount();
+  }catch(e){msg("ftTransferMsg",errText(e))}
+  finally{b.disabled=false}
+}
+
+/* ---- events ---- */
+document.addEventListener("click",e=>{
+  const t=e.target;if(!t.closest)return;
+  if(t.closest('[data-page="futures"]')){setTimeout(()=>{loadMarkets();loadAccount();loadRows();loadChart();loadTicker()},120);return}
+  if(!$("page-futures").contains(t))return;
+  let b;
+  if((b=t.closest("[data-ft-type]"))){st.type=b.dataset.ftType;if(st.type==="limit"&&!$("ftPrice").value&&mkt()?.markPrice)$("ftPrice").value=mkt().markPrice;renderForm();return}
+  if((b=t.closest("[data-ft-pct]"))){setPct(Number(b.dataset.ftPct));return}
+  if((b=t.closest("[data-ft-tf]"))){st.tf=b.dataset.ftTf;document.querySelectorAll("[data-ft-tf]").forEach(x=>x.classList.toggle("active",x===b));loadChart();return}
+  if((b=t.closest("[data-ft-zoom]"))){st.view.n=Math.min(300,Math.max(15,st.view.n*(b.dataset.ftZoom==="in"?0.7:1/0.7)));drawChart();return}
+  if((b=t.closest("[data-ft-tab]"))){st.tab=b.dataset.ftTab;document.querySelectorAll("[data-ft-tab]").forEach(x=>x.classList.toggle("active",x===b));st.rows=[];renderRows();loadRows();return}
+  if((b=t.closest("[data-ft-dir]"))){st.dir=b.dataset.ftDir;document.querySelectorAll("[data-ft-dir]").forEach(x=>x.classList.toggle("active",x===b));$("ftTransferGo").className="bn-submit "+(st.dir==="in"?"buy":"sell");return}
+  if((b=t.closest("[data-ft-close]"))){
+    if(!confirm("Close your "+b.dataset.ftClose+" position at market price?"))return;
+    b.disabled=true;api("/futures/close",{method:"POST",body:JSON.stringify({symbol:b.dataset.ftClose})}).then(()=>{msg("ftMsg","Position closed.",true);return Promise.all([loadAccount(),loadRows()])}).catch(err=>{msg("ftMsg",errText(err));b.disabled=false});return}
+  if((b=t.closest("[data-ft-cancel]"))){b.disabled=true;api("/futures/cancel",{method:"POST",body:JSON.stringify({orderId:Number(b.dataset.ftCancel)})}).then(()=>Promise.all([loadAccount(),loadRows()])).catch(err=>{msg("ftMsg",errText(err));b.disabled=false});return}
+  if(t.closest("#ftLong")){submit("buy");return}
+  if(t.closest("#ftShort")){submit("sell");return}
+  if(t.closest("#ftRefresh")){loadMarkets();loadAccount();loadRows();loadChart();return}
+  if(t.closest("#ftTransferToggle")){openTransfer();return}
+  if(t.closest("#ftTransferGo")){doTransfer();return}
+  if(t.closest("#ftMax")){
+    if(st.dir==="in"){const a=st.spotUsdt.find(x=>x.code===$("ftAsset").value);$("ftAmount").value=a?String(Math.floor(Number(a.available)*1e6)/1e6):""}
+    else $("ftAmount").value=st.acct?String(Math.floor(Number(st.acct.available)*1e6)/1e6):"";
+    return}
+});
+$("ftSymbol").addEventListener("change",e=>{st.sym=e.target.value;st.candles=[];tk={sym:"",t:0};$("ftQty").value="";$("ftPrice").value="";$("ftChartEmpty").textContent="Loading chart…";renderHead();renderForm();loadChart();loadTicker()});
+$("ftLev").addEventListener("input",e=>{st.lev=Number(e.target.value);renderForm()});
+$("ftQty").addEventListener("input",()=>{cleanQty();renderEst()});
+$("ftPrice").addEventListener("input",()=>{let v=$("ftPrice").value.replace(/,/g,".").replace(/[^0-9.]/g,"");if(v!==$("ftPrice").value)$("ftPrice").value=v;renderEst()});
+$("ftSlider").addEventListener("input",e=>setPct(Number(e.target.value)));
+$("ftAmount").addEventListener("input",()=>{const v=$("ftAmount").value.replace(/,/g,".").replace(/[^0-9.]/g,"");if(v!==$("ftAmount").value)$("ftAmount").value=v});
+window.addEventListener("resize",()=>{if(pageOn())drawChart()});
+window.addEventListener("bt-auth",()=>{if(pageOn()){loadAccount();loadRows()}});
+/* live refresh: mark price every 3s, account/orders every 9s, chart every 15s */
+setInterval(()=>{
+  if(document.hidden||!pageOn())return;
+  st.tick++;loadMarkets();
+  if(st.tick%3===0){loadAccount();if(st.tab!=="positions")loadRows()}
+  if(st.tick%5===0){loadChart();loadTicker()}
+},3000);
 })();
 </script>
 
