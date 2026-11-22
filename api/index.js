@@ -759,6 +759,11 @@ export default async function handler(req, res) {
     if (path === "/api/market/coin") return await coinProxy(req, res);
     if (path === "/api/market/new-coins") return await newCoinsFeed(req, res);
     if (path.startsWith("/api/trading/")) return await (await import("../lib/trading.js")).tradingApi(req, res, path);
+    if (path.startsWith("/api/futures/")) return await (await import("../lib/futures.js")).futuresApi(req, res, path);
+    if (path === "/api/cron/futures") {
+      if (!cronAuthorized(req)) return send(res, 401, { ok: false, error: "UNAUTHORIZED" });
+      return send(res, 200, { ok: true, ...(await (await import("../lib/futures.js")).sweep()) });
+    }
     if (path === "/api/network/status") return await networkStatus(req, res);
     if (path === "/api/alerts/onchain") return await onchainAlerts(req, res);
     if (path === "/api/contract/activity") return await contractActivity(req, res);
