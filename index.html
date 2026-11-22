@@ -3706,7 +3706,12 @@ async function loadMarkets(quiet){
     if(quiet&&state.market){state.market=state.markets.find(m=>m.id===state.market.id)||state.market;renderMarkets();return}
     const id=state.market&&state.markets.some(m=>m.id===state.market.id)?state.market.id:state.markets[0].id;
     await selectMarket(id);
-  }catch(e){$("spotMarkets").innerHTML='<div class="muted bn-empty">Could not load markets.</div>'}
+    state.mkRetry=0;
+  }catch(e){
+    const why=String(e&&e.message||"error").slice(0,60);
+    $("spotMarkets").innerHTML='<div class="muted bn-empty">Could not load markets ('+esc(why)+'). Retrying…</div>';
+    if(!quiet&&(state.mkRetry||0)<6){state.mkRetry=(state.mkRetry||0)+1;setTimeout(()=>{if(!state.market&&pageActive())loadMarkets()},3000)}
+  }
 }
 
 /* ---- candlestick chart ---- */
