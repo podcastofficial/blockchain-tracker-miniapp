@@ -676,3 +676,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .ft.bn:not(.chart-open) .bn-chart{display:block}
 .ft .spot-chart-wrap{min-height:260px}
 .ft .form-message.success{color:var(--bn-g)}
+
+/* ===== LOW-CPU overrides ===== */
+*,*::before,*::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.brand-logo,.bar-logo{animation:none!important}
+.card,.stat-card,.quick,.network-card,.plan-card,.dx-card{will-change:auto!important}
+@media (prefers-reduced-motion:reduce){.tk-track{animation:none!important}}

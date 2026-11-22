@@ -30,9 +30,9 @@ body::before{content:"";position:fixed;left:-50%;right:-50%;bottom:-8%;height:62
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #2de2e6;outline-offset:2px}
 
 /* top bar */
-#bar{background:linear-gradient(180deg,#0c0f26f2,#060814f2);border-bottom:1px solid #2a3070;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 12px 30px -10px #000000aa}
+#bar{background:linear-gradient(180deg,#0c0f26f2,#060814f2);border-bottom:1px solid #2a3070;-webkit-box-shadow:0 12px 30px -10px #000000aa}
 #bar b{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
-#bar .bar-logo{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #6d7bff88,0 0 18px #6d7bff88,0 6px 14px #000;animation:float3d 5s ease-in-out infinite}
+#bar .bar-logo{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #6d7bff88,0 0 18px #6d7bff88,0 6px 14px #000;}
 @keyframes float3d{0%,100%{transform:translateY(0) rotateY(0)}50%{transform:translateY(-3px) rotateY(18deg)}}
 
 /* buttons */
@@ -75,7 +75,7 @@ select option{background:#0b0d1a;color:#f1f3ff}
 iframe{background:#0b0d1a;box-shadow:0 0 0 1px #2a3070,0 20px 40px -14px #000}
 
 /* swap bottom sheet */
-#sheet{background:#000000b8;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#sheet{background:#000000b8;-webkit-backdrop-filter:blur(6px)}
 #sheet .in{background:linear-gradient(180deg,#141838,#080a1c);border:1px solid #2a3070;border-bottom:0;box-shadow:0 -20px 60px -10px #6d7bff55,var(--bevel);color:var(--ink)}
 #sheet p{color:var(--mut)}
 

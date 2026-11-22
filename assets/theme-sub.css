@@ -24,9 +24,9 @@ body::before{content:"";position:fixed;left:0;right:0;bottom:0;height:20vh;z-ind
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #1d5bff;outline-offset:2px}
 
 /* top bar */
-#bar{background:#ffffffe0;border-bottom:1px solid #d9e5ff;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px -14px #1d5bff40}
+#bar{background:#ffffffe0;border-bottom:1px solid #d9e5ff;-webkit-box-shadow:0 10px 30px -14px #1d5bff40}
 #bar b{color:var(--ink)}
-#bar .bar-logo{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3px #1d5bff,0 6px 14px #1d5bff55;animation:float3d 5s ease-in-out infinite}
+#bar .bar-logo{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3px #1d5bff,0 6px 14px #1d5bff55;}
 @keyframes float3d{0%,100%{transform:translateY(0) rotateY(0)}50%{transform:translateY(-3px) rotateY(18deg)}}
 
 /* buttons */
@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 iframe{background:#eef4ff;box-shadow:0 0 0 1px #d9e5ff,0 20px 40px -18px #1d5bff55}
 
 /* swap bottom sheet */
-#sheet{background:#0a1f5c88;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#sheet{background:#0a1f5c88;-webkit-backdrop-filter:blur(6px)}
 #sheet .in{background:linear-gradient(180deg,#ffffff,#f1f6ff);border:1px solid #d9e5ff;border-bottom:0;box-shadow:0 -20px 60px -10px #1d5bff55,var(--bevel);color:var(--ink)}
 #sheet p{color:var(--mut)}
 #toast{background:#0a1f5c;color:#fff;border-color:#1d5bff}

@@ -28,7 +28,7 @@ body::before{
   background-image:linear-gradient(#6d7bff2e 1px,transparent 1px),linear-gradient(90deg,#6d7bff2e 1px,transparent 1px);
   background-size:56px 56px;transform:perspective(520px) rotateX(64deg);transform-origin:50% 100%;
   -webkit-mask-image:linear-gradient(to top,#000 0%,transparent 78%);mask-image:linear-gradient(to top,#000 0%,transparent 78%);
-  animation:gridmove 9s linear infinite;
+  
 }
 @keyframes gridmove{to{background-position:0 56px,0 0}}
 #fx3d{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
@@ -37,9 +37,9 @@ body::before{
 button:focus-visible,input:focus-visible,select:focus-visible{outline-color:var(--cyan)}
 
 /* sidebar */
-.sidebar{background:linear-gradient(180deg,#0c0f26f2,#060814f2);border-right:1px solid #2a3070;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:12px 0 40px -10px #000000aa}
+.sidebar{background:linear-gradient(180deg,#0c0f26f2,#060814f2);border-right:1px solid #2a3070;-webkit-box-shadow:12px 0 40px -10px #000000aa}
 .brand{padding-bottom:20px}
-.brand-logo{width:46px;height:46px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #6d7bff88,0 0 28px #6d7bff88,0 10px 24px #000;animation:float3d 5s ease-in-out infinite}
+.brand-logo{width:46px;height:46px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #6d7bff88,0 0 28px #6d7bff88,0 10px 24px #000;}
 @keyframes float3d{0%,100%{transform:translateY(0) rotateY(0)}50%{transform:translateY(-3px) rotateY(14deg)}}
 .brand-name{font-style:italic;font-weight:800;letter-spacing:.2px;font-size:12.5px;line-height:1.15;background:none;color:#fff;-webkit-text-fill-color:#fff}
 .brand-name em{display:inline-block;font-style:italic;background:var(--grad);padding:2px 9px;border-radius:7px;margin-top:3px;-webkit-text-fill-color:#fff;box-shadow:var(--bevel),0 6px 18px #6d7bff77}
