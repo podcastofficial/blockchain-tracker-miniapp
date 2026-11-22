@@ -711,14 +711,14 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 
       <div class="bn-mid">
         <div class="card bn-book">
-          <div class="bn-card-title">Order Book</div>
+          <div class="bn-card-title">Order Book <span class="tag" id="spotBookSrc"></span></div>
           <div class="bn-book-head"><span>Price (USDT)</span><span>Amount (<b class="bn-base-s">—</b>)</span><span>Total</span></div>
           <div id="spotAsks" class="bn-book-side asks"><div class="muted bn-empty">No sell orders</div></div>
           <div class="bn-book-mid" id="spotBookMid">—</div>
           <div id="spotBids" class="bn-book-side bids"><div class="muted bn-empty">No buy orders</div></div>
         </div>
         <div class="card bn-trades">
-          <div class="bn-card-title">Market Trades <span class="tag" id="spotRecentCount">0</span></div>
+          <div class="bn-card-title">Market Trades <span class="tag" id="spotRecentCount">0</span><span class="tag" id="spotTradesSrc"></span></div>
           <div class="bn-book-head"><span>Price (USDT)</span><span>Amount</span><span>Time</span></div>
           <div id="spotRecentTrades" class="bn-trade-list"><div class="muted bn-empty">No completed trades yet</div></div>
         </div>
@@ -739,7 +739,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
       </div>
       <div class="table-wrap"><table><thead id="bnOrdersHead"></thead><tbody id="spotOrders"><tr><td class="muted">Sign in to view orders.</td></tr></tbody></table></div>
     </div>
-    <div class="notice" style="margin-top:14px">Spot orders match only against other users’ open limit orders on this exchange. A market order fills against the available book and any unfilled remainder is cancelled; if the book is empty it is rejected. Limit orders reserve your balance until filled or cancelled.</div>
+    <div class="notice" style="margin-top:14px">Order book, market trades and 24h stats show live Binance prices for reference. Spot orders match only against other users’ open limit orders on this exchange. A market order fills against the available book and any unfilled remainder is cancelled; if the book is empty it is rejected. Limit orders reserve your balance until filled or cancelled.</div>
   </div>
 </section>
 <section class="page" id="page-subscription">
@@ -3395,6 +3395,71 @@ const fmt=(v,n=8)=>Number(v||0).toLocaleString("en-US",{maximumFractionDigits:n}
 const state={markets:[],market:null,balances:null,feeBps:10,orderType:"limit",mSide:"buy",chain:"all",
   book:{asks:[],bids:[],last:null},recent:[],candles:[],timeframe:"15m",chartHover:null,indicators:{sma7:true,sma25:false},
   ordersTab:"open",orders:[],trades:[],hideOthers:false,tick:0};
+/* ---- Binance live feed: order book + market trades (display only; orders still match on this exchange) ---- */
+const BN_REST=["https://data-api.binance.vision","https://api.binance.com"];
+const bnx={sym:null,ok:false,ws:null,tok:0,busy:false,timer:0,asks:[],bids:[],trades:[],bad:{}};
+const bnSymbol=m=>m&&String(m.quote_symbol).toUpperCase()==="USDT"?String(m.base_symbol).toUpperCase().replace(/[^A-Z0-9]/g,"")+"USDT":null;
+const useBn=()=>!!(bnx.ok&&state.market&&bnx.sym&&bnx.sym===bnSymbol(state.market));
+const viewBook=()=>useBn()?{asks:bnx.asks,bids:bnx.bids,last:bnx.trades[0]?{price:bnx.trades[0].price,created_at:bnx.trades[0].createdAt}:null}:state.book;
+const viewRecent=()=>useBn()?bnx.trades:state.recent;
+async function bnGet(p){
+  let err;
+  for(const b of BN_REST){
+    try{const r=await fetch(b+p,{cache:"no-store"});if(r.ok)return await r.json();err=new Error("HTTP "+r.status);if(r.status===400)break}
+    catch(e){err=e}
+  }
+  throw err||new Error("BINANCE_UNAVAILABLE");
+}
+function bnSchedule(){
+  if(bnx.timer)return;
+  bnx.timer=setTimeout(()=>{bnx.timer=0;if(pageActive()){renderBook();renderRecent()}},250);
+}
+function bnStop(){if(bnx.ws){try{bnx.ws.close()}catch(e){}bnx.ws=null}}
+function bnOpen(sym,tok){
+  const s=sym.toLowerCase();let ws;
+  try{ws=new WebSocket(`wss://data-stream.binance.vision/stream?streams=${s}@depth20@1000ms/${s}@trade`)}catch(e){return}
+  bnx.ws=ws;
+  ws.onmessage=ev=>{
+    if(tok!==bnx.tok)return;
+    let m;try{m=JSON.parse(ev.data)}catch(e){return}
+    const d=m.data||m;
+    if(Array.isArray(d.asks)&&Array.isArray(d.bids)){
+      bnx.asks=d.asks.map(x=>({price:x[0],quantity:x[1]}));
+      bnx.bids=d.bids.map(x=>({price:x[0],quantity:x[1]}));
+    }else if(d.e==="trade"){
+      bnx.trades.unshift({price:d.p,quantity:d.q,createdAt:d.T});
+      if(bnx.trades.length>40)bnx.trades.length=40;
+    }else return;
+    bnSchedule();
+  };
+  ws.onclose=()=>{if(bnx.ws===ws)bnx.ws=null};
+}
+async function bnStart(m){
+  const sym=bnSymbol(m);
+  if(!sym){bnStop();bnx.sym=null;bnx.ok=false;bnSchedule();return}
+  if(bnx.sym===sym&&bnx.ok&&bnx.ws&&bnx.ws.readyState<=1)return;
+  if((bnx.bad[sym]||0)>Date.now()||bnx.busy)return;
+  bnx.busy=true;const tok=++bnx.tok;
+  try{
+    bnStop();
+    if(bnx.sym!==sym){bnx.asks=[];bnx.bids=[];bnx.trades=[];bnx.ok=false}
+    bnx.sym=sym;
+    const [d,t]=await Promise.all([bnGet(`/api/v3/depth?symbol=${sym}&limit=20`),bnGet(`/api/v3/trades?symbol=${sym}&limit=40`)]);
+    if(tok!==bnx.tok||bnSymbol(state.market)!==sym)return;
+    bnx.asks=(d.asks||[]).map(x=>({price:x[0],quantity:x[1]}));
+    bnx.bids=(d.bids||[]).map(x=>({price:x[0],quantity:x[1]}));
+    bnx.trades=(t||[]).slice().reverse().map(x=>({price:x.price,quantity:x.qty,createdAt:x.time}));
+    bnx.ok=true;
+    bnOpen(sym,tok);
+    bnSchedule();loadTicker();
+  }catch(e){
+    if(tok===bnx.tok){bnx.ok=false;bnx.sym=null;bnx.bad[sym]=Date.now()+60000;bnSchedule()}
+  }finally{bnx.busy=false}
+}
+function bnTick(){
+  if(!pageActive()||document.hidden){bnStop();return}
+  if(state.market)bnStart(state.market);
+}
 const SIDES={buy:"B",sell:"S"};
 const el=(side,name)=>$("bn"+SIDES[side]+"_"+name);
 const pageActive=()=>$("page-trade")?.classList.contains("active");
@@ -3403,7 +3468,7 @@ const priceDp=()=>Math.min(18,Number(state.market?.quote_decimals??8));
 const qtyDp=()=>Math.min(18,Number(state.market?.base_decimals??8));
 const showQ=()=>Math.min(qtyDp(),6);
 // readable price decimals (e.g. 2 for ~600, 8 for tiny coins), never above what the asset allows
-const showP=()=>{const ref=Number(state.book.last?.price)||Number(state.book.asks[0]?.price)||Number(state.book.bids[0]?.price)||Number(state.market?.last_price)||0;return Math.min(priceDp(),8,ref>=100?2:ref>=1?4:ref>=0.01?6:8)};
+const showP=()=>{const ref=Number(useBn()&&bnx.trades[0]?.price)||Number(state.book.last?.price)||Number(state.book.asks[0]?.price)||Number(state.book.bids[0]?.price)||Number(state.market?.last_price)||0;return Math.min(priceDp(),8,ref>=100?2:ref>=1?4:ref>=0.01?6:8)};
 const P=v=>Number(v||0).toFixed(showP());
 const Q=v=>Number(v||0).toFixed(showQ());
 const trimZ=s=>s.includes(".")?s.replace(/0+$/,"").replace(/\.$/,""):s;
@@ -3531,16 +3596,17 @@ async function cancelAll(){
 
 /* ---- order book / trades ---- */
 function renderBook(){
-  const asks=(state.book.asks||[]).slice(0,12),bids=(state.book.bids||[]).slice(0,12);
+  const vb=viewBook(),asks=(vb.asks||[]).slice(0,12),bids=(vb.bids||[]).slice(0,12);
   let c=0;const askCum=asks.map(a=>c+=Number(a.quantity));c=0;const bidCum=bids.map(a=>c+=Number(a.quantity));
   const maxC=Math.max(1e-18,askCum[askCum.length-1]||0,bidCum[bidCum.length-1]||0);
   const row=(x,side,cum)=>`<div class="bn-row ${side}" data-spot-price="${esc(x.price)}" style="--d:${(cum/maxC*100).toFixed(1)}%"><span>${P(x.price)}</span><span>${Q(x.quantity)}</span><span>${fmt(Number(x.price)*Number(x.quantity),showP())}</span></div>`;
   $("spotAsks").innerHTML=asks.length?asks.map((x,i)=>row(x,"ask",askCum[i])).reverse().join(""):'<div class="muted bn-empty">No sell orders</div>';
   $("spotBids").innerHTML=bids.length?bids.map((x,i)=>row(x,"bid",bidCum[i])).join(""):'<div class="muted bn-empty">No buy orders</div>';
-  const last=state.book.last,r=state.recent,dir=r.length>1?(Number(r[0].price)>=Number(r[1].price)?"up":"down"):(r.length?"up":"");
+  const last=vb.last,r=viewRecent(),dir=r.length>1?(Number(r[0].price)>=Number(r[1].price)?"up":"down"):(r.length?"up":"");
   $("spotBookMid").innerHTML=last?`<span class="${dir}">${P(last.price)}</span><small class="${dir}">${dir==="down"?"↓":"↑"}</small>`:'<span class="muted" style="font-size:12px;font-weight:600">No completed trades</span>';
   const lp=$("spotLastPrice");lp.textContent=last?P(last.price):"—";lp.className=dir;
   $("spotLastTime").textContent=last?timeShort(last.created_at):"No completed trades yet";
+  const src=useBn()?"Binance · live":"Internal";$("spotBookSrc").textContent=src;$("spotTradesSrc").textContent=src;
 }
 async function loadBook(){
   if(!state.market)return;
@@ -3548,7 +3614,7 @@ async function loadBook(){
   catch(e){$("spotAsks").innerHTML='<div class="muted bn-empty">Order book unavailable</div>';$("spotBids").innerHTML=""}
 }
 function renderRecent(){
-  const rows=state.recent;
+  const rows=viewRecent();
   $("spotRecentCount").textContent=String(rows.length);
   $("spotRecentTrades").innerHTML=rows.map((t,i)=>{const older=rows[i+1],up=!older||Number(t.price)>=Number(older.price);return `<div class="bn-trade-row"><span class="${up?"up":"down"}">${P(t.price)}</span><span>${Q(t.quantity)}</span><span>${new Date(t.createdAt).toLocaleTimeString([],{hour12:false})}</span></div>`}).join("")||'<div class="muted bn-empty">No completed trades yet</div>';
 }
@@ -3560,7 +3626,10 @@ async function loadRecent(){
 async function loadTicker(){
   if(!state.market)return;
   try{
-    const t=(await api(`/trading/ticker?market=${state.market.id}`)).ticker||{},ch=t.changePct==null?null:Number(t.changePct);
+    let t;
+    if(useBn()){const b=await bnGet(`/api/v3/ticker/24hr?symbol=${bnx.sym}`);t={changePct:b.priceChangePercent,high:b.highPrice,low:b.lowPrice,quoteVolume:b.quoteVolume}}
+    else t=(await api(`/trading/ticker?market=${state.market.id}`)).ticker||{};
+    const ch=t.changePct==null?null:Number(t.changePct);
     const c=$("spotTickerChange");c.textContent=pctText(ch);c.className=ch==null?"":(ch>=0?"up":"down");
     $("spotTickerHigh").textContent=t.high?P(t.high):"—";$("spotTickerLow").textContent=t.low?P(t.low):"—";
     $("spotTickerVolume").textContent=Number(t.quoteVolume)>0?fmt(t.quoteVolume,2):"—";
@@ -3609,7 +3678,7 @@ async function selectMarket(id){
   $("spotChain").textContent=m.chain;
   $("bnRoot").classList.remove("mk-open");
   renderMarkets();renderOrderType();renderBalances();renderOrders();
-  await Promise.all([loadBook(),loadRecent(),loadTicker(),loadChart()]);
+  await Promise.all([loadBook(),loadRecent(),loadTicker(),loadChart(),bnStart(m)]);
   renderBook();renderRecent();updateAllForms();
 }
 async function loadMarkets(quiet){
@@ -3734,6 +3803,7 @@ if(spotParams.get("spot")==="1"){
 window.addEventListener("bt-auth",()=>{if(pageActive()){loadBalances();loadHistory()}});
 /* live refresh: book / trades / ticker every 4s, account data every 12s, chart + prices every 20s */
 setInterval(()=>{
+  bnTick();
   if(document.hidden||!pageActive()||!state.market)return;
   state.tick++;
   loadBook();loadRecent();loadTicker();
