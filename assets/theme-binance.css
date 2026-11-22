@@ -635,3 +635,5 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .bn-form[data-side="buy"] .bn-panel.sell{display:none}
   .bn-form[data-side="sell"] .bn-panel.buy{display:none}
 }
+
+@media(max-width:520px){.bn-stats{flex:1 0 auto}.bn-stats>div{min-width:max-content}.bn-head-btns{flex-shrink:0}}
