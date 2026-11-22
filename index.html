@@ -658,59 +658,89 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
   <div class="card" style="margin-top:15px"><div class="card-head"><div><div class="card-title">Balance ledger</div><div class="card-sub">Every credited deposit and withdrawal balance change.</div></div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Type</th><th>Asset</th><th>Available change</th><th>Balance after</th></tr></thead><tbody id="assetLedgerRows"><tr><td colspan="5" class="muted">No ledger entries loaded.</td></tr></tbody></table></div></div>
 </section>
 <section class="page" id="page-trade">
-  <div class="page-head"><div><div class="eyebrow">EXCHANGE / SPOT</div><h1 class="page-title">Spot Trading</h1><p class="page-desc">Trade supported assets directly against USDT using your internal exchange balance.</p></div><div class="head-actions"><button class="btn" id="spotRefresh" type="button">↻ Refresh</button></div></div>
-  <div class="spot-layout">
-    <div class="card spot-markets-card">
-      <div class="card-head"><div><div class="card-title">Markets</div><div class="card-sub">Internal order-book markets</div></div></div>
-      <input class="control" id="spotMarketSearch" placeholder="Search market…" autocomplete="off">
-      <div class="spot-market-list" id="spotMarkets"><div class="muted">Loading markets…</div></div>
+  <div class="bn" id="bnRoot">
+    <div class="card bn-head">
+      <button class="bn-pairbtn" id="bnPairToggle" type="button" aria-label="Choose market"><span class="bn-pair" id="spotPair">—</span><small id="spotChain">Choose a market</small><i>▾</i></button>
+      <div class="bn-last"><strong id="spotLastPrice">—</strong><small id="spotLastTime">No completed trades yet</small></div>
+      <div class="bn-stats">
+        <div><small>24h Change</small><b id="spotTickerChange">—</b></div>
+        <div><small>24h High</small><b id="spotTickerHigh">—</b></div>
+        <div><small>24h Low</small><b id="spotTickerLow">—</b></div>
+        <div><small>24h Vol (USDT)</small><b id="spotTickerVolume">—</b></div>
+      </div>
+      <div class="bn-head-btns"><button class="btn small bn-only-mobile" id="bnChartBtn" type="button">📈 Chart</button><button class="btn small" id="spotRefresh" type="button">↻</button></div>
     </div>
-    <div class="spot-main">
-      <div class="card spot-market-head">
-        <div><div class="eyebrow">SELECTED MARKET</div><div class="spot-pair" id="spotPair">—</div><div class="muted" id="spotChain">Choose a market</div></div>
-        <div class="spot-last"><small>Last internal trade</small><strong id="spotLastPrice">—</strong><small id="spotLastTime">No completed trades yet</small></div>
-      </div>
-      <div class="card spot-chart-card" style="margin-bottom:14px">
-        <div class="card-head spot-chart-head"><div><div class="card-title">Market chart</div><div class="card-sub" id="spotChartCaption">Candles from completed internal spot trades</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="spot-timeframes" id="spotTimeframes"><button type="button" class="active" data-spot-tf="15m">15m</button><button type="button" data-spot-tf="1h">1H</button><button type="button" data-spot-tf="4h">4H</button><button type="button" data-spot-tf="1d">1D</button></div><div class="spot-timeframes"><button type="button" class="active" data-spot-indicator="sma7">SMA 7</button><button type="button" data-spot-indicator="sma25">SMA 25</button></div></div></div>
-        <div class="spot-ticker-strip"><div><small>24h change</small><strong id="spotTickerChange">—</strong></div><div><small>24h high</small><strong id="spotTickerHigh">—</strong></div><div><small>24h low</small><strong id="spotTickerLow">—</strong></div><div><small>24h volume</small><strong id="spotTickerVolume">—</strong></div><div><small>24h trades</small><strong id="spotTickerTrades">—</strong></div></div>
-        <div class="spot-chart-wrap"><canvas id="spotChart" aria-label="Internal spot market candlestick chart"></canvas><div id="spotChartEmpty" class="spot-chart-empty">No completed internal trades yet. Candles appear after orders match.</div></div>
-        <div class="spot-chart-legend"><span><i class="up"></i> Bullish</span><span><i class="down"></i> Bearish</span><span><i style="background:#f0b90b"></i> SMA 7</span><span><i style="background:#8b7cff"></i> SMA 25</span><span>Volume is base-asset quantity</span></div>
-      </div>
-      <div class="grid spot-columns">
-        <div class="card">
-          <div class="card-head"><div><div class="card-title">Order book</div><div class="card-sub">Open internal limit orders</div></div></div>
-          <div class="spot-book-head"><span>Price (USDT)</span><span>Amount</span><span>Total</span></div>
-          <div id="spotAsks" class="spot-book-side"><div class="muted">No asks yet</div></div>
-          <div class="spot-book-mid" id="spotBookMid">—</div>
-          <div id="spotBids" class="spot-book-side"><div class="muted">No bids yet</div></div>
+
+    <div class="bn-grid">
+      <div class="bn-left">
+        <div class="card bn-chart">
+          <div class="bn-chart-head">
+            <div class="spot-timeframes" id="spotTimeframes"><button type="button" data-spot-tf="1m">1m</button><button type="button" data-spot-tf="5m">5m</button><button type="button" class="active" data-spot-tf="15m">15m</button><button type="button" data-spot-tf="1h">1H</button><button type="button" data-spot-tf="4h">4H</button><button type="button" data-spot-tf="1d">1D</button></div>
+            <div class="spot-timeframes"><button type="button" class="active" data-spot-indicator="sma7">MA 7</button><button type="button" data-spot-indicator="sma25">MA 25</button></div>
+          </div>
+          <div class="spot-chart-wrap"><canvas id="spotChart" aria-label="Spot market candlestick chart"></canvas><div id="spotChartEmpty" class="spot-chart-empty">No completed trades yet. Candles appear after orders match.</div></div>
+          <div class="muted bn-cap" id="spotChartCaption">Candles from completed internal trades</div>
         </div>
-        <div class="card">
-          <div class="card-head"><div><div class="card-title">Place order</div><div class="card-sub">Uses your available Assets wallet balance</div></div></div>
-          <div class="spot-side-tabs"><button type="button" class="btn primary" id="spotBuyTab">Buy</button><button type="button" class="btn" id="spotSellTab">Sell</button></div>
-          <div class="field" style="margin-top:12px"><label>Order type</label><select class="control" id="spotOrderType"><option value="market">Market</option><option value="limit">Limit</option></select></div>
-          <div class="field" id="spotPriceField" style="margin-top:10px;display:none"><label>Limit price (USDT)</label><input class="control" id="spotPrice" inputmode="decimal" placeholder="0.00"></div>
-          <div class="field" style="margin-top:10px"><label>Amount (<span id="spotBaseLabel">asset</span>)</label><input class="control" id="spotQuantity" inputmode="decimal" placeholder="0.00"></div>
-          <div class="spot-balance-line"><span>Available</span><strong id="spotAvailable">Sign in to view</strong></div>
-          <div class="spot-order-summary" id="spotOrderSummary">Select a market and enter an amount.</div>
-          <button class="btn primary" id="spotSubmit" type="button" style="width:100%;margin-top:12px">Buy</button>
+
+        <div class="card bn-form" id="bnForm" data-side="buy">
+          <div class="bn-ordertabs"><button type="button" class="active" data-bn-type="limit">Limit</button><button type="button" data-bn-type="market">Market</button></div>
+          <div class="bn-sidetoggle"><button type="button" class="buy active" data-bn-mside="buy">Buy</button><button type="button" class="sell" data-bn-mside="sell">Sell</button></div>
+          <div class="bn-panels">
+            <div class="bn-panel buy">
+              <div class="bn-avail"><span>Avbl</span><b id="bnB_avail">—</b></div>
+              <label class="bn-field" id="bnB_pf"><span>Price</span><input class="bn-in" id="bnB_price" inputmode="decimal" autocomplete="off" placeholder="0.00"><em>USDT</em></label>
+              <label class="bn-field"><span>Amount</span><input class="bn-in" id="bnB_qty" inputmode="decimal" autocomplete="off" placeholder="0.00"><em class="bn-base">—</em></label>
+              <div class="bn-slide"><input type="range" min="0" max="100" step="1" value="0" id="bnB_slider"><div class="bn-pcts"><button type="button" data-bn-pct="buy:25">25%</button><button type="button" data-bn-pct="buy:50">50%</button><button type="button" data-bn-pct="buy:75">75%</button><button type="button" data-bn-pct="buy:100">100%</button></div></div>
+              <label class="bn-field" id="bnB_tf"><span>Total</span><input class="bn-in" id="bnB_total" inputmode="decimal" autocomplete="off" placeholder="0.00"><em>USDT</em></label>
+              <div class="bn-est" id="bnB_est"></div>
+              <button class="bn-submit buy" id="bnB_btn" type="button">Buy</button>
+            </div>
+            <div class="bn-panel sell">
+              <div class="bn-avail"><span>Avbl</span><b id="bnS_avail">—</b></div>
+              <label class="bn-field" id="bnS_pf"><span>Price</span><input class="bn-in" id="bnS_price" inputmode="decimal" autocomplete="off" placeholder="0.00"><em>USDT</em></label>
+              <label class="bn-field"><span>Amount</span><input class="bn-in" id="bnS_qty" inputmode="decimal" autocomplete="off" placeholder="0.00"><em class="bn-base">—</em></label>
+              <div class="bn-slide"><input type="range" min="0" max="100" step="1" value="0" id="bnS_slider"><div class="bn-pcts"><button type="button" data-bn-pct="sell:25">25%</button><button type="button" data-bn-pct="sell:50">50%</button><button type="button" data-bn-pct="sell:75">75%</button><button type="button" data-bn-pct="sell:100">100%</button></div></div>
+              <label class="bn-field" id="bnS_tf"><span>Total</span><input class="bn-in" id="bnS_total" inputmode="decimal" autocomplete="off" placeholder="0.00"><em>USDT</em></label>
+              <div class="bn-est" id="bnS_est"></div>
+              <button class="bn-submit sell" id="bnS_btn" type="button">Sell</button>
+            </div>
+          </div>
           <div class="form-message" id="spotMessage" role="status"></div>
         </div>
       </div>
-      <div class="card" style="margin-top:15px">
-        <div class="card-head"><div><div class="card-title">Recent market trades</div><div class="card-sub">Latest completed matches for this market</div></div><span class="tag" id="spotRecentCount">0 trades</span></div>
-        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Price (USDT)</th><th>Amount</th><th>Total (USDT)</th></tr></thead><tbody id="spotRecentTrades"><tr><td colspan="4" class="muted">No completed trades yet.</td></tr></tbody></table></div>
+
+      <div class="bn-mid">
+        <div class="card bn-book">
+          <div class="bn-card-title">Order Book</div>
+          <div class="bn-book-head"><span>Price (USDT)</span><span>Amount (<b class="bn-base-s">—</b>)</span><span>Total</span></div>
+          <div id="spotAsks" class="bn-book-side asks"><div class="muted bn-empty">No sell orders</div></div>
+          <div class="bn-book-mid" id="spotBookMid">—</div>
+          <div id="spotBids" class="bn-book-side bids"><div class="muted bn-empty">No buy orders</div></div>
+        </div>
+        <div class="card bn-trades">
+          <div class="bn-card-title">Market Trades <span class="tag" id="spotRecentCount">0</span></div>
+          <div class="bn-book-head"><span>Price (USDT)</span><span>Amount</span><span>Time</span></div>
+          <div id="spotRecentTrades" class="bn-trade-list"><div class="muted bn-empty">No completed trades yet</div></div>
+        </div>
       </div>
-      <div class="card" style="margin-top:15px">
-        <div class="card-head"><div><div class="card-title">Open orders</div><div class="card-sub">Cancel an unfilled limit order to release reserved funds.</div></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th>Type</th><th>Price</th><th>Amount</th><th>Filled</th><th>Status</th><th></th></tr></thead><tbody id="spotOrders"><tr><td colspan="9" class="muted">Sign in to view orders.</td></tr></tbody></table></div>
-      </div>
-      <div class="card" style="margin-top:15px">
-        <div class="card-head"><div><div class="card-title">Trade history</div><div class="card-sub">Completed internal matches</div></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Side</th><th>Price</th><th>Amount</th><th>Total (USDT)</th></tr></thead><tbody id="spotTrades"><tr><td colspan="6" class="muted">No trades loaded.</td></tr></tbody></table></div>
+
+      <div class="card bn-markets" id="bnMarkets">
+        <input class="control" id="spotMarketSearch" placeholder="Search" autocomplete="off">
+        <div class="bn-chips" id="bnChips"></div>
+        <div class="bn-mk-head"><span>Pair</span><span>Price</span><span>Change</span></div>
+        <div class="bn-mk-list" id="spotMarkets"><div class="muted bn-empty">Loading markets…</div></div>
       </div>
     </div>
+
+    <div class="card bn-orders">
+      <div class="bn-otabs">
+        <div><button type="button" class="active" data-bn-otab="open">Open Orders</button><button type="button" data-bn-otab="history">Order History</button><button type="button" data-bn-otab="trades">Trade History</button></div>
+        <div class="bn-otools"><label class="bn-hide"><input type="checkbox" id="bnHideOthers"> Hide other pairs</label><button class="btn small danger" id="bnCancelAll" type="button">Cancel All</button></div>
+      </div>
+      <div class="table-wrap"><table><thead id="bnOrdersHead"></thead><tbody id="spotOrders"><tr><td class="muted">Sign in to view orders.</td></tr></tbody></table></div>
+    </div>
+    <div class="notice" style="margin-top:14px">Spot orders match only against other users’ open limit orders on this exchange. A market order fills against the available book and any unfilled remainder is cancelled; if the book is empty it is rejected. Limit orders reserve your balance until filled or cancelled.</div>
   </div>
-  <div class="notice" style="margin-top:14px">Internal spot orders only match against other users’ open limit orders. Market orders execute immediately against available book liquidity; unfilled remainder is cancelled. A market with no matching liquidity will not execute. Supported assets only.</div>
 </section>
 <section class="page" id="page-subscription">
   <div class="page-head"><div><div class="eyebrow">ACCOUNT / BILLING</div><h1 class="page-title">Subscription & API</h1><p class="page-desc">Plans and account status are loaded from the live Blockchain Tracker backend. All paid plans are priced in USDT.</p></div><span class="tag yellow" id="authStatus">Checking account…</span></div>
@@ -3362,159 +3392,309 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const api=(p,o)=>window.BT.apiRequest(p,o);
 const fmt=(v,n=8)=>Number(v||0).toLocaleString("en-US",{maximumFractionDigits:n});
-const state={markets:[],market:null,side:"buy",balances:null,loading:false,timeframe:"15m",candles:[],chartHover:null,indicators:{sma7:true,sma25:false}};
+const state={markets:[],market:null,balances:null,feeBps:10,orderType:"limit",mSide:"buy",chain:"all",
+  book:{asks:[],bids:[],last:null},recent:[],candles:[],timeframe:"15m",chartHover:null,indicators:{sma7:true,sma25:false},
+  ordersTab:"open",orders:[],trades:[],hideOthers:false,tick:0};
+const SIDES={buy:"B",sell:"S"};
+const el=(side,name)=>$("bn"+SIDES[side]+"_"+name);
+const pageActive=()=>$("page-trade")?.classList.contains("active");
+/* ---- precision helpers: the API rejects more decimals than the asset supports ---- */
+const priceDp=()=>Math.min(18,Number(state.market?.quote_decimals??8));
+const qtyDp=()=>Math.min(18,Number(state.market?.base_decimals??8));
+const showQ=()=>Math.min(qtyDp(),6);
+// readable price decimals (e.g. 2 for ~600, 8 for tiny coins), never above what the asset allows
+const showP=()=>{const ref=Number(state.book.last?.price)||Number(state.book.asks[0]?.price)||Number(state.book.bids[0]?.price)||Number(state.market?.last_price)||0;return Math.min(priceDp(),8,ref>=100?2:ref>=1?4:ref>=0.01?6:8)};
+const P=v=>Number(v||0).toFixed(showP());
+const Q=v=>Number(v||0).toFixed(showQ());
+const trimZ=s=>s.includes(".")?s.replace(/0+$/,"").replace(/\.$/,""):s;
+const floorTo=(x,d)=>{if(!isFinite(x)||x<=0)return 0;const f=Math.pow(10,d);return Math.floor(x*f+1e-9)/f};
+const numStr=(x,d)=>trimZ(floorTo(x,d).toFixed(d));
+function cleanInput(input,d){
+  let v=input.value.replace(/,/g,".").replace(/[^0-9.]/g,"");
+  const i=v.indexOf(".");
+  if(i>=0){const w=v.slice(0,i).slice(0,12),f=v.slice(i+1).replace(/\./g,"").slice(0,d);v=w+(d>0?"."+f:"")}
+  else v=v.slice(0,12);
+  if(/^0\d/.test(v))v=v.replace(/^0+(?=\d)/,"");
+  if(v!==input.value)input.value=v;
+  return v;
+}
 function msg(s,ok=false){const e=$("spotMessage");if(e){e.textContent=s||"";e.className="form-message"+(ok?" success":"")}}
-function currentAssetCode(){return state.side==="buy"?state.market?.quote_code:state.market?.base_code}
-function renderMarkets(){
- const box=$("spotMarkets");if(!box)return;
- const q=String($("spotMarketSearch")?.value||"").trim().toLowerCase().replace(/\s+/g," ");
- const rows=state.markets.filter(m=>{
-  const hay=[m.symbol,m.base_symbol,m.quote_symbol,m.chain,m.base_code,m.quote_code,`${m.base_symbol}/${m.quote_symbol}`,`${m.base_symbol} ${m.quote_symbol}`]
-    .filter(Boolean).join(" ").toLowerCase().replace(/[-_]/g," ");
-  return !q || hay.includes(q) || hay.replace(/\s+/g,"").includes(q.replace(/[\s/_-]/g,""));
- });
- box.innerHTML=rows.map(m=>`<button type="button" class="spot-market-row${state.market?.id===m.id?" active":""}" data-spot-market="${m.id}">
-  <span><strong>${esc(m.base_symbol)}/${esc(m.quote_symbol)}</strong><small>${esc(m.chain)}</small></span>
-  <span class="spot-market-price">${Number(m.last_price)>0?fmt(m.last_price,8):"—"}<small>${Number(m.last_price)>0?"Last price":"No trades"}</small></span>
- </button>`).join("")||'<div class="muted">No supported markets found.</div>';
+const marketOf=sym=>state.markets.find(m=>m.symbol===sym);
+const pairLabel=sym=>{const m=marketOf(sym);return m?`${m.base_symbol}/${m.quote_symbol}`:sym};
+const timeShort=v=>{const d=new Date(v);return d.toLocaleString([],{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false})};
+const changePct=m=>{const l=Number(m.last_price),o=Number(m.open_price);return l>0&&o>0?(l-o)/o*100:null};
+const pctText=p=>p==null?"—":(p>=0?"+":"")+p.toFixed(2)+"%";
+
+/* ---- balances ---- */
+function avail(side){
+  const m=state.market;if(!m||!state.balances)return null;
+  const code=side==="buy"?m.quote_code:m.base_code;
+  const a=(state.balances.assets||[]).find(x=>x.code===code);
+  return a?Number(a.available):0;
 }
 function renderBalances(){
- const m=state.market;if(!m)return;
- const code=currentAssetCode();
- const a=state.balances?.assets?.find(x=>x.code===code);
- $("spotAvailable").textContent=a?`${fmt(a.available,8)} ${state.side==="buy"?m.quote_symbol:m.base_symbol}`:"Sign in to view";
+  const m=state.market;
+  ["buy","sell"].forEach(side=>{
+    const e=el(side,"avail");if(!e)return;
+    const a=avail(side);
+    if(!m)e.textContent="—";
+    else if(a==null)e.textContent=state.authErr||"Sign in to trade";
+    else e.textContent=fmt(a,side==="buy"?Math.min(priceDp(),6):showQ())+" "+(side==="buy"?m.quote_symbol:m.base_symbol);
+  });
 }
 async function loadBalances(){
- try{const b=await api("/wallet/balances");state.balances=b;renderBalances()}
- catch(e){state.balances=null;$("spotAvailable").textContent=e.message==="AUTH_REQUIRED"?"Sign in to trade":"Wallet unavailable"}
+  try{state.balances=await api("/wallet/balances");state.authErr=""}
+  catch(e){state.balances=null;state.authErr=e.message==="AUTH_REQUIRED"?"Sign in to trade":"Wallet unavailable"}
+  renderBalances();updateAllForms();
 }
-function renderBook(d){
- const rows=(items,side)=>items.map(x=>{
-  const total=Number(x.price)*Number(x.quantity);
-  return `<div class="spot-book-row ${side}" data-spot-price="${esc(x.price)}"><span>${fmt(x.price,8)}</span><span>${fmt(x.quantity,8)}</span><span>${fmt(total,6)}</span></div>`;
- }).join("");
- $("spotAsks").innerHTML=rows(d.asks||[],"ask")||'<div class="muted" style="padding:8px 2px">No open sell orders</div>';
- $("spotBids").innerHTML=rows(d.bids||[],"bid")||'<div class="muted" style="padding:8px 2px">No open buy orders</div>';
- const last=d.lastTrade;
- $("spotBookMid").textContent=last?`${fmt(last.price,8)} USDT`:"No completed trades";
- $("spotLastPrice").textContent=last?`${fmt(last.price,8)} USDT`:"—";
- $("spotLastTime").textContent=last?new Date(last.created_at).toLocaleString():"No completed trades yet";
+
+/* ---- order form ---- */
+function bestAsk(){return Number(state.book.asks[0]?.price)||0}
+function bestBid(){return Number(state.book.bids[0]?.price)||0}
+function maxQty(side){
+  const av=avail(side);if(av==null||!(av>0))return 0;
+  if(side==="sell")return av;
+  const f=1+state.feeBps/10000;
+  if(state.orderType==="limit"){const p=Number(el("buy","price").value);return p>0?av/(p*f):0}
+  let rest=av,q=0;
+  for(const a of state.book.asks){const p=Number(a.price),n=Number(a.quantity);if(!(p>0)||!(n>0))continue;const cost=p*n*f;if(rest>=cost){rest-=cost;q+=n}else{q+=rest/(p*f);rest=0;break}}
+  return q;
+}
+function walk(levels,qty){let rest=qty,cost=0;for(const l of levels){const p=Number(l.price),n=Number(l.quantity);if(rest<=0)break;const t=Math.min(rest,n);cost+=t*p;rest-=t}return{cost,unfilled:rest}}
+function updateForm(side){
+  const m=state.market,market=state.orderType==="market";
+  const price=el(side,"price"),qty=el(side,"qty"),total=el(side,"total"),slider=el(side,"slider"),est=el(side,"est"),btn=el(side,"btn");
+  price.disabled=market;
+  if(market){price.value="";price.placeholder="Market price"}else price.placeholder="0.00";
+  const q=Number(qty.value)||0,pr=Number(price.value)||0;
+  if(!market&&q>0&&pr>0&&document.activeElement!==total)total.value=numStr(q*pr,Math.min(priceDp(),8));
+  const mx=maxQty(side);
+  slider.value=mx>0?String(Math.max(0,Math.min(100,Math.round(q/mx*100)))):"0";
+  if(market&&q>0){
+    const w=walk(side==="buy"?state.book.asks:state.book.bids,q);
+    est.textContent=w.cost>0?`Est. ≈ ${fmt(w.cost,showP())} USDT${w.unfilled>0?" (partial)":""}`:"No liquidity";
+  }else est.textContent="";
+  btn.textContent=(side==="buy"?"Buy ":"Sell ")+(m?.base_symbol||"");
+}
+function updateAllForms(){["buy","sell"].forEach(updateForm)}
+function setPct(side,pct){
+  const mx=maxQty(side),d=Math.min(qtyDp(),8);
+  const q=floorTo(mx*pct/100,d);
+  el(side,"qty").value=q>0?numStr(q,d):"";
+  const total=el(side,"total"),pr=Number(el(side,"price").value)||0;
+  total.value=q>0&&pr>0&&state.orderType==="limit"?numStr(q*pr,Math.min(priceDp(),8)):"";
+  updateForm(side);
+}
+function renderOrderType(){
+  const f=$("bnForm");f.dataset.type=state.orderType;f.dataset.side=state.mSide;
+  document.querySelectorAll("[data-bn-type]").forEach(b=>b.classList.toggle("active",b.dataset.bnType===state.orderType));
+  document.querySelectorAll("[data-bn-mside]").forEach(b=>b.classList.toggle("active",b.dataset.bnMside===state.mSide));
+  const m=state.market;
+  document.querySelectorAll(".bn-base").forEach(e=>e.textContent=m?.base_symbol||"—");
+  document.querySelectorAll(".bn-base-s").forEach(e=>e.textContent=m?.base_symbol||"—");
+  updateAllForms();
+}
+async function submitOrder(side){
+  const m=state.market;if(!m){msg("Choose a market first.");return}
+  const type=state.orderType,qty=el(side,"qty").value.trim(),price=el(side,"price").value.trim();
+  if(!(Number(qty)>0)){msg("Enter a valid amount.");return}
+  if(type==="limit"&&!(Number(price)>0)){msg("Enter a valid price.");return}
+  const btn=el(side,"btn");btn.disabled=true;msg("Submitting order…");
+  try{
+    const r=await api("/trading/order",{method:"POST",body:JSON.stringify({marketId:m.id,side,type,quantity:qty,price:type==="limit"?price:undefined})});
+    const o=r.order,verb=side==="buy"?"Bought":"Sold";
+    if(o.status==="filled")msg(`${verb} ${fmt(r.filledQuantity,showQ())} ${m.base_symbol}. Order #${o.id} filled.`,true);
+    else if(o.status==="partially_filled")msg(`Order #${o.id} partially filled: ${fmt(r.filledQuantity,showQ())} of ${fmt(o.quantity,showQ())} ${m.base_symbol}. Rest is waiting on the book.`,true);
+    else if(o.status==="open")msg(`Limit order #${o.id} placed. Funds are reserved until it fills or you cancel.`,true);
+    else msg(`Order #${o.id}: ${o.status}. Filled ${fmt(r.filledQuantity,showQ())} ${m.base_symbol}.`,true);
+    ["buy","sell"].forEach(s=>{el(s,"qty").value="";el(s,"total").value=""});
+    await Promise.all([loadBalances(),loadBook(),loadHistory(),loadRecent(),loadTicker()]);
+    loadChart();
+  }catch(e){
+    const map={AUTH_REQUIRED:"Sign in to trade.",INSUFFICIENT_BALANCE:"Insufficient available balance.",NO_LIQUIDITY:"No matching liquidity in the order book. Place a limit order instead.",INVALID_ORDER:"Check the order details.",INVALID_ORDER_PRECISION:"Too many decimals for this asset. Shorten the price or amount.",MARKET_NOT_FOUND:"This market is not available.",ACCOUNT_BLOCKED:"This account cannot trade.",RATE_LIMITED:"Too many requests. Wait a few seconds."};
+    msg(map[e.message]||(e.status===429?map.RATE_LIMITED:e.message)||"Order failed.");
+  }finally{btn.disabled=false;updateAllForms()}
+}
+async function cancelOrder(id,quiet){
+  try{await api("/trading/cancel",{method:"POST",body:JSON.stringify({orderId:Number(id)})});if(!quiet)msg("Order cancelled. Reserved funds released.",true);return true}
+  catch(e){if(!quiet)msg(e.message==="ORDER_NOT_OPEN"?"This order is no longer open.":e.message);return false}
+  finally{if(!quiet)await Promise.all([loadHistory(),loadBook(),loadBalances()])}
+}
+async function cancelAll(){
+  const open=state.orders.filter(o=>["open","partially_filled"].includes(o.status)&&(!state.hideOthers||o.market===state.market?.symbol));
+  if(!open.length){msg("No open orders to cancel.");return}
+  const b=$("bnCancelAll");b.disabled=true;let n=0;
+  for(const o of open){if(await cancelOrder(o.id,true))n++}
+  b.disabled=false;msg(`${n} of ${open.length} orders cancelled.`,n>0);
+  await Promise.all([loadHistory(),loadBook(),loadBalances()]);
+}
+
+/* ---- order book / trades ---- */
+function renderBook(){
+  const asks=(state.book.asks||[]).slice(0,12),bids=(state.book.bids||[]).slice(0,12);
+  let c=0;const askCum=asks.map(a=>c+=Number(a.quantity));c=0;const bidCum=bids.map(a=>c+=Number(a.quantity));
+  const maxC=Math.max(1e-18,askCum[askCum.length-1]||0,bidCum[bidCum.length-1]||0);
+  const row=(x,side,cum)=>`<div class="bn-row ${side}" data-spot-price="${esc(x.price)}" style="--d:${(cum/maxC*100).toFixed(1)}%"><span>${P(x.price)}</span><span>${Q(x.quantity)}</span><span>${fmt(Number(x.price)*Number(x.quantity),showP())}</span></div>`;
+  $("spotAsks").innerHTML=asks.length?asks.map((x,i)=>row(x,"ask",askCum[i])).reverse().join(""):'<div class="muted bn-empty">No sell orders</div>';
+  $("spotBids").innerHTML=bids.length?bids.map((x,i)=>row(x,"bid",bidCum[i])).join(""):'<div class="muted bn-empty">No buy orders</div>';
+  const last=state.book.last,r=state.recent,dir=r.length>1?(Number(r[0].price)>=Number(r[1].price)?"up":"down"):(r.length?"up":"");
+  $("spotBookMid").innerHTML=last?`<span class="${dir}">${P(last.price)}</span><small class="${dir}">${dir==="down"?"↓":"↑"}</small>`:'<span class="muted" style="font-size:12px;font-weight:600">No completed trades</span>';
+  const lp=$("spotLastPrice");lp.textContent=last?P(last.price):"—";lp.className=dir;
+  $("spotLastTime").textContent=last?timeShort(last.created_at):"No completed trades yet";
 }
 async function loadBook(){
- if(!state.market)return;
- try{const d=await api(`/trading/orderbook?market=${state.market.id}`);renderBook(d)}
- catch(e){$("spotAsks").textContent="Order book unavailable";$("spotBids").textContent=""}
+  if(!state.market)return;
+  try{const d=await api(`/trading/orderbook?market=${state.market.id}`);state.book={asks:d.asks||[],bids:d.bids||[],last:d.lastTrade||null};renderBook();updateAllForms()}
+  catch(e){$("spotAsks").innerHTML='<div class="muted bn-empty">Order book unavailable</div>';$("spotBids").innerHTML=""}
 }
-function renderOrders(rows){
- $("spotOrders").innerHTML=(rows||[]).map(o=>`<tr><td>${new Date(o.createdAt).toLocaleString()}</td><td>${esc(o.market)}</td><td>${esc(o.side)}</td><td>${esc(o.type)}</td><td>${o.price?fmt(o.price,8):"Market"}</td><td>${fmt(o.quantity)}</td><td>${fmt(o.filledQuantity)}</td><td>${esc(o.status)}</td><td>${["open","partially_filled"].includes(o.status)?`<button class="btn small" data-spot-cancel="${o.id}">Cancel</button>`:"—"}</td></tr>`).join("")||'<tr><td colspan="9" class="muted">No orders yet.</td></tr>';
+function renderRecent(){
+  const rows=state.recent;
+  $("spotRecentCount").textContent=String(rows.length);
+  $("spotRecentTrades").innerHTML=rows.map((t,i)=>{const older=rows[i+1],up=!older||Number(t.price)>=Number(older.price);return `<div class="bn-trade-row"><span class="${up?"up":"down"}">${P(t.price)}</span><span>${Q(t.quantity)}</span><span>${new Date(t.createdAt).toLocaleTimeString([],{hour12:false})}</span></div>`}).join("")||'<div class="muted bn-empty">No completed trades yet</div>';
 }
-function renderTrades(rows){
- $("spotTrades").innerHTML=(rows||[]).map(t=>`<tr><td>${new Date(t.createdAt).toLocaleString()}</td><td>${esc(t.market)}</td><td>${esc(t.side)}</td><td>${fmt(t.price,8)}</td><td>${fmt(t.quantity)}</td><td>${fmt(t.quoteAmount,6)}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">No completed trades yet.</td></tr>';
+async function loadRecent(){
+  if(!state.market)return;
+  try{const d=await api(`/trading/recent?market=${state.market.id}&limit=40`);state.recent=d.trades||[];renderRecent();renderBook()}
+  catch(e){$("spotRecentTrades").innerHTML='<div class="muted bn-empty">Market trades unavailable</div>'}
+}
+async function loadTicker(){
+  if(!state.market)return;
+  try{
+    const t=(await api(`/trading/ticker?market=${state.market.id}`)).ticker||{},ch=t.changePct==null?null:Number(t.changePct);
+    const c=$("spotTickerChange");c.textContent=pctText(ch);c.className=ch==null?"":(ch>=0?"up":"down");
+    $("spotTickerHigh").textContent=t.high?P(t.high):"—";$("spotTickerLow").textContent=t.low?P(t.low):"—";
+    $("spotTickerVolume").textContent=Number(t.quoteVolume)>0?fmt(t.quoteVolume,2):"—";
+  }catch(e){}
+}
+
+/* ---- orders / history tabs ---- */
+function renderOrders(){
+  const head=$("bnOrdersHead"),body=$("spotOrders"),tab=state.ordersTab,cur=state.market?.symbol;
+  const hide=state.hideOthers&&cur;
+  const isOpen=o=>["open","partially_filled"].includes(o.status);
+  $("bnCancelAll").style.display=tab==="open"?"":"none";
+  const sideTd=s=>`<td class="${s==="buy"?"up":"down"}">${s==="buy"?"Buy":"Sell"}</td>`;
+  if(tab==="trades"){
+    head.innerHTML="<tr><th>Date</th><th>Pair</th><th>Side</th><th>Price</th><th>Amount</th><th>Total (USDT)</th></tr>";
+    const rows=state.trades.filter(t=>!hide||t.market===cur);
+    body.innerHTML=rows.map(t=>`<tr><td>${esc(timeShort(t.createdAt))}</td><td>${esc(pairLabel(t.market))}</td>${sideTd(t.side)}<td>${fmt(t.price,8)}</td><td>${fmt(t.quantity,8)}</td><td>${fmt(t.quoteAmount,6)}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">No trades yet.</td></tr>';
+    return;
+  }
+  const rows=state.orders.filter(o=>(tab==="open"?isOpen(o):!isOpen(o))&&(!hide||o.market===cur));
+  head.innerHTML="<tr><th>Date</th><th>Pair</th><th>Type</th><th>Side</th><th>Price</th><th>Amount</th><th>Filled</th><th>"+(tab==="open"?"Action":"Status")+"</th></tr>";
+  body.innerHTML=rows.map(o=>{const pct=Number(o.quantity)>0?(Number(o.filledQuantity)/Number(o.quantity)*100):0;
+    return `<tr><td>${esc(timeShort(o.createdAt))}</td><td>${esc(pairLabel(o.market))}</td><td style="text-transform:capitalize">${esc(o.type)}</td>${sideTd(o.side)}<td>${o.price?fmt(o.price,8):"Market"}</td><td>${fmt(o.quantity,8)}</td><td>${pct.toFixed(1)}%</td><td>${tab==="open"?`<button class="btn small" type="button" data-spot-cancel="${o.id}">Cancel</button>`:`<span style="text-transform:capitalize">${esc(String(o.status).replace("_"," "))}</span>`}</td></tr>`}).join("")||`<tr><td colspan="8" class="muted">${state.balances||state.orders.length?(tab==="open"?"No open orders.":"No order history."):"Sign in to view orders."}</td></tr>`;
 }
 async function loadHistory(){
- try{const [o,t]=await Promise.all([api("/trading/orders?limit=50"),api("/trading/trades?limit=50")]);renderOrders(o.orders);renderTrades(t.trades)}
- catch(e){$("spotOrders").innerHTML=`<tr><td colspan="9" class="muted">${esc(e.message==="AUTH_REQUIRED"?"Sign in to view orders.":e.message)}</td></tr>`}
+  try{const [o,t]=await Promise.all([api("/trading/orders?limit=100"),api("/trading/trades?limit=100")]);state.orders=o.orders||[];state.trades=t.trades||[];renderOrders()}
+  catch(e){state.orders=[];state.trades=[];renderOrders();if(e.message!=="AUTH_REQUIRED")$("spotOrders").innerHTML=`<tr><td colspan="8" class="muted">${esc(e.message)}</td></tr>`}
 }
-function renderSide(){
- $("spotBuyTab").classList.toggle("primary",state.side==="buy");$("spotSellTab").classList.toggle("primary",state.side==="sell");
- $("spotSubmit").textContent=state.side==="buy"?"Buy "+(state.market?.base_symbol||""):"Sell "+(state.market?.base_symbol||"");
- $("spotBaseLabel").textContent=state.market?.base_symbol||"asset";renderBalances();updateSummary();
+
+/* ---- markets list ---- */
+function renderMarkets(){
+  const box=$("spotMarkets");if(!box)return;
+  const q=String($("spotMarketSearch")?.value||"").trim().toLowerCase().replace(/[\s/_-]/g,"");
+  const chains=[...new Set(state.markets.map(m=>m.chain))];
+  $("bnChips").innerHTML=["all",...chains].map(c=>`<button type="button" class="${state.chain===c?"active":""}" data-bn-chain="${esc(c)}">${esc(c)}</button>`).join("");
+  const rows=state.markets.filter(m=>(state.chain==="all"||m.chain===state.chain)&&(!q||[m.symbol,m.base_symbol,m.chain,m.base_code].join("").toLowerCase().replace(/[\s/_-]/g,"").includes(q)))
+    .sort((a,b)=>Number(b.quote_volume_24h)-Number(a.quote_volume_24h)||String(a.base_symbol).localeCompare(b.base_symbol));
+  box.innerHTML=rows.map(m=>{const ch=changePct(m),has=Number(m.last_price)>0;return `<button type="button" class="bn-mk-row${state.market?.id===m.id?" active":""}" data-spot-market="${m.id}"><span><strong>${esc(m.base_symbol)}</strong><small>/${esc(m.quote_symbol)} · ${esc(m.chain)}</small></span><span>${has?fmt(m.last_price,Math.min(Number(m.quote_decimals??8),8)):"—"}</span><span class="${ch==null?"":(ch>=0?"up":"down")}">${pctText(ch)}</span></button>`}).join("")||'<div class="muted bn-empty">No markets found.</div>';
 }
-function updateSummary(){
- const qty=Number($("spotQuantity").value||0),type=$("spotOrderType").value,price=Number($("spotPrice").value||0);
- if(!qty){$("spotOrderSummary").textContent="Enter an amount to preview your order.";return}
- if(type==="limit"&&price>0)$("spotOrderSummary").textContent=`Estimated order value: ${fmt(qty*price,6)} USDT`;
- else $("spotOrderSummary").textContent=type==="market"?"Market orders execute only against available internal order-book liquidity.":"Enter a valid limit price.";
+async function selectMarket(id){
+  const m=state.markets.find(x=>x.id===Number(id));if(!m)return;
+  const changed=!state.market||state.market.id!==m.id;
+  state.market=m;
+  if(changed){state.book={asks:[],bids:[],last:null};state.recent=[];state.candles=[];["buy","sell"].forEach(s=>{el(s,"qty").value="";el(s,"total").value="";el(s,"price").value=""})}
+  $("spotPair").textContent=`${m.base_symbol}/${m.quote_symbol}`;
+  $("spotChain").textContent=m.chain;
+  $("bnRoot").classList.remove("mk-open");
+  renderMarkets();renderOrderType();renderBalances();renderOrders();
+  await Promise.all([loadBook(),loadRecent(),loadTicker(),loadChart()]);
+  renderBook();renderRecent();updateAllForms();
 }
+async function loadMarkets(quiet){
+  if(!quiet)$("spotMarkets").innerHTML='<div class="muted bn-empty">Loading markets…</div>';
+  try{
+    const d=await api("/trading/markets");
+    state.markets=(d.markets||[]).map(m=>({...m,id:Number(m.id)}));
+    if(Number.isFinite(Number(d.feeBps)))state.feeBps=Number(d.feeBps);
+    if(!state.markets.length){$("spotMarkets").innerHTML='<div class="muted bn-empty">No supported USDT markets are configured.</div>';return}
+    if(quiet&&state.market){state.market=state.markets.find(m=>m.id===state.market.id)||state.market;renderMarkets();return}
+    const id=state.market&&state.markets.some(m=>m.id===state.market.id)?state.market.id:state.markets[0].id;
+    await selectMarket(id);
+  }catch(e){$("spotMarkets").innerHTML='<div class="muted bn-empty">Could not load markets.</div>'}
+}
+
+/* ---- candlestick chart ---- */
 function drawChart(){
- const canvas=$("spotChart"),empty=$("spotChartEmpty");if(!canvas)return;
- const rect=canvas.getBoundingClientRect(),dpr=Math.max(1,window.devicePixelRatio||1),w=Math.max(280,rect.width),h=Math.max(180,rect.height);
- canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
- const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
- const data=state.candles||[];if(!data.length){empty.style.display="grid";return}empty.style.display="none";
- const left=8,right=66,top=12,bottom=42,volH=48,plotW=w-left-right,plotH=h-top-bottom-volH;
- const hi=Math.max(...data.map(x=>x.h)),lo=Math.min(...data.map(x=>x.l)),pad=(hi-lo||hi*.02||1)*.08,min=lo-pad,max=hi+pad,range=max-min||1;
- const y=v=>top+(max-v)/range*plotH,slot=plotW/data.length,cw=Math.max(2,Math.min(11,slot*.62));
- ctx.font="10px Arial";ctx.textBaseline="middle";ctx.strokeStyle="rgba(132,142,156,.18)";ctx.fillStyle="#848e9c";ctx.lineWidth=1;
- for(let i=0;i<=4;i++){const yy=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();const val=max-(max-min)*i/4;ctx.fillText(fmt(val,8),w-right+5,yy)}
- const maxV=Math.max(1,...data.map(x=>x.v));
- data.forEach((c,i)=>{const x=left+i*slot+slot/2,up=c.c>=c.o,color=up?"#0ecb81":"#f6465d";ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke();const yo=y(Math.max(c.o,c.c)),yc=y(Math.min(c.o,c.c)),bh=Math.max(1,yc-yo);ctx.fillRect(x-cw/2,yo,cw,bh);const vh=c.v/maxV*volH;ctx.globalAlpha=.48;ctx.fillRect(x-cw/2,top+plotH+bottom+volH-vh,cw,vh);ctx.globalAlpha=1;});
- const drawSma=(period,color)=>{if(data.length<period)return;ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.4;let started=false;for(let i=period-1;i<data.length;i++){let sum=0;for(let j=i-period+1;j<=i;j++)sum+=data[j].c;const xx=left+i*slot+slot/2,yy=y(sum/period);if(!started){ctx.moveTo(xx,yy);started=true}else ctx.lineTo(xx,yy)}ctx.stroke()};
- if(state.indicators.sma7)drawSma(7,"#f0b90b");if(state.indicators.sma25)drawSma(25,"#8b7cff");
- const first=data[0],last=data[data.length-1];ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText(new Date(first.t*1000).toLocaleString([], {month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"}),left,h-12);ctx.textAlign="right";ctx.fillText(new Date(last.t*1000).toLocaleString([], {month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"}),w-right,h-12);ctx.textAlign="left";
- if(state.chartHover!=null){const idx=Math.max(0,Math.min(data.length-1,Math.floor((state.chartHover-left)/slot))),c=data[idx],x=left+idx*slot+slot/2;ctx.strokeStyle="rgba(240,185,11,.75)";ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+plotH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#eaecef";ctx.fillText(`O ${fmt(c.o,8)}  H ${fmt(c.h,8)}  L ${fmt(c.l,8)}  C ${fmt(c.c,8)}`,left,top+8);}
+  const canvas=$("spotChart"),empty=$("spotChartEmpty");if(!canvas)return;
+  const rect=canvas.getBoundingClientRect();if(!rect.width)return;
+  const dpr=Math.max(1,window.devicePixelRatio||1),w=Math.max(280,rect.width),h=Math.max(180,rect.height);
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  const data=state.candles||[];if(!data.length){empty.style.display="grid";return}empty.style.display="none";
+  const left=8,right=70,top=14,bottom=22,volH=50,plotW=w-left-right,plotH=h-top-bottom-volH;
+  const hi=Math.max(...data.map(x=>x.h)),lo=Math.min(...data.map(x=>x.l)),pad=(hi-lo||hi*.02||1)*.1,min=lo-pad,max=hi+pad,range=max-min||1;
+  const y=v=>top+(max-v)/range*plotH,slot=plotW/Math.max(data.length,30),cw=Math.max(2,Math.min(11,slot*.62));
+  const dp=showP();
+  ctx.font="10px Arial";ctx.textBaseline="middle";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const yy=top+plotH*i/4;ctx.strokeStyle="rgba(132,142,156,.16)";ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText((max-(max-min)*i/4).toFixed(dp),w-right+5,yy)}
+  const maxV=Math.max(1e-18,...data.map(x=>x.v)),volBase=top+plotH+volH+4;
+  data.forEach((c,i)=>{const x=left+i*slot+slot/2,up=c.c>=c.o,col=up?"#0ecb81":"#f6465d";ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke();const yo=y(Math.max(c.o,c.c)),yc=y(Math.min(c.o,c.c));ctx.fillRect(x-cw/2,yo,cw,Math.max(1,yc-yo));const vh=c.v/maxV*volH;ctx.globalAlpha=.45;ctx.fillRect(x-cw/2,volBase-vh,cw,vh);ctx.globalAlpha=1});
+  const sma=(period,color)=>{if(data.length<period)return;ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.3;let st=false;for(let i=period-1;i<data.length;i++){let s=0;for(let j=i-period+1;j<=i;j++)s+=data[j].c;const xx=left+i*slot+slot/2,yy=y(s/period);if(!st){ctx.moveTo(xx,yy);st=true}else ctx.lineTo(xx,yy)}ctx.stroke();ctx.lineWidth=1};
+  if(state.indicators.sma7)sma(7,"#f0b90b");if(state.indicators.sma25)sma(25,"#8b7cff");
+  const lastC=data[data.length-1],ly=y(lastC.c),lcol=lastC.c>=lastC.o?"#0ecb81":"#f6465d";
+  ctx.setLineDash([3,3]);ctx.strokeStyle=lcol;ctx.beginPath();ctx.moveTo(left,ly);ctx.lineTo(w-right,ly);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=lcol;ctx.fillRect(w-right+1,ly-8,right-2,16);ctx.fillStyle="#0b0e11";ctx.textAlign="left";ctx.fillText(lastC.c.toFixed(dp),w-right+4,ly);
+  const tf=t=>new Date(t*1000).toLocaleString([],{month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
+  ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText(tf(data[0].t),left,h-8);ctx.textAlign="right";ctx.fillText(tf(lastC.t),w-right,h-8);ctx.textAlign="left";
+  if(state.chartHover!=null){const idx=Math.max(0,Math.min(data.length-1,Math.floor((state.chartHover-left)/slot))),c=data[idx],x=left+idx*slot+slot/2;ctx.strokeStyle="rgba(240,185,11,.7)";ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+plotH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#eaecef";ctx.fillText(`O ${c.o.toFixed(dp)}  H ${c.h.toFixed(dp)}  L ${c.l.toFixed(dp)}  C ${c.c.toFixed(dp)}`,left,top-1)}
 }
 async function loadChart(){
- if(!state.market)return;
- const empty=$("spotChartEmpty");
- try{
-  const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);
-  state.candles=Array.isArray(d.candles)?d.candles:[];
-  $("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed internal trades only`;
-  if(empty)empty.textContent="No completed internal trades yet. Candles appear after orders match.";
+  if(!state.market)return;
+  const empty=$("spotChartEmpty");
+  try{
+    const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);
+    state.candles=Array.isArray(d.candles)?d.candles:[];
+    $("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed trades on this exchange`;
+    if(empty)empty.textContent="No completed trades yet. Candles appear after orders match.";
+  }catch(e){
+    state.candles=[];const reason=String(e.message||"API_REQUEST_FAILED").slice(0,100);
+    $("spotChartCaption").textContent="Chart error: "+reason;if(empty)empty.textContent="Chart data could not be loaded ("+reason+").";
+  }
   drawChart();
- }catch(e){
-  state.candles=[];state.chartHover=null;drawChart();
-  const reason=String(e.message||"API_REQUEST_FAILED").slice(0,100);
-  $("spotChartCaption").textContent="Chart API error: "+reason;
-  if(empty)empty.textContent="Chart data could not be loaded ("+reason+"). Check the trading API / database logs.";
-  console.warn("Spot candle request failed",e);
- }
 }
-async function loadTicker(){if(!state.market)return;try{const d=await api(`/trading/ticker?market=${state.market.id}`),t=d.ticker||{};$("spotTickerChange").textContent=t.changePct==null?"—":`${Number(t.changePct)>=0?"+":""}${Number(t.changePct).toFixed(2)}%`;
- $("spotTickerChange").style.color=Number(t.changePct)>=0?"#0ecb81":"#f6465d";$("spotTickerHigh").textContent=t.high?fmt(t.high,8):"—";$("spotTickerLow").textContent=t.low?fmt(t.low,8):"—";$("spotTickerVolume").textContent=t.quoteVolume?fmt(t.quoteVolume,2)+" USDT":"—";$("spotTickerTrades").textContent=String(t.trades||0)}catch(e){}}
-async function loadRecentMarketTrades(){if(!state.market)return;try{const d=await api(`/trading/recent?market=${state.market.id}&limit=30`),rows=d.trades||[];$("spotRecentCount").textContent=rows.length+" trades";$("spotRecentTrades").innerHTML=rows.map(t=>`<tr><td>${new Date(t.createdAt).toLocaleTimeString()}</td><td class="${Number(t.price)>=0?"":""}">${fmt(t.price,8)}</td><td>${fmt(t.quantity)}</td><td>${fmt(t.quoteAmount,6)}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">No completed trades yet.</td></tr>'}catch(e){$("spotRecentTrades").innerHTML='<tr><td colspan="4" class="muted">Market trades unavailable.</td></tr>'}}
-async function selectMarket(id){
- state.market=state.markets.find(m=>m.id===Number(id))||null;if(!state.market)return;
- $("spotPair").textContent=`${state.market.base_symbol} / ${state.market.quote_symbol}`;
- $("spotChain").textContent=state.market.chain+" · Internal spot market";
- $("spotBaseLabel").textContent=state.market.base_symbol;
- renderMarkets();renderSide();await Promise.all([loadBook(),loadHistory(),loadChart(),loadTicker(),loadRecentMarketTrades()]);
-}
-async function loadMarkets(){
- $("spotMarkets").innerHTML='<div class="muted">Loading markets…</div>';
- try{
-  const d=await api("/trading/markets");state.markets=d.markets||[];
-  renderMarkets();
-  if(state.markets.length){const id=state.market&&state.markets.some(m=>m.id===state.market.id)?state.market.id:state.markets[0].id;await selectMarket(id)}
-  else $("spotMarkets").innerHTML='<div class="muted">No supported USDT markets are configured.</div>';
- }catch(e){$("spotMarkets").textContent="Could not load internal markets."}
-}
-async function submitOrder(){
- if(!state.market){msg("Choose a market first.");return}
- const quantity=$("spotQuantity").value.trim(),type=$("spotOrderType").value,price=$("spotPrice").value.trim();
- if(!(Number(quantity)>0)){msg("Enter a valid amount.");return}
- if(type==="limit"&&!(Number(price)>0)){msg("Enter a valid limit price.");return}
- const btn=$("spotSubmit");btn.disabled=true;msg("Submitting order…");
- try{
-  const r=await api("/trading/order",{method:"POST",body:JSON.stringify({marketId:state.market.id,side:state.side,type,quantity,price:type==="limit"?price:undefined})});
-  const o=r.order;
-  msg(`Order #${o.id}: ${o.status}. Filled ${fmt(r.filledQuantity)} ${state.market.base_symbol}.`,true);
-  $("spotQuantity").value="";await Promise.all([loadBalances(),loadBook(),loadHistory()]);
- }catch(e){
-  const messages={AUTH_REQUIRED:"Sign in to trade.",INSUFFICIENT_BALANCE:"Insufficient available balance.",NO_LIQUIDITY:"No matching liquidity.",INVALID_ORDER:"Check the order details.",MARKET_NOT_FOUND:"This market is not available."};
-  msg(messages[e.message]||e.message||"Order failed.");
- }finally{btn.disabled=false;updateSummary()}
-}
-async function cancelOrder(id){
- try{await api("/trading/cancel",{method:"POST",body:JSON.stringify({orderId:Number(id)})});msg("Order cancelled and unused funds released.",true);await Promise.all([loadHistory(),loadBook(),loadBalances()])}
- catch(e){msg(e.message==="ORDER_NOT_OPEN"?"This order is no longer open.":e.message)}
-}
+
+/* ---- events ---- */
 document.addEventListener("click",e=>{
- const m=e.target.closest("[data-spot-market]");if(m){selectMarket(m.dataset.spotMarket);return}
- const p=e.target.closest("[data-spot-price]");if(p){$("spotOrderType").value="limit";$("spotPriceField").style.display="block";$("spotPrice").value=p.dataset.spotPrice;updateSummary();return}
- const c=e.target.closest("[data-spot-cancel]");if(c){cancelOrder(c.dataset.spotCancel);return}
- if(e.target.id==="spotBuyTab"){state.side="buy";renderSide()}
- if(e.target.id==="spotSellTab"){state.side="sell";renderSide()}
- if(e.target.id==="spotSubmit")submitOrder();
- if(e.target.id==="spotRefresh"){loadMarkets();loadBalances()}
- if(e.target.closest('[data-page="trade"]'))setTimeout(()=>{loadMarkets();loadBalances();loadHistory()},120);
+  const t=e.target;
+  const mk=t.closest("[data-spot-market]");if(mk){selectMarket(mk.dataset.spotMarket);return}
+  const row=t.closest("[data-spot-price]");
+  if(row){state.orderType="limit";renderOrderType();["buy","sell"].forEach(s=>{el(s,"price").value=row.dataset.spotPrice;updateForm(s)});return}
+  const cx=t.closest("[data-spot-cancel]");if(cx){cancelOrder(cx.dataset.spotCancel);return}
+  const ty=t.closest("[data-bn-type]");if(ty){state.orderType=ty.dataset.bnType;renderOrderType();return}
+  const ms=t.closest("[data-bn-mside]");if(ms){state.mSide=ms.dataset.bnMside;renderOrderType();return}
+  const pc=t.closest("[data-bn-pct]");if(pc){const [s,p]=pc.dataset.bnPct.split(":");setPct(s,Number(p));return}
+  const ch=t.closest("[data-bn-chain]");if(ch){state.chain=ch.dataset.bnChain;renderMarkets();return}
+  const ot=t.closest("[data-bn-otab]");if(ot){state.ordersTab=ot.dataset.bnOtab;document.querySelectorAll("[data-bn-otab]").forEach(b=>b.classList.toggle("active",b===ot));renderOrders();return}
+  const tf=t.closest("[data-spot-tf]");if(tf){state.timeframe=tf.dataset.spotTf;document.querySelectorAll("[data-spot-tf]").forEach(b=>b.classList.toggle("active",b===tf));loadChart();return}
+  const ind=t.closest("[data-spot-indicator]");if(ind){const k=ind.dataset.spotIndicator;state.indicators[k]=!state.indicators[k];ind.classList.toggle("active",state.indicators[k]);drawChart();return}
+  if(t.closest("#bnB_btn")){submitOrder("buy");return}
+  if(t.closest("#bnS_btn")){submitOrder("sell");return}
+  if(t.closest("#bnCancelAll")){cancelAll();return}
+  if(t.closest("#bnPairToggle")){$("bnRoot").classList.toggle("mk-open");return}
+  if(t.closest("#bnChartBtn")){$("bnRoot").classList.toggle("chart-open");setTimeout(drawChart,50);return}
+  if(t.closest("#spotRefresh")){loadMarkets();loadBalances();return}
+  if(t.closest('[data-page="trade"]'))setTimeout(()=>{loadMarkets();loadBalances();loadHistory()},120);
 });
-$("spotOrderType").addEventListener("change",()=>{$("spotPriceField").style.display=$("spotOrderType").value==="limit"?"block":"none";updateSummary()});
-$("spotQuantity").addEventListener("input",updateSummary);$("spotPrice").addEventListener("input",updateSummary);
+["buy","sell"].forEach(side=>{
+  el(side,"price").addEventListener("input",()=>{cleanInput(el(side,"price"),priceDp());updateForm(side)});
+  el(side,"qty").addEventListener("input",()=>{cleanInput(el(side,"qty"),qtyDp());const q=Number(el(side,"qty").value)||0,pr=Number(el(side,"price").value)||0;if(state.orderType==="limit")el(side,"total").value=q>0&&pr>0?numStr(q*pr,Math.min(priceDp(),8)):"";updateForm(side)});
+  el(side,"total").addEventListener("input",()=>{cleanInput(el(side,"total"),priceDp());const tt=Number(el(side,"total").value)||0,pr=Number(el(side,"price").value)||0;el(side,"qty").value=tt>0&&pr>0?numStr(tt/pr,Math.min(qtyDp(),8)):"";updateForm(side)});
+  el(side,"slider").addEventListener("input",()=>setPct(side,Number(el(side,"slider").value)));
+});
 $("spotMarketSearch").addEventListener("input",renderMarkets);
-document.querySelectorAll("[data-spot-tf]").forEach(b=>b.addEventListener("click",()=>{state.timeframe=b.dataset.spotTf;document.querySelectorAll("[data-spot-tf]").forEach(x=>x.classList.toggle("active",x===b));loadChart()}));
-document.querySelectorAll("[data-spot-indicator]").forEach(b=>b.addEventListener("click",()=>{const key=b.dataset.spotIndicator;state.indicators[key]=!state.indicators[key];b.classList.toggle("active",state.indicators[key]);drawChart()}));
+$("bnHideOthers").addEventListener("change",e=>{state.hideOthers=e.target.checked;renderOrders()});
 $("spotChart")?.addEventListener("pointermove",e=>{const r=e.currentTarget.getBoundingClientRect();state.chartHover=e.clientX-r.left;drawChart()});
 $("spotChart")?.addEventListener("pointerleave",()=>{state.chartHover=null;drawChart()});
 window.addEventListener("resize",drawChart);
@@ -3538,21 +3718,28 @@ document.addEventListener("click",async e=>{
 const spotAdminObserver=new MutationObserver(()=>{if($("page-admin")?.classList.contains("active"))loadSpotAdmin()});
 if($("page-admin"))spotAdminObserver.observe($("page-admin"),{attributes:true,attributeFilter:["class"]});
 window.BT_SPOT={async selectForAsset(symbol,chain){
- if(!state.markets.length)await loadMarkets();
- const m=state.markets.find(x=>String(x.base_symbol).toLowerCase()===String(symbol).toLowerCase()&&(!chain||String(x.chain).toLowerCase()===String(chain).toLowerCase()));
- if(m){await selectMarket(m.id);msg("Selected listed internal market: "+m.base_symbol+"/USDT.",true)}
- else msg("This token is not listed in internal Spot Markets yet. No external swap was started.");
- }};
+  if(!state.markets.length)await loadMarkets();
+  const m=state.markets.find(x=>String(x.base_symbol).toLowerCase()===String(symbol).toLowerCase()&&(!chain||String(x.chain).toLowerCase()===String(chain).toLowerCase()));
+  if(m){await selectMarket(m.id);msg("Selected market: "+m.base_symbol+"/"+m.quote_symbol+".",true)}
+  else msg("This token is not listed in Spot Markets yet. No external swap was started.");
+}};
 const spotParams=new URLSearchParams(location.search);
 if(spotParams.get("spot")==="1"){
- setTimeout(()=>{
-  const nav=document.querySelector('[data-page="trade"]');if(nav)nav.click();
-  const sym=spotParams.get("symbol"),chain=spotParams.get("chain");
-  if(sym)setTimeout(()=>window.BT_SPOT.selectForAsset(sym,chain||""),450);
- },300);
+  setTimeout(()=>{
+    const nav=document.querySelector('[data-page="trade"]');if(nav)nav.click();
+    const sym=spotParams.get("symbol"),chain=spotParams.get("chain");
+    if(sym)setTimeout(()=>window.BT_SPOT.selectForAsset(sym,chain||""),450);
+  },300);
 }
-window.addEventListener("bt-auth",()=>{if($("page-trade")?.classList.contains("active")){loadBalances();loadHistory()}});
-setInterval(()=>{if(!document.hidden&&$("page-trade")?.classList.contains("active")){loadBook();loadHistory();loadChart();loadTicker();loadRecentMarketTrades()}},60000);
+window.addEventListener("bt-auth",()=>{if(pageActive()){loadBalances();loadHistory()}});
+/* live refresh: book / trades / ticker every 4s, account data every 12s, chart + prices every 20s */
+setInterval(()=>{
+  if(document.hidden||!pageActive()||!state.market)return;
+  state.tick++;
+  loadBook();loadRecent();loadTicker();
+  if(state.tick%3===0){loadHistory();loadBalances()}
+  if(state.tick%5===0){loadChart();loadMarkets(true)}
+},4000);
 })();
 </script>
 
