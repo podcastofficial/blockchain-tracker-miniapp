@@ -676,7 +676,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
         <div class="card bn-chart">
           <div class="bn-chart-head">
             <div class="spot-timeframes" id="spotTimeframes"><button type="button" data-spot-tf="1m">1m</button><button type="button" data-spot-tf="5m">5m</button><button type="button" class="active" data-spot-tf="15m">15m</button><button type="button" data-spot-tf="1h">1H</button><button type="button" data-spot-tf="4h">4H</button><button type="button" data-spot-tf="1d">1D</button></div>
-            <div class="spot-timeframes"><button type="button" class="active" data-spot-indicator="sma7">MA 7</button><button type="button" data-spot-indicator="sma25">MA 25</button></div>
+            <div class="spot-timeframes"><button type="button" class="active" data-spot-indicator="sma7">MA 7</button><button type="button" data-spot-indicator="sma25">MA 25</button><button type="button" data-chart-zoom="in" aria-label="Zoom in">＋</button><button type="button" data-chart-zoom="out" aria-label="Zoom out">－</button></div>
           </div>
           <div class="spot-chart-wrap"><canvas id="spotChart" aria-label="Spot market candlestick chart"></canvas><div id="spotChartEmpty" class="spot-chart-empty">No completed trades yet. Candles appear after orders match.</div></div>
           <div class="muted bn-cap" id="spotChartCaption">Candles from completed internal trades</div>
@@ -3393,8 +3393,23 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const api=(p,o)=>window.BT.apiRequest(p,o);
 const fmt=(v,n=8)=>Number(v||0).toLocaleString("en-US",{maximumFractionDigits:n});
 const state={markets:[],market:null,balances:null,feeBps:10,orderType:"limit",mSide:"buy",chain:"all",
-  book:{asks:[],bids:[],last:null},recent:[],candles:[],timeframe:"15m",chartHover:null,indicators:{sma7:true,sma25:false},
+  book:{asks:[],bids:[],last:null},recent:[],candles:[],timeframe:"15m",chartHover:null,view:{n:100,off:0},candleKey:null,indicators:{sma7:true,sma25:false},
   ordersTab:"open",orders:[],trades:[],hideOthers:false,tick:0};
+const TF_MS={"1m":6e4,"5m":3e5,"15m":9e5,"1h":36e5,"4h":144e5,"1d":864e5};
+function bnCandle(T,p,q){
+  if(state.candleKey!==bnx.sym+":"+state.timeframe)return;
+  const c=state.candles,ms=TF_MS[state.timeframe];if(!c||!c.length||!ms||!(p>0))return;
+  const open=Math.floor(T/ms)*ms/1000,last=c[c.length-1];
+  if(open<last.t)return;
+  if(open===last.t){last.c=p;if(p>last.h)last.h=p;if(p<last.l)last.l=p;last.v+=q}
+  else{c.push({t:open,o:p,h:p,l:p,c:p,v:q});if(c.length>1000)c.shift();if(state.view.off>0)state.view.off++}
+  bnx.chart=true;
+}
+function clampView(){
+  const l=(state.candles||[]).length,v=state.view;
+  v.n=Math.min(Math.max(10,l),Math.max(10,v.n||100));
+  v.off=Math.max(0,Math.min(Math.max(0,l-v.n),v.off||0));
+}
 /* ---- Binance live feed: order book + market trades (display only; orders still match on this exchange) ---- */
 const BN_REST=["https://data-api.binance.vision","https://api.binance.com"];
 const bnx={sym:null,ok:false,ws:null,tok:0,busy:false,timer:0,asks:[],bids:[],trades:[],bad:{}};
@@ -3412,7 +3427,7 @@ async function bnGet(p){
 }
 function bnSchedule(){
   if(bnx.timer)return;
-  bnx.timer=setTimeout(()=>{bnx.timer=0;if(pageActive()){renderBook();renderRecent()}},250);
+  bnx.timer=setTimeout(()=>{bnx.timer=0;if(pageActive()){renderBook();renderRecent();if(bnx.chart){bnx.chart=false;drawChart()}}},250);
 }
 function bnStop(){if(bnx.ws){try{bnx.ws.close()}catch(e){}bnx.ws=null}}
 function bnOpen(sym,tok){
@@ -3427,7 +3442,7 @@ function bnOpen(sym,tok){
       bnx.asks=d.asks.map(x=>({price:x[0],quantity:x[1]}));
       bnx.bids=d.bids.map(x=>({price:x[0],quantity:x[1]}));
     }else if(d.e==="trade"){
-      bnx.trades.unshift({price:d.p,quantity:d.q,createdAt:d.T});
+      bnx.trades.unshift({price:d.p,quantity:d.q,createdAt:d.T});bnCandle(d.T,+d.p,+d.q);
       if(bnx.trades.length>40)bnx.trades.length=40;
     }else return;
     bnSchedule();
@@ -3673,7 +3688,7 @@ async function selectMarket(id){
   const m=state.markets.find(x=>x.id===Number(id));if(!m)return;
   const changed=!state.market||state.market.id!==m.id;
   state.market=m;
-  if(changed){state.book={asks:[],bids:[],last:null};state.recent=[];state.candles=[];["buy","sell"].forEach(s=>{el(s,"qty").value="";el(s,"total").value="";el(s,"price").value=""})}
+  if(changed){state.book={asks:[],bids:[],last:null};state.recent=[];state.candles=[];state.view={n:100,off:0};state.candleKey=null;["buy","sell"].forEach(s=>{el(s,"qty").value="";el(s,"total").value="";el(s,"price").value=""})}
   $("spotPair").textContent=`${m.base_symbol}/${m.quote_symbol}`;
   $("spotChain").textContent=m.chain;
   $("bnRoot").classList.remove("mk-open");
@@ -3701,16 +3716,17 @@ function drawChart(){
   const dpr=Math.max(1,window.devicePixelRatio||1),w=Math.max(280,rect.width),h=Math.max(180,rect.height);
   canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
   const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
-  const data=state.candles||[];if(!data.length){empty.style.display="grid";return}empty.style.display="none";
+  const all=state.candles||[];if(!all.length){empty.style.display="grid";return}empty.style.display="none";
+  const vn=Math.min(all.length,Math.max(10,Math.round(state.view.n||100))),vo=Math.max(0,Math.min(all.length-vn,Math.round(state.view.off||0))),base=all.length-vo-vn,data=all.slice(base,base+vn);
   const left=8,right=70,top=14,bottom=22,volH=50,plotW=w-left-right,plotH=h-top-bottom-volH;
   const hi=Math.max(...data.map(x=>x.h)),lo=Math.min(...data.map(x=>x.l)),pad=(hi-lo||hi*.02||1)*.1,min=lo-pad,max=hi+pad,range=max-min||1;
-  const y=v=>top+(max-v)/range*plotH,slot=plotW/Math.max(data.length,30),cw=Math.max(2,Math.min(11,slot*.62));
+  const y=v=>top+(max-v)/range*plotH,slot=plotW/Math.max(data.length,all.length<30?30:8),cw=Math.max(2,Math.min(26,slot*.62));
   const dp=showP();
   ctx.font="10px Arial";ctx.textBaseline="middle";ctx.lineWidth=1;
   for(let i=0;i<=4;i++){const yy=top+plotH*i/4;ctx.strokeStyle="rgba(132,142,156,.16)";ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();ctx.fillStyle="#848e9c";ctx.textAlign="left";ctx.fillText((max-(max-min)*i/4).toFixed(dp),w-right+5,yy)}
   const maxV=Math.max(1e-18,...data.map(x=>x.v)),volBase=top+plotH+volH+4;
   data.forEach((c,i)=>{const x=left+i*slot+slot/2,up=c.c>=c.o,col=up?"#0ecb81":"#f6465d";ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke();const yo=y(Math.max(c.o,c.c)),yc=y(Math.min(c.o,c.c));ctx.fillRect(x-cw/2,yo,cw,Math.max(1,yc-yo));const vh=c.v/maxV*volH;ctx.globalAlpha=.45;ctx.fillRect(x-cw/2,volBase-vh,cw,vh);ctx.globalAlpha=1});
-  const sma=(period,color)=>{if(data.length<period)return;ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.3;let st=false;for(let i=period-1;i<data.length;i++){let s=0;for(let j=i-period+1;j<=i;j++)s+=data[j].c;const xx=left+i*slot+slot/2,yy=y(s/period);if(!st){ctx.moveTo(xx,yy);st=true}else ctx.lineTo(xx,yy)}ctx.stroke();ctx.lineWidth=1};
+  const sma=(period,color)=>{if(all.length<period)return;ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.3;let st=false;for(let i=0;i<data.length;i++){const gi=base+i;if(gi<period-1)continue;let s=0;for(let j=gi-period+1;j<=gi;j++)s+=all[j].c;const xx=left+i*slot+slot/2,yy=y(s/period);if(!st){ctx.moveTo(xx,yy);st=true}else ctx.lineTo(xx,yy)}ctx.stroke();ctx.lineWidth=1};
   if(state.indicators.sma7)sma(7,"#f0b90b");if(state.indicators.sma25)sma(25,"#8b7cff");
   const lastC=data[data.length-1],ly=y(lastC.c),lcol=lastC.c>=lastC.o?"#0ecb81":"#f6465d";
   ctx.setLineDash([3,3]);ctx.strokeStyle=lcol;ctx.beginPath();ctx.moveTo(left,ly);ctx.lineTo(w-right,ly);ctx.stroke();ctx.setLineDash([]);
@@ -3727,14 +3743,15 @@ async function loadChart(){
     let done=false;
     if(bsym&&(bnx.bad[bsym]||0)<=Date.now()){
       try{
-        const k=await bnGet(`/api/v3/klines?symbol=${bsym}&interval=${tfNow}&limit=180`);
+        const k=await bnGet(`/api/v3/klines?symbol=${bsym}&interval=${tfNow}&limit=500`);
         if(!state.market||state.market.id!==mid||state.timeframe!==tfNow)return;
         state.candles=k.map(x=>({t:Math.floor(x[0]/1000),o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
         $("spotChartCaption").textContent=`${tfNow.toUpperCase()} · ${state.candles.length} candles · Binance live`;
-        done=true;
+        done=true;state.candleKey=bsym+":"+tfNow;clampView();
       }catch(e){}
     }
     if(!done){
+      state.candleKey=null;
       const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);
       state.candles=Array.isArray(d.candles)?d.candles:[];
       $("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed trades on this exchange`;
@@ -3759,7 +3776,8 @@ document.addEventListener("click",e=>{
   const pc=t.closest("[data-bn-pct]");if(pc){const [s,p]=pc.dataset.bnPct.split(":");setPct(s,Number(p));return}
   const ch=t.closest("[data-bn-chain]");if(ch){state.chain=ch.dataset.bnChain;renderMarkets();return}
   const ot=t.closest("[data-bn-otab]");if(ot){state.ordersTab=ot.dataset.bnOtab;document.querySelectorAll("[data-bn-otab]").forEach(b=>b.classList.toggle("active",b===ot));renderOrders();return}
-  const tf=t.closest("[data-spot-tf]");if(tf){state.timeframe=tf.dataset.spotTf;document.querySelectorAll("[data-spot-tf]").forEach(b=>b.classList.toggle("active",b===tf));loadChart();return}
+  const zm=t.closest("[data-chart-zoom]");if(zm){state.view.n*=zm.dataset.chartZoom==="in"?0.7:1/0.7;clampView();drawChart();return}
+  const tf=t.closest("[data-spot-tf]");if(tf){state.timeframe=tf.dataset.spotTf;state.view.off=0;document.querySelectorAll("[data-spot-tf]").forEach(b=>b.classList.toggle("active",b===tf));loadChart();return}
   const ind=t.closest("[data-spot-indicator]");if(ind){const k=ind.dataset.spotIndicator;state.indicators[k]=!state.indicators[k];ind.classList.toggle("active",state.indicators[k]);drawChart();return}
   if(t.closest("#bnB_btn")){submitOrder("buy");return}
   if(t.closest("#bnS_btn")){submitOrder("sell");return}
@@ -3777,8 +3795,39 @@ document.addEventListener("click",e=>{
 });
 $("spotMarketSearch").addEventListener("input",renderMarkets);
 $("bnHideOthers").addEventListener("change",e=>{state.hideOthers=e.target.checked;renderOrders()});
-$("spotChart")?.addEventListener("pointermove",e=>{const r=e.currentTarget.getBoundingClientRect();state.chartHover=e.clientX-r.left;drawChart()});
-$("spotChart")?.addEventListener("pointerleave",()=>{state.chartHover=null;drawChart()});
+(function(){
+  const cv=$("spotChart");if(!cv)return;
+  cv.style.touchAction="pan-y";
+  const ptrs=new Map();let pinch=null,drag=null;
+  const slotPx=()=>Math.max(1,(cv.getBoundingClientRect().width-78)/Math.max(state.view.n,8));
+  const dist=()=>{const v=[...ptrs.values()];return v.length<2?1:(Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y)||1)};
+  cv.addEventListener("pointerdown",e=>{
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===2){pinch={d:dist(),n:state.view.n};drag=null}
+    else if(ptrs.size===1)drag={x:e.clientX,off:state.view.off,moved:false};
+  });
+  cv.addEventListener("pointermove",e=>{
+    if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptrs.size===2&&pinch){state.view.n=pinch.n*pinch.d/dist();clampView();state.chartHover=null;drawChart();return}
+    if(drag&&ptrs.size===1&&(e.pointerType==="touch"||(e.buttons&1))){
+      const dx=e.clientX-drag.x;if(Math.abs(dx)>4)drag.moved=true;
+      if(drag.moved){state.view.off=drag.off+dx/slotPx();clampView();state.chartHover=null;drawChart();return}
+    }
+    state.chartHover=e.clientX-cv.getBoundingClientRect().left;drawChart();
+  });
+  const up=e=>{
+    ptrs.delete(e.pointerId);
+    if(ptrs.size<2)pinch=null;
+    if(ptrs.size===0)drag=null;
+    else if(ptrs.size===1){const p=[...ptrs.values()][0];drag={x:p.x,off:state.view.off,moved:true}}
+    if(e.pointerType==="touch"){state.chartHover=null;drawChart()}
+  };
+  cv.addEventListener("pointerup",up);
+  cv.addEventListener("pointercancel",up);
+  cv.addEventListener("pointerleave",e=>{if(e.pointerType!=="touch"){up(e);state.chartHover=null;drawChart()}});
+  cv.addEventListener("wheel",e=>{e.preventDefault();state.view.n*=e.deltaY>0?1.15:1/1.15;clampView();drawChart()},{passive:false});
+  cv.addEventListener("dblclick",()=>{state.view.n=100;state.view.off=0;clampView();drawChart()});
+})();
 window.addEventListener("resize",drawChart);
 async function loadSpotAdmin(){
  const msg=$("adSpotMessage");if(!$("spotAdminCard"))return;msg.textContent="Loading spot exchange administration…";
