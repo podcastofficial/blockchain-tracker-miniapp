@@ -323,7 +323,7 @@ tbody tr{transition:background .12s}tbody tr:hover{background:#f3f6ff}
 .dx-pool small{color:var(--muted);font-size:10px;display:block}
 </style>
 <script>(function(){var d=true;window.MBC_DARK=d;document.documentElement.setAttribute("data-theme",d?"dark":"light");var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d?"#0b0e11":"#f4f8ff";var c=document.querySelector('meta[name="color-scheme"]');if(c)c.content=d?"dark":"light";document.write('<link rel="stylesheet" id="themeCss" href="/assets/theme'+(d?'-dark':'')+'.css">')})();</script>
-<link rel="stylesheet" href="/assets/theme-binance.css?v=20261122a">
+<link rel="stylesheet" href="/assets/theme-binance.css?v=20261122b">
 <script defer src="/assets/fx3d.js"></script><script defer src="/assets/theme-switch.js"></script>
 </head>
 <body>
@@ -3723,9 +3723,22 @@ async function loadChart(){
   if(!state.market)return;
   const empty=$("spotChartEmpty");
   try{
-    const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);
-    state.candles=Array.isArray(d.candles)?d.candles:[];
-    $("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed trades on this exchange`;
+    const bsym=bnSymbol(state.market),tfNow=state.timeframe,mid=state.market.id;
+    let done=false;
+    if(bsym&&(bnx.bad[bsym]||0)<=Date.now()){
+      try{
+        const k=await bnGet(`/api/v3/klines?symbol=${bsym}&interval=${tfNow}&limit=180`);
+        if(!state.market||state.market.id!==mid||state.timeframe!==tfNow)return;
+        state.candles=k.map(x=>({t:Math.floor(x[0]/1000),o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
+        $("spotChartCaption").textContent=`${tfNow.toUpperCase()} · ${state.candles.length} candles · Binance live`;
+        done=true;
+      }catch(e){}
+    }
+    if(!done){
+      const d=await api(`/trading/candles?market=${state.market.id}&tf=${state.timeframe}&limit=180`);
+      state.candles=Array.isArray(d.candles)?d.candles:[];
+      $("spotChartCaption").textContent=`${state.timeframe.toUpperCase()} · ${state.candles.length} candles · completed trades on this exchange`;
+    }
     if(empty)empty.textContent="No completed trades yet. Candles appear after orders match.";
   }catch(e){
     state.candles=[];const reason=String(e.message||"API_REQUEST_FAILED").slice(0,100);
