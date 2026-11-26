@@ -695,6 +695,33 @@ async function cronAlerts(req, res) {
   return send(res, status, { ...body, maintenance });
 }
 
+
+
+// Spot + Futures master switch: OFF unless env TRADING_ENABLED=1 (saves Vercel CPU)
+const TRADING_ENABLED = String(process.env.TRADING_ENABLED || "0") === "1";
+// ---- short-TTL cache for PUBLIC market data (cuts Vercel Active CPU: pollers every 3-4s no longer hit DB each time) ----
+const PUB_TTL = {
+  "/api/trading/orderbook": 3000, "/api/trading/recent": 3000, "/api/trading/ticker": 5000,
+  "/api/trading/candles": 15000, "/api/trading/markets": 30000, "/api/futures/markets": 3000
+};
+const PUB_CACHE = new Map();
+async function cachedPublic(req, res, path, run) {
+  const ttl = PUB_TTL[path];
+  if (!ttl || req.method !== "GET") return run();
+  const key = req.url, hit = PUB_CACHE.get(key), secs = Math.ceil(ttl / 1000);
+  res.setHeader("Cache-Control", `public, s-maxage=${secs}, stale-while-revalidate=${secs * 2}`);
+  if (hit && Date.now() - hit.t < ttl) return res.status(hit.status).json(hit.body);
+  let st = 200;
+  const origStatus = res.status.bind(res), origJson = res.json.bind(res);
+  res.status = (c) => { st = c; return origStatus(c); };
+  res.json = (b) => {
+    if (st === 200) { PUB_CACHE.set(key, { t: Date.now(), status: 200, body: b }); if (PUB_CACHE.size > 300) PUB_CACHE.delete(PUB_CACHE.keys().next().value); }
+    else res.setHeader("Cache-Control", "no-store");
+    return origJson(b);
+  };
+  return run();
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -758,8 +785,12 @@ export default async function handler(req, res) {
     if (path === "/api/market/whales") return await whaleFeed(req, res);
     if (path === "/api/market/coin") return await coinProxy(req, res);
     if (path === "/api/market/new-coins") return await newCoinsFeed(req, res);
-    if (path.startsWith("/api/trading/")) return await (await import("../lib/trading.js")).tradingApi(req, res, path);
-    if (path.startsWith("/api/futures/")) return await (await import("../lib/futures.js")).futuresApi(req, res, path);
+    if (!TRADING_ENABLED && (path.startsWith("/api/trading/") || path.startsWith("/api/futures/") || path === "/api/cron/futures")) {
+      if (path === "/api/cron/futures") return send(res, 200, { ok: true, skipped: "trading disabled" });
+      return send(res, 403, { ok: false, error: path.startsWith("/api/futures/") ? "FUTURES_DISABLED" : "TRADING_DISABLED" });
+    }
+    if (path.startsWith("/api/trading/")) return await cachedPublic(req, res, path, async () => (await import("../lib/trading.js")).tradingApi(req, res, path));
+    if (path.startsWith("/api/futures/")) return await cachedPublic(req, res, path, async () => (await import("../lib/futures.js")).futuresApi(req, res, path));
     if (path === "/api/cron/futures") {
       if (!cronAuthorized(req)) return send(res, 401, { ok: false, error: "UNAUTHORIZED" });
       return send(res, 200, { ok: true, ...(await (await import("../lib/futures.js")).sweep()) });

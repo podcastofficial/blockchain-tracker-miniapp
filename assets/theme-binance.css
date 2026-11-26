@@ -682,3 +682,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .brand-logo,.bar-logo{animation:none!important}
 .card,.stat-card,.quick,.network-card,.plan-card,.dx-card{will-change:auto!important}
 @media (prefers-reduced-motion:reduce){.tk-track{animation:none!important}}
+
+/* ===== Spot/Futures trading disabled ===== */
+[data-page="trade"],[data-page="futures"],#page-trade,#page-futures{display:none!important}
